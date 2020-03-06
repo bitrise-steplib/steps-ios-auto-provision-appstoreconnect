@@ -1,7 +1,7 @@
 package autoprovision
 
 import (
-	"github.com/bitrise-steplib/steps-ios-auto-provision/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
 // Platform ...

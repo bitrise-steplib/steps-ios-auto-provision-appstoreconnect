@@ -3,7 +3,7 @@ package devportaldata_test
 import (
 	"testing"
 
-	"github.com/bitrise-steplib/steps-ios-auto-provision/devportaldata"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportaldata"
 	"github.com/stretchr/testify/assert"
 )
 

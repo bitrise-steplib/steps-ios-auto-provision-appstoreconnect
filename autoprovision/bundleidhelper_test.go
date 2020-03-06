@@ -3,7 +3,7 @@ package autoprovision
 import (
 	"testing"
 
-	"github.com/bitrise-steplib/steps-ios-auto-provision/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
 func Test_checkBundleIDEntitlements(t *testing.T) {

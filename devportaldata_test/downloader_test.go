@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bitrise-steplib/steps-ios-auto-provision/devportaldata"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportaldata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

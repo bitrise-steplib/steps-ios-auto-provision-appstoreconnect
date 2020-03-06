@@ -12,9 +12,9 @@ description: |-
   - ensures that the __Provisioning Profiles__ exist on the Apple Developer Portal and are installed for the build
   - ensure that all the available __Test Devices__ exist on the Apple Developer Portal and are included in the Provisioning Profiles
   - installs the provided __Codesigning Certificates__ into the Keychain
-website: https://github.com/bitrise-steplib/steps-ios-auto-provision
-source_code_url: https://github.com/bitrise-steplib/steps-ios-auto-provision
-support_url: https://github.com/bitrise-steplib/steps-ios-auto-provision/issues
+website: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
+source_code_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
+support_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect-appstoreconnect/issues
 
 project_type_tags:
   - ios
@@ -29,7 +29,7 @@ run_if: ".IsCI"
 
 toolkit:
   go:
-    package_name: github.com/bitrise-steplib/steps-ios-auto-provision
+    package_name: github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
 
 inputs:
   - build_api_token: $BITRISE_BUILD_API_TOKEN

@@ -5,7 +5,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/xcode-project/serialized"
-	"github.com/bitrise-steplib/steps-ios-auto-provision/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
 // Entitlement ...

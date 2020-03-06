@@ -3,7 +3,7 @@ package autoprovision_test
 import (
 	"testing"
 
-	"github.com/bitrise-steplib/steps-ios-auto-provision/autoprovision"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/stretchr/testify/require"
 )
 

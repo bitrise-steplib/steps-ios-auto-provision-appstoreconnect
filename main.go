@@ -17,10 +17,10 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-io/xcode-project/xcodeproj"
-	"github.com/bitrise-steplib/steps-ios-auto-provision/appstoreconnect"
-	"github.com/bitrise-steplib/steps-ios-auto-provision/autoprovision"
-	"github.com/bitrise-steplib/steps-ios-auto-provision/devportaldata"
-	"github.com/bitrise-steplib/steps-ios-auto-provision/keychain"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportaldata"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
 )
 
 // downloadCertificates downloads and parses a list of p12 files

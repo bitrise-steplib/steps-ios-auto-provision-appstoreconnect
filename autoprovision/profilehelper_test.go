@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bitrise-io/xcode-project/serialized"
-	"github.com/bitrise-steplib/steps-ios-auto-provision/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
 func Test_profileName(t *testing.T) {
