@@ -14,7 +14,7 @@ description: |-
   - installs the provided __Codesigning Certificates__ into the Keychain
 website: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
 source_code_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
-support_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect-appstoreconnect/issues
+support_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/issues
 
 project_type_tags:
   - ios
