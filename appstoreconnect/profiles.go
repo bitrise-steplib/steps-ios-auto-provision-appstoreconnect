@@ -2,6 +2,7 @@ package appstoreconnect
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/bitrise-io/xcode-project/serialized"
 )
@@ -83,7 +84,7 @@ type ProfileAttributes struct {
 	CreatedDate    string           `json:"createdDate"`
 	ProfileState   ProfileState     `json:"profileState"`
 	ProfileType    ProfileType      `json:"profileType"`
-	ExpirationDate string           `json:"expirationDate"`
+	ExpirationDate time.Time        `json:"expirationDate"`
 }
 
 // Profile ...

@@ -2,11 +2,11 @@ package autoprovision
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/require"
+	"time"
 
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_profileName(t *testing.T) {
@@ -173,6 +173,27 @@ func Test_findMissingContainers(t *testing.T) {
 				require.NoError(t, err)
 			}
 			require.Equal(t, got, tt.want)
+		})
+	}
+}
+
+func Test_checkProfileExpiry(t *testing.T) {
+	tests := []struct {
+		prof                appstoreconnect.Profile
+		minProfileDaysValid int
+		name                string
+		want                bool
+	}{
+		{name: "no days set - profile expiry date after current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(5 * time.Hour)}}, want: false},
+		{name: "no days set - profile expiry date before current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(-5 * time.Hour)}}, want: true},
+		{name: "days set - profile expiry date after current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(5 * 24 * time.Hour)}}, want: false},
+		{name: "days set - profile expiry date before current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(1 * 24 * time.Hour)}}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := checkProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
+				t.Errorf("checkProfileExpiry() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

@@ -24,7 +24,7 @@ type Config struct {
 	Configuration string `env:"configuration"`
 
 	Distribution        string `env:"distribution_type,opt[development,app-store,ad-hoc,enterprise]"`
-	MinProfileDaysValid string `env:"min_profile_days_valid"`
+	MinProfileDaysValid int    `env:"min_profile_days_valid"`
 
 	CertificateURLList        string          `env:"certificate_urls,required"`
 	CertificatePassphraseList stepconf.Secret `env:"passphrases"`

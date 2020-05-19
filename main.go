@@ -386,7 +386,7 @@ func main() {
 
 				if profile.Attributes.ProfileState == appstoreconnect.Active {
 					// Check if Bitrise managed Profile is sync with the project
-					ok, err := autoprovision.CheckProfile(client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs)
+					ok, err := autoprovision.CheckProfile(client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, stepConf.MinProfileDaysValid)
 					if err != nil {
 						failf("Failed to check if profile is valid: %s", err)
 					}
