@@ -11,14 +11,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:89562e1ecde606efbc12f60b41582279cccea8f4d39b31290e2d64bd1f08ee29"
+  digest = "1:ba6694e16cc02ad534ba0e2443323379159c978bbba876b01a7286c326cafeb8"
   name = "github.com/bitrise-io/go-steputils"
   packages = [
     "stepconf",
     "tools",
   ]
   pruneopts = "UT"
-  revision = "3c98d95a94d51624a26e99419d0fc03d2aab0055"
+  revision = "94490ca44ddb645764676a94988f6fc7e3187383"
 
 [[projects]]
   branch = "master"
@@ -58,7 +58,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:85c502298a8078ffdfee516cfb59bb5272c3adca032d1d26001da41042275851"
+  digest = "1:4312b505eec5790a5c16ea6f8ee5cea6408e4c455353835f2d9b9be47a56ef0f"
   name = "github.com/bitrise-io/xcode-project"
   packages = [
     ".",
@@ -70,7 +70,7 @@
     "xcworkspace",
   ]
   pruneopts = "UT"
-  revision = "389cf29e41c71dc02c83959c6fac72e8d476766a"
+  revision = "09e5737e052d9d01cb927e53e18c378868377414"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -164,20 +164,20 @@
   version = "v0.3.2"
 
 [[projects]]
-  digest = "1:55b110c99c5fdc4f14930747326acce56b52cfce60b24b1c03ef686ac0e46bb1"
+  digest = "1:d7f1bd887dc650737a421b872ca883059580e9f8314d601f88025df4f4802dce"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "53403b58ad1b561927d19068c655246f2db79d48"
-  version = "v2.2.8"
+  revision = "0b1645d91e851e735d3e23330303ce81f70adbe3"
+  version = "v2.3.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:bc88f8258129a6b4eaf52d8095b3f0bcf68e065aca273aaf6ee7d3c7e464c510"
+  digest = "1:b5ead2120cd278858a83be14ef551f54295da350033dbc3f227fe0298b880256"
   name = "howett.net/plist"
   packages = ["."]
   pruneopts = "UT"
-  revision = "77e249a2e2ba6362794925035a31bea61b902a1e"
+  revision = "3b63eb3a43b59c776909681ed1fcb412b47d3c9a"
 
 [solve-meta]
   analyzer-name = "dep"
