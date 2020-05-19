@@ -202,7 +202,7 @@ func checkProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) 
 	if minProfileDaysValid > 0 {
 		relativeExpiryTime = relativeExpiryTime.Add(time.Duration(minProfileDaysValid) * 24 * time.Hour)
 	}
-	return !prof.Attributes.ExpirationDate.After(relativeExpiryTime)
+	return !time.Time(prof.Attributes.ExpirationDate).After(relativeExpiryTime)
 }
 
 // CheckProfile ...

@@ -84,7 +84,20 @@ type ProfileAttributes struct {
 	CreatedDate    string           `json:"createdDate"`
 	ProfileState   ProfileState     `json:"profileState"`
 	ProfileType    ProfileType      `json:"profileType"`
-	ExpirationDate time.Time        `json:"expirationDate"`
+	ExpirationDate Time             `json:"expirationDate"`
+}
+
+// Time ...
+type Time time.Time
+
+// UnmarshalJSON ...
+func (t *Time) UnmarshalJSON(b []byte) error {
+	parsed, err := time.Parse("2006-01-02T15:04:05.000-0700", string(b))
+	if err != nil {
+		return err
+	}
+	*t = Time(parsed)
+	return nil
 }
 
 // Profile ...

@@ -184,10 +184,10 @@ func Test_checkProfileExpiry(t *testing.T) {
 		name                string
 		want                bool
 	}{
-		{name: "no days set - profile expiry date after current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(5 * time.Hour)}}, want: false},
-		{name: "no days set - profile expiry date before current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(-5 * time.Hour)}}, want: true},
-		{name: "days set - profile expiry date after current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(5 * 24 * time.Hour)}}, want: false},
-		{name: "days set - profile expiry date before current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: time.Now().Add(1 * 24 * time.Hour)}}, want: true},
+		{name: "no days set - profile expiry date after current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * time.Hour))}}, want: false},
+		{name: "no days set - profile expiry date before current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(-5 * time.Hour))}}, want: true},
+		{name: "days set - profile expiry date after current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * 24 * time.Hour))}}, want: false},
+		{name: "days set - profile expiry date before current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(1 * 24 * time.Hour))}}, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
