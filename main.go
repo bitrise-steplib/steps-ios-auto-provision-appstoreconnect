@@ -139,15 +139,15 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-// RemoteProfileManager ...
-type RemoteProfileManager struct {
+// ProfileManager ...
+type ProfileManager struct {
 	client                      *appstoreconnect.Client
 	bundleIDByBundleIDIdentifer map[string]*appstoreconnect.BundleID
 	containersByBundleID        map[string][]string
 }
 
 // EnsureBundleID ...
-func (m RemoteProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements serialized.Object) (*appstoreconnect.BundleID, error) {
+func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements serialized.Object) (*appstoreconnect.BundleID, error) {
 	fmt.Println()
 	log.Infof("  Searching for app ID for bundle ID: %s", bundleIDIdentifier)
 
@@ -212,7 +212,7 @@ func (m RemoteProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlem
 }
 
 // EnsureProfile ...
-func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string) (*appstoreconnect.Profile, error) {
+func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string) (*appstoreconnect.Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities: %s", entitlements)
@@ -295,7 +295,7 @@ func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileT
 	return profile, nil
 }
 
-func (m RemoteProfileManager) deleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
+func (m ProfileManager) deleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
 	var nextPageURL string
 	var profile *appstoreconnect.Profile
 
@@ -522,7 +522,7 @@ func main() {
 
 	containersByBundleID := map[string][]string{}
 
-	profileManager := RemoteProfileManager{
+	profileManager := ProfileManager{
 		client:                      client,
 		bundleIDByBundleIDIdentifer: bundleIDByBundleIDIdentifer,
 		containersByBundleID:        containersByBundleID,
