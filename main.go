@@ -146,56 +146,8 @@ type RemoteProfileManager struct {
 	containersByBundleID        map[string][]string
 }
 
-// EnsureProfile ...
-func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string) (*appstoreconnect.Profile, error) {
-	fmt.Println()
-	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
-	log.Printf("  capabilities: %s", entitlements)
-
-	// Search for Bitrise managed Profile
-	name, err := autoprovision.ProfileName(profileType, bundleIDIdentifier)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create profile name: %s", err)
-	}
-
-	profile, err := autoprovision.FindProfile(m.client, name, profileType, bundleIDIdentifier)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find profile: %s", err)
-	}
-
-	if profile == nil {
-		log.Warnf("  profile does not exist, generating...")
-	} else {
-		log.Printf("  Bitrise managed profile found: %s", profile.Attributes.Name)
-
-		if profile.Attributes.ProfileState == appstoreconnect.Active {
-			// Check if Bitrise managed Profile is sync with the project
-			ok, err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs)
-			if err != nil {
-				return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
-			}
-			if ok {
-				log.Donef("  profile is in sync with the project requirements")
-				// codesignSettings.ProfilesByBundleID[bundleIDIdentifier] = *profile
-				// codesignSettingsByDistributionType[distrType] = codesignSettings
-				// continue
-				return profile, nil
-			} else {
-				log.Warnf("  the profile is not in sync with the project requirements, regenerating ...")
-			}
-		}
-
-		if profile.Attributes.ProfileState == appstoreconnect.Invalid {
-			// If the profile's bundle id gets modified, the profile turns in Invalid state.
-			log.Warnf("  the profile state is invalid, regenerating ...")
-		}
-
-		if err := autoprovision.DeleteProfile(m.client, profile.ID); err != nil {
-			return nil, fmt.Errorf("failed to delete profile: %s", err)
-		}
-	}
-
-	// Search for BundleID
+// EnsureBundleID ...
+func (m RemoteProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements serialized.Object) (*appstoreconnect.BundleID, error) {
 	fmt.Println()
 	log.Infof("  Searching for app ID for bundle ID: %s", bundleIDIdentifier)
 
@@ -226,32 +178,88 @@ func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileT
 		} else {
 			log.Printf("  app ID capabilities are in sync with the project capabilities")
 		}
+
+		return bundleID, nil
+	}
+
+	// Create BundleID
+	log.Warnf("  app ID not found, generating...")
+
+	capabilities := autoprovision.Entitlement(entitlements)
+
+	bundleID, err := autoprovision.CreateBundleID(m.client, bundleIDIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
+	}
+
+	containers, err := capabilities.ICloudContainers()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get list of iCloud containers: %s", err)
+	}
+
+	if len(containers) > 0 {
+		m.containersByBundleID[bundleIDIdentifier] = containers
+		log.Errorf("  app ID created but couldn't add iCloud containers: %v", containers)
+	}
+
+	if err := autoprovision.SyncBundleID(m.client, bundleID.ID, capabilities); err != nil {
+		return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
+	}
+
+	m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
+
+	return bundleID, nil
+}
+
+// EnsureProfile ...
+func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string) (*appstoreconnect.Profile, error) {
+	fmt.Println()
+	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
+	log.Printf("  capabilities: %s", entitlements)
+
+	// Search for Bitrise managed Profile
+	name, err := autoprovision.ProfileName(profileType, bundleIDIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create profile name: %s", err)
+	}
+
+	profile, err := autoprovision.FindProfile(m.client, name, profileType, bundleIDIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find profile: %s", err)
+	}
+
+	if profile == nil {
+		log.Warnf("  profile does not exist, generating...")
 	} else {
-		// Create BundleID
-		log.Warnf("  app ID not found, generating...")
+		log.Printf("  Bitrise managed profile found: %s", profile.Attributes.Name)
 
-		entitlements := autoprovision.Entitlement(entitlements)
-
-		bundleID, err = autoprovision.CreateBundleID(m.client, bundleIDIdentifier)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create bundle ID: %s", err)
+		if profile.Attributes.ProfileState == appstoreconnect.Active {
+			// Check if Bitrise managed Profile is sync with the project
+			ok, err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs)
+			if err != nil {
+				return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
+			}
+			if ok {
+				log.Donef("  profile is in sync with the project requirements")
+				return profile, nil
+			}
+			log.Warnf("  the profile is not in sync with the project requirements, regenerating ...")
 		}
 
-		containers, err := entitlements.ICloudContainers()
-		if err != nil {
-			return nil, fmt.Errorf("Failed to get list of iCloud containers: %s", err)
+		if profile.Attributes.ProfileState == appstoreconnect.Invalid {
+			// If the profile's bundle id gets modified, the profile turns in Invalid state.
+			log.Warnf("  the profile state is invalid, regenerating ...")
 		}
 
-		if len(containers) > 0 {
-			m.containersByBundleID[bundleIDIdentifier] = containers
-			log.Errorf("  app ID created but couldn't add iCloud containers: %v", containers)
+		if err := autoprovision.DeleteProfile(m.client, profile.ID); err != nil {
+			return nil, fmt.Errorf("failed to delete profile: %s", err)
 		}
+	}
 
-		if err := autoprovision.SyncBundleID(m.client, bundleID.ID, entitlements); err != nil {
-			return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
-		}
-
-		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
+	// Search for BundleID
+	bundleID, err := m.EnsureBundleID(bundleIDIdentifier, entitlements)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create Bitrise managed Profile
@@ -260,6 +268,9 @@ func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileT
 
 	profile, err = autoprovision.CreateProfile(m.client, name, profileType, *bundleID, certIDs, deviceIDs)
 	if err != nil {
+		// Expired profiles are not listed via profiles endpoint,
+		// so we can not catch if the profile already exist but expired, before we attempt to create one with the managed profile name.
+		// As a workaround we use the BundleID profiles relationship url to find and delete the expired profile.
 		if isMultipleProfileErr(err) {
 			log.Warnf("  Profile already exists, but expired, cleaning up...")
 			if err := deleteExpiredProfile(m.client, bundleID, name); err != nil {
