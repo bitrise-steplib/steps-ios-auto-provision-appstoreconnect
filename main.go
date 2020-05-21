@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -152,7 +153,12 @@ func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileT
 	log.Printf("  capabilities: %s", entitlements)
 
 	// Search for Bitrise managed Profile
-	profile, err := autoprovision.FindProfile(m.client, profileType, bundleIDIdentifier)
+	name, err := autoprovision.ProfileName(profileType, bundleIDIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create profile name: %s", err)
+	}
+
+	profile, err := autoprovision.FindProfile(m.client, name, profileType, bundleIDIdentifier)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find profile: %s", err)
 	}
@@ -252,14 +258,76 @@ func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileT
 	fmt.Println()
 	log.Infof("  Creating profile for bundle id: %s", bundleID.Attributes.Name)
 
-	profile, err = autoprovision.CreateProfile(m.client, profileType, *bundleID, certIDs, deviceIDs)
+	profile, err = autoprovision.CreateProfile(m.client, name, profileType, *bundleID, certIDs, deviceIDs)
 	if err != nil {
+		if isMultipleProfileErr(err) {
+			log.Warnf("  Profile already exists, but expired, cleaning up...")
+			if err := deleteExpiredProfile(m.client, bundleID, name); err != nil {
+				return nil, fmt.Errorf("expired profile cleanup failed: %s", err)
+			}
+
+			profile, err = autoprovision.CreateProfile(m.client, name, profileType, *bundleID, certIDs, deviceIDs)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create profile: %s", err)
+			}
+
+			log.Donef("  profile created: %s", profile.Attributes.Name)
+
+			return profile, nil
+		}
+
 		return nil, fmt.Errorf("failed to create profile: %s", err)
 	}
 
 	log.Donef("  profile created: %s", profile.Attributes.Name)
 
 	return profile, nil
+}
+
+func deleteExpiredProfile(client *appstoreconnect.Client, bundleID *appstoreconnect.BundleID, profileName string) error {
+	var nextPageURL string
+	var profile *appstoreconnect.Profile
+
+	for {
+		response, err := client.Provisioning.Profiles(bundleID.Relationships.Profiles.Links.Related, &appstoreconnect.PagingOptions{
+			Limit: 20,
+			Next:  nextPageURL,
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		for _, d := range response.Data {
+			if d.Attributes.Name == profileName {
+				profile = &d
+				break
+			}
+		}
+
+		nextPageURL = response.Links.Next
+		if nextPageURL == "" {
+			break
+		}
+	}
+
+	if profile == nil {
+		return fmt.Errorf("failed to find profile: %s", profileName)
+	}
+
+	return client.Provisioning.DeleteProfile(profile.ID)
+}
+
+func isMultipleProfileErr(err error) bool {
+	var responseErrror *appstoreconnect.ErrorResponse
+	if !errors.As(err, &responseErrror) {
+		log.Debugf("not responseErrror")
+		return false
+	}
+	if responseErrror.Response.StatusCode != http.StatusConflict {
+		log.Debugf("not conflict")
+		return false
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "multiple profiles found with the name")
 }
 
 func main() {

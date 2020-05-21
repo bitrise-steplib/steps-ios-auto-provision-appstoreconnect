@@ -2,6 +2,7 @@ package appstoreconnect
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/bitrise-io/xcode-project/serialized"
 )
@@ -270,4 +271,29 @@ func (s ProvisioningService) DeleteProfile(id string) error {
 
 	_, err = s.client.Do(req, nil)
 	return err
+}
+
+// Profiles ...
+func (s ProvisioningService) Profiles(relationshipLink string, opt *PagingOptions) (*ProfilesResponse, error) {
+	if err := opt.UpdateCursor(); err != nil {
+		return nil, err
+	}
+
+	u, err := addOptions(relationshipLink, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	url := strings.TrimPrefix(u, baseURL+apiVersion)
+	req, err := s.client.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	r := &ProfilesResponse{}
+	if _, err := s.client.Do(req, r); err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }

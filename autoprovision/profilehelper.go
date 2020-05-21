@@ -13,8 +13,8 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
-// Generates profile name: Bitrise <platform> <distribution type> - (<bundle id>)
-func profileName(profileType appstoreconnect.ProfileType, bundleID string) (string, error) {
+// ProfileName generates profile name with layout: Bitrise <platform> <distribution type> - (<bundle id>)
+func ProfileName(profileType appstoreconnect.ProfileType, bundleID string) (string, error) {
 	platform, ok := ProfileTypeToPlatform[profileType]
 	if !ok {
 		return "", fmt.Errorf("unknown profile type: %s", profileType)
@@ -29,12 +29,7 @@ func profileName(profileType appstoreconnect.ProfileType, bundleID string) (stri
 }
 
 // FindProfile ...
-func FindProfile(client *appstoreconnect.Client, profileType appstoreconnect.ProfileType, bundleIDIdentifier string) (*appstoreconnect.Profile, error) {
-	name, err := profileName(profileType, bundleIDIdentifier)
-	if err != nil {
-		return nil, err
-	}
-
+func FindProfile(client *appstoreconnect.Client, name string, profileType appstoreconnect.ProfileType, bundleIDIdentifier string) (*appstoreconnect.Profile, error) {
 	opt := &appstoreconnect.ListProfilesOptions{
 		PagingOptions: appstoreconnect.PagingOptions{
 			Limit: 1,
@@ -232,11 +227,7 @@ func DeleteProfile(client *appstoreconnect.Client, id string) error {
 }
 
 // CreateProfile ...
-func CreateProfile(client *appstoreconnect.Client, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (*appstoreconnect.Profile, error) {
-	name, err := profileName(profileType, bundleID.Attributes.Identifier)
-	if err != nil {
-		return nil, err
-	}
+func CreateProfile(client *appstoreconnect.Client, name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (*appstoreconnect.Profile, error) {
 	// Create new Bitrise profile on App Store Connect
 	r, err := client.Provisioning.CreateProfile(
 		appstoreconnect.NewProfileCreateRequest(
@@ -248,7 +239,7 @@ func CreateProfile(client *appstoreconnect.Client, profileType appstoreconnect.P
 		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create %s provisioning profile for %s bundle ID: %s", profileType.ReadableString(), bundleID.Attributes.Identifier, err)
+		return nil, fmt.Errorf("failed to create %s provisioning profile for %s bundle ID: %w", profileType.ReadableString(), bundleID.Attributes.Identifier, err)
 	}
 	return &r.Data, nil
 }
