@@ -273,7 +273,7 @@ func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileT
 		// As a workaround we use the BundleID profiles relationship url to find and delete the expired profile.
 		if isMultipleProfileErr(err) {
 			log.Warnf("  Profile already exists, but expired, cleaning up...")
-			if err := deleteExpiredProfile(m.client, bundleID, name); err != nil {
+			if err := m.deleteExpiredProfile(bundleID, name); err != nil {
 				return nil, fmt.Errorf("expired profile cleanup failed: %s", err)
 			}
 
@@ -295,12 +295,12 @@ func (m RemoteProfileManager) EnsureProfile(profileType appstoreconnect.ProfileT
 	return profile, nil
 }
 
-func deleteExpiredProfile(client *appstoreconnect.Client, bundleID *appstoreconnect.BundleID, profileName string) error {
+func (m RemoteProfileManager) deleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
 	var nextPageURL string
 	var profile *appstoreconnect.Profile
 
 	for {
-		response, err := client.Provisioning.Profiles(bundleID.Relationships.Profiles.Links.Related, &appstoreconnect.PagingOptions{
+		response, err := m.client.Provisioning.Profiles(bundleID.Relationships.Profiles.Links.Related, &appstoreconnect.PagingOptions{
 			Limit: 20,
 			Next:  nextPageURL,
 		})
@@ -325,7 +325,7 @@ func deleteExpiredProfile(client *appstoreconnect.Client, bundleID *appstoreconn
 		return fmt.Errorf("failed to find profile: %s", profileName)
 	}
 
-	return client.Provisioning.DeleteProfile(profile.ID)
+	return m.client.Provisioning.DeleteProfile(profile.ID)
 }
 
 func isMultipleProfileErr(err error) bool {
