@@ -22,6 +22,11 @@ const (
 	apiVersion = "v1"
 )
 
+// HTTPClient ...
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type service struct {
 	client *Client
 }
@@ -37,7 +42,7 @@ type Client struct {
 	token       *jwt.Token
 	signedToken string
 
-	client  *http.Client
+	client  HTTPClient
 	BaseURL *url.URL
 
 	common       service // Reuse a single struct instead of allocating one for each service on the heap.
@@ -45,11 +50,10 @@ type Client struct {
 }
 
 // NewClient creates a new client
-func NewClient(keyID, issuerID string, privateKey []byte) (*Client, error) {
-	httpClient := http.DefaultClient
+func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte) *Client {
 	baseURL, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, err
+		panic("invalid api base url: " + err.Error())
 	}
 
 	c := &Client{
@@ -63,7 +67,7 @@ func NewClient(keyID, issuerID string, privateKey []byte) (*Client, error) {
 	c.common.client = c
 	c.Provisioning = (*ProvisioningService)(&c.common)
 
-	return c, nil
+	return c
 }
 
 // ensureSignedToken makes sure that the JWT auth token is not expired
@@ -120,11 +124,13 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	signedToken, err := c.ensureSignedToken()
-	if err != nil {
-		return nil, err
+	if _, ok := c.client.(*http.Client); ok {
+		signedToken, err := c.ensureSignedToken()
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bearer "+signedToken)
 	}
-	req.Header.Set("Authorization", "Bearer "+signedToken)
 
 	return req, nil
 }

@@ -360,10 +360,7 @@ func main() {
 		failf("Failed get developer portal data: %s", err)
 	}
 
-	client, err := appstoreconnect.NewClient(devPortalData.KeyID, devPortalData.IssuerID, []byte(devPortalData.PrivateKeyWithHeader()))
-	if err != nil {
-		failf("Failed to create client: %s", err)
-	}
+	client := appstoreconnect.NewClient(http.DefaultClient, devPortalData.KeyID, devPortalData.IssuerID, []byte(devPortalData.PrivateKeyWithHeader()))
 
 	// Turn off client debug logs includeing HTTP call debug logs
 	client.EnableDebugLogs = false
