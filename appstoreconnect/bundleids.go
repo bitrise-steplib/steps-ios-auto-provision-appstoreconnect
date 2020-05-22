@@ -29,21 +29,21 @@ type BundleIDAttributes struct {
 	Platform   string `json:"platform"`
 }
 
+// Links ...
+type Links struct {
+	Related string `json:"related"`
+	Self    string `json:"next"`
+}
+
+// RelationshipsLinks ...
+type RelationshipsLinks struct {
+	Links Links `json:"links"`
+}
+
 // BundleIDRelationships ...
 type BundleIDRelationships struct {
-	Profiles struct {
-		Links struct {
-			Related string `json:"related"`
-			Self    string `json:"next"`
-		} `json:"links"`
-	} `json:"profiles"`
-
-	Capabilities struct {
-		Links struct {
-			Related string `json:"related"`
-			Self    string `json:"next"`
-		} `json:"links"`
-	} `json:"bundleIdCapabilities"`
+	Profiles     RelationshipsLinks `json:"profiles"`
+	Capabilities RelationshipsLinks `json:"bundleIdCapabilities"`
 }
 
 // BundleID ...
