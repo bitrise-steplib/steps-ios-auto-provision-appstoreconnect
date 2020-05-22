@@ -30,10 +30,12 @@ func (c *MockClient) Do(req *http.Request) (*http.Response, error) {
 	case req.URL.Path == "/v1/profiles" && req.Method == "GET":
 		return c.GetProfiles(req)
 	case req.URL.Path == "/v1/profiles" && req.Method == "POST":
+		// First profile create request fails by 'Multiple profiles found' error
 		if !c.postProfileSuccess {
 			c.postProfileSuccess = true
 			return c.PostProfilesFailed(req)
 		}
+		// After deleting the expired profile, creating a new one succeed
 		return c.PostProfilesSuccess(req)
 	case req.URL.Path == "/v1//bundleID/capabilities" && req.Method == "GET":
 		return c.GetBundleIDCapabilities(req)
@@ -105,7 +107,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		On("PostProfilesFailed", mock.AnythingOfType("*http.Request")).
 		Return(newResponse(t, http.StatusConflict,
 			map[string]interface{}{
-				"errors": []interface{}{map[string]interface{}{"detail": "multiple profiles found with the name"}},
+				"errors": []interface{}{map[string]interface{}{"detail": "ENTITY_ERROR: There is a problem with the request entity: Multiple profiles found with the name 'Bitrise iOS development - (io.bitrise.testapp)'.  Please remove the duplicate profiles and try again."}},
 			}), nil)
 
 	mockClient.
@@ -135,6 +137,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 	manager := ProfileManager{
 		client: client,
+		// cache io.bitrise.testapp bundle ID, so that no need to mock bundle ID GET requests
 		bundleIDByBundleIDIdentifer: map[string]*appstoreconnect.BundleID{"io.bitrise.testapp": &appstoreconnect.BundleID{
 			Relationships: appstoreconnect.BundleIDRelationships{
 				Profiles: appstoreconnect.RelationshipsLinks{
