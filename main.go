@@ -305,7 +305,7 @@ func (m ProfileManager) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 			Next:  nextPageURL,
 		})
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		for _, d := range response.Data {
