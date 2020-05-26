@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// BundleIDsURL ...
-const BundleIDsURL = "bundleIds"
+// BundleIDsEndpoint ...
+const BundleIDsEndpoint = "bundleIds"
 
 // ListBundleIDsOptions ...
 type ListBundleIDsOptions struct {
@@ -29,21 +29,21 @@ type BundleIDAttributes struct {
 	Platform   string `json:"platform"`
 }
 
+// Links ...
+type Links struct {
+	Related string `json:"related"`
+	Self    string `json:"next"`
+}
+
+// RelationshipsLinks ...
+type RelationshipsLinks struct {
+	Links Links `json:"links"`
+}
+
 // BundleIDRelationships ...
 type BundleIDRelationships struct {
-	Profiles struct {
-		Links struct {
-			Related string `json:"related"`
-			Self    string `json:"next"`
-		} `json:"links"`
-	} `json:"profiles"`
-
-	Capabilities struct {
-		Links struct {
-			Related string `json:"related"`
-			Self    string `json:"next"`
-		} `json:"links"`
-	} `json:"bundleIdCapabilities"`
+	Profiles     RelationshipsLinks `json:"profiles"`
+	Capabilities RelationshipsLinks `json:"bundleIdCapabilities"`
 }
 
 // BundleID ...
@@ -67,7 +67,7 @@ func (s ProvisioningService) ListBundleIDs(opt *ListBundleIDsOptions) (*BundleId
 		return nil, err
 	}
 
-	u, err := addOptions(BundleIDsURL, opt)
+	u, err := addOptions(BundleIDsEndpoint, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ type BundleIDCreateRequest struct {
 
 // CreateBundleID ...
 func (s ProvisioningService) CreateBundleID(body BundleIDCreateRequest) (*BundleIDResponse, error) {
-	req, err := s.client.NewRequest(http.MethodPost, BundleIDsURL, body)
+	req, err := s.client.NewRequest(http.MethodPost, BundleIDsEndpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +125,8 @@ func (s ProvisioningService) CreateBundleID(body BundleIDCreateRequest) (*Bundle
 
 // BundleID ...
 func (s ProvisioningService) BundleID(relationshipLink string) (*BundleIDResponse, error) {
-	url := strings.TrimPrefix(relationshipLink, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, url, nil)
+	endpoint := strings.TrimPrefix(relationshipLink, baseURL+apiVersion)
+	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -23,9 +23,12 @@ type ErrorResponse struct {
 
 // Error ...
 func (r ErrorResponse) Error() string {
-	m := fmt.Sprintf("%s %s: %d\n", r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode)
-	var s string
+	var m string
+	if r.Response.Request != nil {
+		m = fmt.Sprintf("%s %s: %d\n", r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode)
+	}
 
+	var s string
 	for _, err := range r.Errors {
 		m += s + fmt.Sprintf("- %s: %s: %s", err.Code, err.Title, err.Detail)
 		s = "\n"

@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// BundleIDCapabilitiesURL ...
-const BundleIDCapabilitiesURL = "bundleIdCapabilities"
+// BundleIDCapabilitiesEndpoint ...
+const BundleIDCapabilitiesEndpoint = "bundleIdCapabilities"
 
 // CapabilityType ...
 type CapabilityType string
@@ -222,7 +222,7 @@ type BundleIDCapabilitiesResponse struct {
 
 // EnableCapability ...
 func (s ProvisioningService) EnableCapability(body BundleIDCapabilityCreateRequest) (*BundleIDCapabilityResponse, error) {
-	req, err := s.client.NewRequest(http.MethodPost, BundleIDCapabilitiesURL, body)
+	req, err := s.client.NewRequest(http.MethodPost, BundleIDCapabilitiesEndpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (s ProvisioningService) EnableCapability(body BundleIDCapabilityCreateReque
 
 // UpdateCapability ...
 func (s ProvisioningService) UpdateCapability(id string, body BundleIDCapabilityUpdateRequest) (*BundleIDCapabilityResponse, error) {
-	req, err := s.client.NewRequest(http.MethodPatch, BundleIDCapabilitiesURL+"/"+id, body)
+	req, err := s.client.NewRequest(http.MethodPatch, BundleIDCapabilitiesEndpoint+"/"+id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -251,8 +251,8 @@ func (s ProvisioningService) UpdateCapability(id string, body BundleIDCapability
 
 // Capabilities ...
 func (s ProvisioningService) Capabilities(relationshipLink string) (*BundleIDCapabilitiesResponse, error) {
-	url := strings.TrimPrefix(relationshipLink, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, url, nil)
+	endpoint := strings.TrimPrefix(relationshipLink, baseURL+apiVersion)
+	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}

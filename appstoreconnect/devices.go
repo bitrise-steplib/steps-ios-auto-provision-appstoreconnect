@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// DevicesURL ...
-const DevicesURL = "devices"
+// DevicesEndpoint ...
+const DevicesEndpoint = "devices"
 
 // ListDevicesOptions ...
 type ListDevicesOptions struct {
@@ -76,7 +76,7 @@ func (s ProvisioningService) ListDevices(opt *ListDevicesOptions) (*DevicesRespo
 		return nil, err
 	}
 
-	u, err := addOptions(DevicesURL, opt)
+	u, err := addOptions(DevicesEndpoint, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ type DeviceCreateRequest struct {
 
 // RegisterNewDevice ...
 func (s ProvisioningService) RegisterNewDevice(body DeviceCreateRequest) (*DevicesResponse, error) {
-	req, err := s.client.NewRequest(http.MethodPost, DevicesURL, body)
+	req, err := s.client.NewRequest(http.MethodPost, DevicesEndpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +138,8 @@ func (s ProvisioningService) Devices(relationshipLink string, opt *PagingOptions
 		return nil, err
 	}
 
-	url := strings.TrimPrefix(u, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, url, nil)
+	endpoint := strings.TrimPrefix(u, baseURL+apiVersion)
+	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}

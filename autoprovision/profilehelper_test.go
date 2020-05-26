@@ -74,7 +74,7 @@ func Test_profileName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.profileType), func(t *testing.T) {
-			got, err := profileName(tt.profileType, tt.bundleID)
+			got, err := ProfileName(tt.profileType, tt.bundleID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("profileName() error = %v, wantErr %v", err, tt.wantErr)
 				return
