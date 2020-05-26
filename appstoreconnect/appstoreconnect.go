@@ -99,7 +99,7 @@ func (c *Client) ensureSignedToken() (string, error) {
 
 // NewRequest creates a new http.Request
 func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Request, error) {
-	endpoint = "v1/" + endpoint
+	endpoint = apiVersion + "/" + endpoint
 	u, err := c.BaseURL.Parse(endpoint)
 	if err != nil {
 		return nil, err

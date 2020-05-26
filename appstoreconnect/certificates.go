@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// CertificatesURL ...
-const CertificatesURL = "certificates"
+// CertificatesEndpoint ...
+const CertificatesEndpoint = "certificates"
 
 // ListCertificatesOptions ...
 type ListCertificatesOptions struct {
@@ -60,7 +60,7 @@ func (s ProvisioningService) ListCertificates(opt *ListCertificatesOptions) (*Ce
 		return nil, err
 	}
 
-	u, err := addOptions(CertificatesURL, opt)
+	u, err := addOptions(CertificatesEndpoint, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +106,8 @@ func (s ProvisioningService) Certificates(relationshipLink string, opt *PagingOp
 		return nil, err
 	}
 
-	url := strings.TrimPrefix(u, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, url, nil)
+	endpoint := strings.TrimPrefix(u, baseURL+apiVersion)
+	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -7,8 +7,8 @@ import (
 	"github.com/bitrise-io/xcode-project/serialized"
 )
 
-// ProfilesURL ...
-const ProfilesURL = "profiles"
+// ProfilesEndpoint ...
+const ProfilesEndpoint = "profiles"
 
 // ListProfilesOptions ...
 type ListProfilesOptions struct {
@@ -134,7 +134,7 @@ func (s ProvisioningService) ListProfiles(opt *ListProfilesOptions) (*ProfilesRe
 		return nil, err
 	}
 
-	u, err := addOptions(ProfilesURL, opt)
+	u, err := addOptions(ProfilesEndpoint, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ type ProfileResponse struct {
 
 // CreateProfile ...
 func (s ProvisioningService) CreateProfile(body ProfileCreateRequest) (*ProfileResponse, error) {
-	req, err := s.client.NewRequest(http.MethodPost, ProfilesURL, body)
+	req, err := s.client.NewRequest(http.MethodPost, ProfilesEndpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (s ProvisioningService) CreateProfile(body ProfileCreateRequest) (*ProfileR
 
 // DeleteProfile ...
 func (s ProvisioningService) DeleteProfile(id string) error {
-	req, err := s.client.NewRequest(http.MethodDelete, ProfilesURL+"/"+id, nil)
+	req, err := s.client.NewRequest(http.MethodDelete, ProfilesEndpoint+"/"+id, nil)
 	if err != nil {
 		return err
 	}
@@ -284,8 +284,8 @@ func (s ProvisioningService) Profiles(relationshipLink string, opt *PagingOption
 		return nil, err
 	}
 
-	url := strings.TrimPrefix(u, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, url, nil)
+	endpoint := strings.TrimPrefix(u, baseURL+apiVersion)
+	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
