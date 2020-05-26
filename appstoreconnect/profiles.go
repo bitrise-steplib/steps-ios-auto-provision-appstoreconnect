@@ -83,7 +83,7 @@ type ProfileAttributes struct {
 	CreatedDate    string           `json:"createdDate"`
 	ProfileState   ProfileState     `json:"profileState"`
 	ProfileType    ProfileType      `json:"profileType"`
-	ExpirationDate string           `json:"expirationDate"`
+	ExpirationDate Time             `json:"expirationDate"`
 }
 
 // Profile ...

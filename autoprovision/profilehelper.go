@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
@@ -196,8 +197,20 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 	return true, nil
 }
 
+func checkProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) bool {
+	relativeExpiryTime := time.Now()
+	if minProfileDaysValid > 0 {
+		relativeExpiryTime = relativeExpiryTime.Add(time.Duration(minProfileDaysValid) * 24 * time.Hour)
+	}
+	return !time.Time(prof.Attributes.ExpirationDate).After(relativeExpiryTime)
+}
+
 // CheckProfile ...
-func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string) (bool, error) {
+func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) (bool, error) {
+	if !checkProfileExpired(prof, minProfileDaysValid) {
+		return false, nil
+	}
+
 	if ok, err := checkProfileEntitlements(client, prof, entitlements); err != nil {
 		return false, err
 	} else if !ok {
