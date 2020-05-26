@@ -273,7 +273,7 @@ func (s ProvisioningService) DeleteProfile(id string) error {
 	return err
 }
 
-// Profiles ...
+// Profiles fetches provisioning profiles pointed by a relationship URL.
 func (s ProvisioningService) Profiles(relationshipLink string, opt *PagingOptions) (*ProfilesResponse, error) {
 	if err := opt.UpdateCursor(); err != nil {
 		return nil, err
