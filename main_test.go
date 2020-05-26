@@ -161,6 +161,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		serialized.Object(map[string]interface{}{}),
 		[]string{},
 		[]string{},
+		0,
 	)
 
 	// Assert

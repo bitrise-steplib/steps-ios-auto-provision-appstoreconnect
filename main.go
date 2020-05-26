@@ -212,7 +212,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 }
 
 // EnsureProfile ...
-func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string) (*appstoreconnect.Profile, error) {
+func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*appstoreconnect.Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities: %s", entitlements)
@@ -235,7 +235,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes.ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			ok, err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs)
+			ok, err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
 				return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
 			}
@@ -575,7 +575,7 @@ func main() {
 		}
 
 		for bundleIDIdentifier, entitlements := range entitlementsByBundleID {
-			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs)
+			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
 			if err != nil {
 				failf(err.Error())
 			}
