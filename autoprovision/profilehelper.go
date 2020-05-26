@@ -239,7 +239,7 @@ func CreateProfile(client *appstoreconnect.Client, name string, profileType apps
 		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create %s provisioning profile for %s bundle ID: %w", profileType.ReadableString(), bundleID.Attributes.Identifier, err)
+		return nil, fmt.Errorf("failed to create %s provisioning profile for %s bundle ID: %s", profileType.ReadableString(), bundleID.Attributes.Identifier, err)
 	}
 	return &r.Data, nil
 }

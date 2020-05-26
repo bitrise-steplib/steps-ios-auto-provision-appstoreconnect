@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -329,15 +328,6 @@ func (m ProfileManager) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 }
 
 func isMultipleProfileErr(err error) bool {
-	var responseErrror *appstoreconnect.ErrorResponse
-	if !errors.As(err, &responseErrror) {
-		log.Debugf("not responseErrror")
-		return false
-	}
-	if responseErrror.Response.StatusCode != http.StatusConflict {
-		log.Debugf("not conflict")
-		return false
-	}
 	return strings.Contains(strings.ToLower(err.Error()), "multiple profiles found with the name")
 }
 
