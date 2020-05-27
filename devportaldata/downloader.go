@@ -2,6 +2,7 @@ package devportaldata
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -34,9 +35,29 @@ func NewDownloader(buildURL string, buildAPIToken string) *Downloader {
 	}
 }
 
+func (c Downloader) parseDevPortalData(data []byte) (*DevPortalData, error) {
+	var devPortalData DevPortalData
+	if err := json.Unmarshal(data, &devPortalData); err != nil {
+		return nil, err
+	}
+
+	if devPortalData.IssuerID == "" {
+		return nil, errors.New("invalid App Store Connect API authentication data: missing issuer_id")
+	}
+	if devPortalData.KeyID == "" {
+		return nil, errors.New("invalid App Store Connect API authentication data: missing key_id")
+	}
+	if devPortalData.PrivateKey == "" {
+		return nil, errors.New("invalid App Store Connect API authentication data: missing private_key")
+	}
+
+	return &devPortalData, nil
+}
+
 // GetDevPortalData ...
-func (c Downloader) GetDevPortalData() (devPortalData DevPortalData, err error) {
+func (c Downloader) GetDevPortalData() (*DevPortalData, error) {
 	var data []byte
+	var err error
 
 	if strings.HasPrefix(c.BuildURL, "file://") {
 		data, err = c.ReadBytesFromFile(strings.TrimPrefix(c.BuildURL, "file://"))
@@ -44,18 +65,13 @@ func (c Downloader) GetDevPortalData() (devPortalData DevPortalData, err error) 
 		var u *url.URL
 		u, err = url.Parse(c.BuildURL)
 		if err != nil {
-			return
+			return nil, err
 		}
 		u.Path = path.Join(u.Path, "apple_developer_portal_data.json")
 		data, err = c.DownloadContent(u.String(), c.BuildAPIToken)
 	}
 
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(data, &devPortalData)
-	return
+	return c.parseDevPortalData(data)
 }
 
 func downloadContent(url string, buildAPIToken string) ([]byte, error) {
