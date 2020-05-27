@@ -124,3 +124,47 @@ func TestGetDevPortalDataNetworkFailure(t *testing.T) {
 	assert.NotNil(t, err, "error should not be nil")
 	assert.Equal(t, testError, err)
 }
+
+func TestGetDevPortalDataEmptyResponse(t *testing.T) {
+	// Arrange
+	testToken := "testToken"
+	testURL := "https:///test"
+	mockIOUtils := new(MockIOUtils)
+	mockIOUtils.On("DownloadContent", mock.Anything, testToken).Return([]byte(`{}`), nil)
+
+	testSubject := devportaldata.Downloader{
+		BuildAPIToken:     testToken,
+		BuildURL:          testURL,
+		DownloadContent:   mockIOUtils.DownloadContent,
+		ReadBytesFromFile: mockIOUtils.ReadBytesFromFile,
+	}
+
+	// Act
+	data, err := testSubject.GetDevPortalData()
+
+	// Assert
+	assert.Error(t, err, "error should not be nil")
+	assert.Nil(t, data)
+}
+
+func TestGetDevPortalDataEmptyResponseFields(t *testing.T) {
+	// Arrange
+	testToken := "testToken"
+	testURL := "https:///test"
+	mockIOUtils := new(MockIOUtils)
+	mockIOUtils.On("DownloadContent", mock.Anything, testToken).Return([]byte(`{"key_id":"","issuer_id":"","private_key":""}`), nil)
+
+	testSubject := devportaldata.Downloader{
+		BuildAPIToken:     testToken,
+		BuildURL:          testURL,
+		DownloadContent:   mockIOUtils.DownloadContent,
+		ReadBytesFromFile: mockIOUtils.ReadBytesFromFile,
+	}
+
+	// Act
+	data, err := testSubject.GetDevPortalData()
+
+	// Assert
+	assert.Error(t, err, "error should not be nil")
+	assert.Nil(t, data)
+}
