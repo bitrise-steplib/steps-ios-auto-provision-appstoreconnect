@@ -71,6 +71,10 @@ func (c Downloader) GetDevPortalData() (*DevPortalData, error) {
 		data, err = c.DownloadContent(u.String(), c.BuildAPIToken)
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
 	return c.parseDevPortalData(data)
 }
 
