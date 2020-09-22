@@ -118,6 +118,7 @@ type CapabilitySettingKey string
 const (
 	IcloudVersion                 CapabilitySettingKey = "ICLOUD_VERSION"
 	DataProtectionPermissionLevel CapabilitySettingKey = "DATA_PROTECTION_PERMISSION_LEVEL"
+	AppleIDAuthAppConsent         CapabilitySettingKey = "APPLE_ID_AUTH_APP_CONSENT"
 )
 
 // CapabilityOptionKey ...
