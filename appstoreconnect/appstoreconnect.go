@@ -125,9 +125,7 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 	}
 
 	if _, ok := c.client.(*http.Client); ok {
-		signedToken, err := c.EnsureSignedToken()
-		fmt.Printf("Signed token:")
-		fmt.Printf(signedToken)
+		signedToken, err := c.ensureSignedToken()
 
 		if err != nil {
 			return nil, err
