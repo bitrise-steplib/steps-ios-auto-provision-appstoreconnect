@@ -198,7 +198,11 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		capSetts = append(capSetts, capSett)
 	} else if capType == appstoreconnect.SignInWithApple {
 		log.Warnf("Sign In With Apple entitlement: \n")
-		log.Warnf(e)
+
+		for key, element := range e {
+			log.Warnf("Key: %s => Element: %v", key, element)
+		}
+
 		log.Warnf("\n")
 		capSett := appstoreconnect.CapabilitySetting{
 			Key: appstoreconnect.AppleIDAuthAppConsent,
