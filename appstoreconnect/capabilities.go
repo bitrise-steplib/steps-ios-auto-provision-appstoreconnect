@@ -89,7 +89,6 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	"aps-environment":                                                          PushNotifications,
 	"com.apple.developer.siri":                                                 Sirikit,
 	"com.apple.developer.applesignin":                                          SignInWithApple,
-	"com.apple.developer.parent-application-identifiers":                       ParentApplicationIdentifiers,
 	"com.apple.developer.on-demand-install-capable":                            OnDemandInstallCapable,
 	"com.apple.developer.pass-type-identifiers":                                Wallet,
 	"com.apple.external-accessory.wireless-configuration":                      WirelessAccessoryConfiguration,
@@ -99,6 +98,7 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	// does not appear on developer portal
 	"com.apple.developer.icloud-container-identifiers":   Ignored,
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
+	"com.apple.developer.parent-application-identifiers": Ignored,
 }
 
 // CapabilitySettingAllowedInstances ...
