@@ -72,7 +72,7 @@ func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte)
 
 // ensureSignedToken makes sure that the JWT auth token is not expired
 // and return a signed key
-func (c *Client) ensureSignedToken() (string, error) {
+func (c *Client) EnsureSignedToken() (string, error) {
 	if c.token != nil {
 		claim, ok := c.token.Claims.(claims)
 		if !ok {
@@ -125,7 +125,10 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 	}
 
 	if _, ok := c.client.(*http.Client); ok {
-		signedToken, err := c.ensureSignedToken()
+		signedToken, err := c.EnsureSignedToken()
+		fmt.Printf("Signed token:")
+		fmt.Printf(signedToken)
+
 		if err != nil {
 			return nil, err
 		}
