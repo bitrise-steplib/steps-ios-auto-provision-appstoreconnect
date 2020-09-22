@@ -3,7 +3,6 @@ package autoprovision
 import (
 	"errors"
 
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
@@ -197,13 +196,6 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		}
 		capSetts = append(capSetts, capSett)
 	} else if capType == appstoreconnect.SignInWithApple {
-		log.Warnf("Sign In With Apple entitlement: \n")
-
-		for key, element := range e {
-			log.Warnf("Key: %s => Element: %v", key, element)
-		}
-
-		log.Warnf("\n")
 		capSett := appstoreconnect.CapabilitySetting{
 			Key: appstoreconnect.AppleIDAuthAppConsent,
 			Options: []appstoreconnect.CapabilityOption{
