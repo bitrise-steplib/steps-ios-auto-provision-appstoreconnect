@@ -208,7 +208,7 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 			Key: appstoreconnect.AppleIDAuthAppConsent,
 			Options: []appstoreconnect.CapabilityOption{
 				appstoreconnect.CapabilityOption{
-					Key: appstoreconnect.Xcode6,
+					Key: "Default",
 				},
 			},
 		}
