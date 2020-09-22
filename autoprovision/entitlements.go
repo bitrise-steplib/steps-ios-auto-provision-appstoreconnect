@@ -197,12 +197,11 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		}
 		capSetts = append(capSetts, capSett)
 	} else if capType == appstoreconnect.SignInWithApple {
-		entVal, _ := serialized.Object(e).String(entKey)
 		log.Warnf("Sign In With Apple entitlement: \n")
-		log.Warnf(entVal)
+		log.Warnf(e)
 		log.Warnf("\n")
 		capSett := appstoreconnect.CapabilitySetting{
-			Key: appstoreconnect.IcloudVersion,
+			Key: appstoreconnect.AppleIDAuthAppConsent,
 			Options: []appstoreconnect.CapabilityOption{
 				appstoreconnect.CapabilityOption{
 					Key: appstoreconnect.Xcode6,
