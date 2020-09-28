@@ -46,32 +46,6 @@ const (
 	OnDemandInstallCapable         CapabilityType = "ON_DEMAND_INSTALL_CAPABLE"
 )
 
-// ServiceNameByKey maps iOS specific entitlement keys to names
-// based on the entitlements list: https://developer.apple.com/documentation/bundleresources/entitlements.
-var ServiceNameByKey = map[string]string{
-	"com.apple.security.application-groups":                                    "App Groups",
-	"com.apple.developer.in-app-payments":                                      "Apple Pay",
-	"com.apple.developer.associated-domains":                                   "Associated Domains",
-	"com.apple.developer.healthkit":                                            "HealthKit",
-	"com.apple.developer.homekit":                                              "HomeKit",
-	"com.apple.developer.networking.HotspotConfiguration":                      "Hotspot",
-	"com.apple.InAppPurchase":                                                  "In-App Purchase",
-	"inter-app-audio":                                                          "Inter-App Audio",
-	"com.apple.developer.networking.multipath":                                 "Multipath",
-	"com.apple.developer.networking.networkextension":                          "Network Extensions",
-	"com.apple.developer.nfc.readersession.formats":                            "NFC Tag Reading",
-	"com.apple.developer.networking.vpn.api":                                   "Personal VPN",
-	"aps-environment":                                                          "Push Notifications",
-	"com.apple.developer.siri":                                                 "SiriKit",
-	"com.apple.developer.applesignin":                                          "Sign in with Apple",
-	"com.apple.developer.parent-application-identifiers":                       "Parent Application Identifiers",
-	"com.apple.developer.on-demand-install-capable":                            "On-demand install capable",
-	"com.apple.developer.pass-type-identifiers":                                "Wallet",
-	"com.apple.external-accessory.wireless-configuration":                      "Wireless Accessory Configuration",
-	"com.apple.developer.default-data-protection":                              "Data Protection",
-	"com.apple.developer.authentication-services.autofill-credential-provider": "AutoFill Credential Provider",
-}
-
 // ServiceTypeByKey ...
 var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.security.application-groups":                                    AppGroups,
@@ -119,6 +93,7 @@ const (
 	IcloudVersion                 CapabilitySettingKey = "ICLOUD_VERSION"
 	DataProtectionPermissionLevel CapabilitySettingKey = "DATA_PROTECTION_PERMISSION_LEVEL"
 	AppleIDAuthAppConsent         CapabilitySettingKey = "APPLE_ID_AUTH_APP_CONSENT"
+	AppGroupIdentifiers           CapabilitySettingKey = "APP_GROUP_IDENTIFIERS"
 )
 
 // CapabilityOptionKey ...

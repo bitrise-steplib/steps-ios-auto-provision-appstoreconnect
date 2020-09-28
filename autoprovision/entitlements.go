@@ -2,7 +2,9 @@ package autoprovision
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
@@ -153,6 +155,20 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		return nil, nil
 	}
 
+	// List of capabilities that need to be configured manually on the Developer portal
+	capabilitiesWarn := map[appstoreconnect.CapabilityType]string{
+		appstoreconnect.AppGroups:       "App Groups",
+		appstoreconnect.ApplePay:        "Apple Pay Payment Processing",
+		appstoreconnect.ICloud:          "iCloud",
+		appstoreconnect.SignInWithApple: "Sign In with Apple",
+	}
+
+	// List of capabilities that the API does not support and prevent autoprovisioning
+	capabilitiesError := map[appstoreconnect.CapabilityType]string{
+		appstoreconnect.OnDemandInstallCapable:       "On Demand Install Capable (App Clips)",
+		appstoreconnect.ParentApplicationIdentifiers: "Parent Bundle ID",
+	}
+
 	entKey := serialized.Object(e).Keys()[0]
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
@@ -205,6 +221,14 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 			},
 		}
 		capSetts = append(capSetts, capSett)
+	}
+
+	if capName, contains := capabilitiesWarn[capType]; contains {
+		log.Warnf("This will enable the \"%s\" capability but details will have to be configured manually using the Apple Developer Portal", capName)
+	}
+
+	if capName, contains := capabilitiesError[capType]; contains {
+		return nil, fmt.Errorf("step does not support creating an application identifier using the \"%s\" capability, please add your Application Identifier manually using the Apple Developer Portal", capName)
 	}
 
 	return &appstoreconnect.BundleIDCapability{
