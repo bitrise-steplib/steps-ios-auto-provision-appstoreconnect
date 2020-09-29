@@ -69,10 +69,13 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.developer.default-data-protection":                              DataProtection,
 	"com.apple.developer.icloud-services":                                      ICloud,
 	"com.apple.developer.authentication-services.autofill-credential-provider": AutofillCredentialProvider,
+	"com.apple.developer.parent-application-identifiers":                       ParentApplicationIdentifiers,
+	"com.apple.developer.networking.wifi-info":                                 AccessWIFIInformation,
+	"com.apple.developer.ClassKit-environment":                                 Classkit,
+	"com.apple.developer.coremedia.hls.low-latency":                            CoremediaHLSLowLatency,
 	// does not appear on developer portal
 	"com.apple.developer.icloud-container-identifiers":   Ignored,
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
-	"com.apple.developer.parent-application-identifiers": Ignored,
 }
 
 // CapabilitySettingAllowedInstances ...
