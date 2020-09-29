@@ -37,53 +37,42 @@ const (
 	Classkit                       CapabilityType = "CLASSKIT"
 	AutofillCredentialProvider     CapabilityType = "AUTOFILL_CREDENTIAL_PROVIDER"
 	AccessWIFIInformation          CapabilityType = "ACCESS_WIFI_INFORMATION"
+	NetworkCustomProtocol          CapabilityType = "NETWORK_CUSTOM_PROTOCOL"
+	CoremediaHLSLowLatency         CapabilityType = "COREMEDIA_HLS_LOW_LATENCY"
+	SystemExtensionInstall         CapabilityType = "SYSTEM_EXTENSION_INSTALL"
+	UserManagement                 CapabilityType = "USER_MANAGEMENT"
+	SignInWithApple                CapabilityType = "APPLE_ID_AUTH"
+	ParentApplicationIdentifiers   CapabilityType = "ODIC_PARENT_BUNDLEID"
+	OnDemandInstallCapable         CapabilityType = "ON_DEMAND_INSTALL_CAPABLE"
 )
-
-// ServiceNameByKey maps iOS specific entitlement keys to names
-// based on the entitlements list: https://developer.apple.com/documentation/bundleresources/entitlements.
-var ServiceNameByKey = map[string]string{
-	"com.apple.security.application-groups":               "App Groups",
-	"com.apple.developer.in-app-payments":                 "Apple Pay",
-	"com.apple.developer.associated-domains":              "Associated Domains",
-	"com.apple.developer.healthkit":                       "HealthKit",
-	"com.apple.developer.homekit":                         "HomeKit",
-	"com.apple.developer.networking.HotspotConfiguration": "Hotspot",
-	"com.apple.InAppPurchase":                             "In-App Purchase",
-	"inter-app-audio":                                     "Inter-App Audio",
-	"com.apple.developer.networking.multipath":            "Multipath",
-	"com.apple.developer.networking.networkextension":     "Network Extensions",
-	"com.apple.developer.nfc.readersession.formats":       "NFC Tag Reading",
-	"com.apple.developer.networking.vpn.api":              "Personal VPN",
-	"aps-environment":                                     "Push Notifications",
-	"com.apple.developer.siri":                            "SiriKit",
-	"com.apple.developer.pass-type-identifiers":           "Wallet",
-	"com.apple.external-accessory.wireless-configuration": "Wireless Accessory Configuration",
-	"com.apple.developer.default-data-protection":         "Data Protection",
-}
 
 // ServiceTypeByKey ...
 var ServiceTypeByKey = map[string]CapabilityType{
-	"com.apple.security.application-groups":               AppGroups,
-	"com.apple.developer.in-app-payments":                 ApplePay,
-	"com.apple.developer.associated-domains":              AssociatedDomains,
-	"com.apple.developer.healthkit":                       Healthkit,
-	"com.apple.developer.homekit":                         Homekit,
-	"com.apple.developer.networking.HotspotConfiguration": HotSpot,
-	"com.apple.InAppPurchase":                             InAppPurchase,
-	"inter-app-audio":                                     InterAppAudio,
-	"com.apple.developer.networking.multipath":            Multipath,
-	"com.apple.developer.networking.networkextension":     NetworkExtensions,
-	"com.apple.developer.nfc.readersession.formats":       NFCTagReading,
-	"com.apple.developer.networking.vpn.api":              PersonalVPN,
-	"aps-environment":                                     PushNotifications,
-	"com.apple.developer.siri":                            Sirikit,
-	"com.apple.developer.pass-type-identifiers":           Wallet,
-	"com.apple.external-accessory.wireless-configuration": WirelessAccessoryConfiguration,
-	"com.apple.developer.default-data-protection":         DataProtection,
-	"com.apple.developer.icloud-services":                 ICloud,
+	"com.apple.security.application-groups":                                    AppGroups,
+	"com.apple.developer.in-app-payments":                                      ApplePay,
+	"com.apple.developer.associated-domains":                                   AssociatedDomains,
+	"com.apple.developer.healthkit":                                            Healthkit,
+	"com.apple.developer.homekit":                                              Homekit,
+	"com.apple.developer.networking.HotspotConfiguration":                      HotSpot,
+	"com.apple.InAppPurchase":                                                  InAppPurchase,
+	"inter-app-audio":                                                          InterAppAudio,
+	"com.apple.developer.networking.multipath":                                 Multipath,
+	"com.apple.developer.networking.networkextension":                          NetworkExtensions,
+	"com.apple.developer.nfc.readersession.formats":                            NFCTagReading,
+	"com.apple.developer.networking.vpn.api":                                   PersonalVPN,
+	"aps-environment":                                                          PushNotifications,
+	"com.apple.developer.siri":                                                 Sirikit,
+	"com.apple.developer.applesignin":                                          SignInWithApple,
+	"com.apple.developer.on-demand-install-capable":                            OnDemandInstallCapable,
+	"com.apple.developer.pass-type-identifiers":                                Wallet,
+	"com.apple.external-accessory.wireless-configuration":                      WirelessAccessoryConfiguration,
+	"com.apple.developer.default-data-protection":                              DataProtection,
+	"com.apple.developer.icloud-services":                                      ICloud,
+	"com.apple.developer.authentication-services.autofill-credential-provider": AutofillCredentialProvider,
 	// does not appear on developer portal
 	"com.apple.developer.icloud-container-identifiers":   Ignored,
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
+	"com.apple.developer.parent-application-identifiers": Ignored,
 }
 
 // CapabilitySettingAllowedInstances ...
@@ -103,6 +92,8 @@ type CapabilitySettingKey string
 const (
 	IcloudVersion                 CapabilitySettingKey = "ICLOUD_VERSION"
 	DataProtectionPermissionLevel CapabilitySettingKey = "DATA_PROTECTION_PERMISSION_LEVEL"
+	AppleIDAuthAppConsent         CapabilitySettingKey = "APPLE_ID_AUTH_APP_CONSENT"
+	AppGroupIdentifiers           CapabilitySettingKey = "APP_GROUP_IDENTIFIERS"
 )
 
 // CapabilityOptionKey ...
