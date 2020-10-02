@@ -1,17 +1,49 @@
 title: iOS Auto Provision with App Store Connect API
-summary: Automatically manages your iOS Provisioning Profiles for your Xcode project
+summary: Automatically manages your iOS Provisioning Profiles for your Xcode project.
 description: |-
-  ### Automatically manages your iOS Provisioning Profiles for your Xcode project.
+  The Step uses the official [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests). 
+  The Steps performs the following:
+  - It generates, updates and downloads the provisioning profiles needed for your iOS project.
+  - It verifies if your project is registered with the App Store Connect. If it was not, the Step registers your project.
+  - It registers the iOS devices connected to your Bitrise account with the App Store Connect.
+  - It modifies the iOS project to use manual code signing if the project uses automatically managed signing.
 
-  __Setup guide__: [Managing iOS code signing files - automatic provisioning](https://devcenter.bitrise.io/code-signing/ios-code-signing/ios-auto-provisioning/)
+  ### Configuring the Step
 
-  How does it work?
+  Before you start configuring the Step, make sure you've completed the following requirements:
+  1. You've generated an [API key](https://developer.apple.com/documentation/appstoreconnectapi/creating_api_keys_for_app_store_connect_api) and obtained an **Issuer ID**, **Key ID** and a **Private Key**.
+  2. You've [defined your Apple Developer Account to Bitrise](https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/#defining-your-apple-developer-account-to-bitrise).
+  3. You've [assigned an Apple Developer Account to your app](https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/#assigning-an-apple-developer-account-for-your-app).
 
-  - ensures that the __Application Identifier__ exists on the Apple Developer Portal
-  - ensures that the __project's Capabilities__ are set correctly in the Application Identifier
-  - ensures that the __Provisioning Profiles__ exist on the Apple Developer Portal and are installed for the build
-  - ensure that all the available __Test Devices__ exist on the Apple Developer Portal and are included in the Provisioning Profiles
-  - installs the provided __Codesigning Certificates__ into the Keychain
+  Once these are done, most of the required Step input fields are already populated for you.
+
+  To configure the Step:
+
+  1. Add the **iOS Auto Provision with App Store Connect API** after any dependency installer Step in your Workflow, such as **Run CocoaPods install** or **Carthage**.
+
+  2. Click the Step to edit its input fields. You can see that the **Build API token**, **Build URL**, and the **Xcode Project (or Workspace) path** inputs are automatically filled out for you.
+
+  - **Build API token**: Every running build has a temporary API token on a Bitrise virtual machine. This token is only available while the build is running. The Step downloads the connected API key with the help of this API token and Bitrise saves it in a JSON file.
+
+  - **Build URL**: URL of the current build or local path URL to your `apple_developer_portal_data.json`.
+
+  - **Xcode Project path**: The path where the `.xcodeproj` / `.xcworkspace` is located.
+
+  3. **Distribution type** input's value has to match with the value of the **Select method for export** input in the **Xcode Archive & Export for iOS** Step.
+
+  4. With the **Scheme name** input you can restrict which targets to process.
+
+  ### Troubleshooting
+  Make sure you do not have the **Certificate and Profile Installer** Step in your Workflow.
+  Make sure that you do NOT modify your Xcode project between the **iOS Auto Provision with App Store Connect API** and the **Xcode Archive & Export for iOS** Steps. For example, do not change the **bundle ID** after the **iOS Auto Provision with App Store Connect API** Step.
+
+  ### Useful links
+  - [Managing iOS code signing files - automatic provisioning](https://devcenter.bitrise.io/code-signing/ios-code-signing/ios-auto-provisioning/)
+  - [About iOS Auto Provision with Apple ID](https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/#assigning-an-apple-developer-account-for-your-appv)
+
+  ### Related Steps
+  - [iOS Auto Provision with Apple ID](https://www.bitrise.io/integrations/steps/ios-auto-provision)
+  - [Xcode Archive & Export](https://www.bitrise.io/integrations/steps/xcode-archive)
 website: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
 source_code_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
 support_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/issues
@@ -36,13 +68,13 @@ inputs:
     opts:
       title: Build API token
       description: |-
-        Bitrise API token
+        Every build gets a temporary Bitrise API token to download the connected API key in a JSON file.
       is_required: true
   - build_url: $BITRISE_BUILD_URL
     opts:
       title: Build URL
       description: |-
-        URL of the current build or local path URL to your apple_developer_portal_data.json
+        URL of the current build or local path URL to your apple_developer_portal_data.json.
       is_required: true
   - distribution_type: development
     opts:
@@ -57,7 +89,7 @@ inputs:
   - project_path: $BITRISE_PROJECT_PATH
     opts:
       title: Xcode Project (or Workspace) path
-      description: A `.xcodeproj` or `.xcworkspace` path.
+      description: The path where the `.xcodeproj` / `.xcworkspace` is located.
       is_required: true
   - scheme: $BITRISE_SCHEME
     opts:
@@ -69,18 +101,15 @@ inputs:
       title: Configuration name
       description: |-
         The Xcode Configuration to use.
-
-        By default your Scheme defines which Configuration (Debug, Release, ...) should be used,
+        By default your Scheme defines which Configuration (for example, Debug, Release) should be used,
         but you can overwrite it with this option.
   - min_profile_days_valid: 0
     opts:
       title: The minimum days the Provisioning Profile should be valid
       description: |-
         Sometimes you want to sign an app with a Provisioning Profile that is valid for at least 'x' days.
-
         For example, an enterprise app won't open if your Provisioning Profile is expired. With this parameter, you can have a Provisioning Profile that's at least valid for 'x' days.
-
-        By default (0) it just renews the Provisioning Profile when expired.
+        By default it is set to `0` and renews the Provisioning Profile when expired.
       is_required: false
   - verbose_log: "no"
     opts:
@@ -97,13 +126,9 @@ inputs:
       title: Certificate URL
       description: |
         URLs of the certificates to download.
-
         Multiple URLs can be specified, separated by a pipe (`|`) character,
         you can specify a local path as well, using the `file://` scheme.
-
-        __Provide a development certificate__ url, to ensure development code signing files for the project and __also provide a distribution certificate__ url, to ensure distribution code signing files for your project.
-
-        __Example:__ `file://./development/certificate/path|https://distribution/certificate/url`
+        __Provide a development certificate__ URL, to ensure development code signing files for the project and __also provide a distribution certificate__ URL, to ensure distribution code signing files for your project, for example, `file://./development/certificate/path|https://distribution/certificate/url`
       is_required: true
       is_sensitive: true
   - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE
@@ -112,12 +137,8 @@ inputs:
       title: Certificate passphrase
       description: |
         Certificate passphrases.
-
         Multiple passphrases can be specified, separated by a pipe (`|`) character.
-
-        __Specified certificate passphrase count should match the count of the certificate urls.__
-
-        __Example__ (1 certificate with empty passphrase, 1 certificate with non-empty passphrase): `|distribution-passphrase`
+        __Specified certificate passphrase count should match the count of the certificate urls__,for example, (1 certificate with empty passphrase, 1 certificate with non-empty passphrase): `|distribution-passphrase`
       is_required: true
       is_sensitive: true
   - keychain_path: $HOME/Library/Keychains/login.keychain
@@ -138,43 +159,32 @@ outputs:
     opts:
       title: "The selected distribution type"
       description: |-
-        The selected distribution type.
-
-        One of: `development`, `app-store`, `ad-hoc` or `enterprise`
+        Distribution type can be one of the following: `development`, `app-store`, `ad-hoc` or `enterprise`.
   - BITRISE_DEVELOPER_TEAM:
     opts:
       title: "The development team's ID"
       description: |-
-        The development team's ID.
-
-        Example: `1MZX23ABCD4`
+        The development team's ID, for example, `1MZX23ABCD4`.
   - BITRISE_DEVELOPMENT_CODESIGN_IDENTITY:
     opts:
       title: "The development codesign identity's name"
       description: |-
-        The development codesign identity's name.
-
-        Example: `iPhone Developer: Bitrise Bot (VV2J4SV8V4)`
+        The development codesign identity's name, for example, `iPhone Developer: Bitrise Bot (VV2J4SV8V4)`.
   - BITRISE_PRODUCTION_CODESIGN_IDENTITY:
     opts:
       title: "The production codesign identity's name"
     opts:
       title: "The production codesign identity's name"
       description: |-
-        The production codesign identity's name.
-
-        Example: `iPhone Distribution: Bitrise Bot (VV2J4SV8V4)`
+        The production codesign identity's name, for example, `iPhone Distribution: Bitrise Bot (VV2J4SV8V4.
   - BITRISE_DEVELOPMENT_PROFILE:
     opts:
-      title: "The main target's development provisioning profile's UUID"
+      title: "The main target's development provisioning profile UUID"
       description: |-
-        The main target's development provisioning profile's UUID.
-
-        Example: `c5be4123-1234-4f9d-9843-0d9be985a068`
+        The development provisioning profile's UUID which belongs to the main target, for example, `c5be4123-1234-4f9d-9843-0d9be985a068`.
   - BITRISE_PRODUCTION_PROFILE:
     opts:
-      title: "The main target's production provisioning profile's UUID"
+      title: "The main target's production provisioning profile UUID"
       description: |-
-        The main target's production provisioning profile's UUID.
+        The production provisioning profile's UUID which belongs to the main target, for example, `c5be4123-1234-4f9d-9843-0d9be985a068`.
 
-        Example: `c5be4123-1234-4f9d-9843-0d9be985a068`
