@@ -71,6 +71,12 @@ type DevicesResponse struct {
 	Links PagedDocumentLinks `json:"links,omitempty"`
 }
 
+// DeviceResponse ...
+type DeviceResponse struct {
+	Data  Device           `json:"data"`
+	Links PagedDocumentLinks `json:"links,omitempty"`
+}
+
 // ListDevices ...
 func (s ProvisioningService) ListDevices(opt *ListDevicesOptions) (*DevicesResponse, error) {
 	if err := opt.UpdateCursor(); err != nil {
@@ -114,13 +120,13 @@ type DeviceCreateRequest struct {
 }
 
 // RegisterNewDevice ...
-func (s ProvisioningService) RegisterNewDevice(body DeviceCreateRequest) (*DevicesResponse, error) {
+func (s ProvisioningService) RegisterNewDevice(body DeviceCreateRequest) (*DeviceResponse, error) {
 	req, err := s.client.NewRequest(http.MethodPost, DevicesEndpoint, body)
 	if err != nil {
 		return nil, err
 	}
 
-	r := &DevicesResponse{}
+	r := &DeviceResponse{}
 	if _, err := s.client.Do(req, r); err != nil {
 		return nil, err
 	}
