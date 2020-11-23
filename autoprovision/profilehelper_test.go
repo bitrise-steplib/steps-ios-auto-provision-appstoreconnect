@@ -191,7 +191,7 @@ func Test_checkProfileExpiry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := checkProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
+			if got := isProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
 				t.Errorf("checkProfileExpiry() = %v, want %v", got, tt.want)
 			}
 		})
