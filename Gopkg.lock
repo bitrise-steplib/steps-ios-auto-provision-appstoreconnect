@@ -173,11 +173,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:92b6e14d99fc9684a56c91055b66882eed40e5f601a1316b8da860d0538d7da3"
+  digest = "1:812d0f78132bbf7731c247b2a3ea54710ecc8fd251a9e4898be9793f25dbdb1a"
   name = "howett.net/plist"
   packages = ["."]
   pruneopts = "UT"
-  revision = "117a925f21509a9550f452433c190139e480a726"
+  revision = "1454fab16a0642638feb0ae98c41f79eccb2a20a"
 
 [solve-meta]
   analyzer-name = "dep"
