@@ -228,7 +228,8 @@ workflows:
             - content: |-
                 #!/bin/bash
                 set -ex
-                if [[ $SAMPLE_APP_URL =~ "^https" ]]; then
+                MATCH_PATTERN="^https"
+                if [[ $SAMPLE_APP_URL =~ $MATCH_PATTERN ]]; then
                   git clone -b $BRANCH $SAMPLE_APP_URL .
                 else
                   cp -r $SAMPLE_APP_URL .
