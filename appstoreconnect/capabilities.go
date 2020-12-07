@@ -78,6 +78,18 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
 }
 
+// UnsupportedEntitlements contains entitlements not supported via the API and this step,
+// profile needs to be manually generated on Apple Developer Portal
+var UnsupportedEntitlements = []string{
+	"com.apple.developer.contacts.notes",
+	"com.apple.developer.carplay-audio",
+	"com.apple.developer.carplay-communication",
+	"com.apple.developer.carplay-charging",
+	"com.apple.developer.carplay-maps",
+	"com.apple.developer.carplay-parking",
+	"com.apple.developer.carplay-quick-ordering",
+}
+
 // CapabilitySettingAllowedInstances ...
 type CapabilitySettingAllowedInstances string
 

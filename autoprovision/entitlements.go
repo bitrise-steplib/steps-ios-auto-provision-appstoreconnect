@@ -70,6 +70,19 @@ func dataProtectionEquals(entVal string, cap appstoreconnect.BundleIDCapability)
 	return true, nil
 }
 
+// ContainsUnsupportedEntitlement returns an error if an entitlement is used that we can not generate using the API
+func ContainsUnsupportedEntitlement(entitlementsByBundleID map[string]serialized.Object, unsupportedEntitlements []string) error {
+	for id, entitlements := range entitlementsByBundleID {
+		for entitlement := range entitlements {
+			if sliceutil.IsStringInSlice(entitlement, unsupportedEntitlements) {
+				return fmt.Errorf("unsupported entitlement (%s) set for bundle ID %s", entitlement, id)
+			}
+		}
+	}
+
+	return nil
+}
+
 // AppearsOnDeveloperPortal reports whether the given (project) Entitlement needs to be registered on Apple Developer Portal or not.
 // List of services, to be registered: https://developer.apple.com/documentation/appstoreconnectapi/capabilitytype.
 func (e Entitlement) AppearsOnDeveloperPortal() bool {

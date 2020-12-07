@@ -385,6 +385,10 @@ func main() {
 		log.Printf("- %s", id)
 	}
 
+	if err := autoprovision.ContainsUnsupportedEntitlement(entitlementsByBundleID, appstoreconnect.UnsupportedEntitlements); err != nil {
+		failf("Error: %v. Generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step.", err)
+	}
+
 	platform, err := projHelper.Platform(config)
 	if err != nil {
 		failf("Failed to read project platform: %s", err)
