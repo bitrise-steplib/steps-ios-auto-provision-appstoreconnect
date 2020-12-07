@@ -9,14 +9,14 @@ app:
     - BITRISE_CERTIFICATE_URL: $BITRISE_CERTIFICATE_URL
     - BITRISE_CERTIFICATE_PASSPHRASE: $BITRISE_CERTIFICATE_PASSPHRASE
     - TEAM_ID: $TEAM_ID
+    - KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
 
     # Used for development
     - LOCAL_SAMPLE_PATH: $LOCAL_SAMPLE_PATH
     - LOCAL_PROJECT_NAME: $LOCAL_PROJECT_NAME
     - LOCAL_SCHEME: $LOCAL_SCHEME
-    # If also defined in .bitrise.secrets.yml, that will take precedence
-    - $KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
+    - $LOCAL_KEYCHAIN_PATH: $LOCAL_KEYCHAIN_PATH
 
     - API_TOKEN: $API_TOKEN
     - APP_SLUG: $APP_SLUG
@@ -73,6 +73,7 @@ workflows:
       - BITRISE_CONFIGURATION: Debug
       - DISTRIBUTION_TYPE: development
       - GENERATE_PROFILES: "yes"
+      - KEYCHAIN_PATH: $LOCAL_KEYCHAIN_PATH
     after_run:
       - _common
 
@@ -208,6 +209,8 @@ workflows:
     - _common
 
   _common:
+    envs:
+      - KEYCHAIN_PATH: $KEYCHAIN_PATH
     steps:
       - script:
           title: Cleanup _tmp dir
