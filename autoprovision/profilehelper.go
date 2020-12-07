@@ -192,17 +192,17 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 	return true, nil
 }
 
-func checkProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) bool {
+func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) bool {
 	relativeExpiryTime := time.Now()
 	if minProfileDaysValid > 0 {
 		relativeExpiryTime = relativeExpiryTime.Add(time.Duration(minProfileDaysValid) * 24 * time.Hour)
 	}
-	return !time.Time(prof.Attributes.ExpirationDate).After(relativeExpiryTime)
+	return time.Time(prof.Attributes.ExpirationDate).Before(relativeExpiryTime)
 }
 
 // CheckProfile ...
 func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) (bool, error) {
-	if !checkProfileExpired(prof, minProfileDaysValid) {
+	if isProfileExpired(prof, minProfileDaysValid) {
 		return false, nil
 	}
 
