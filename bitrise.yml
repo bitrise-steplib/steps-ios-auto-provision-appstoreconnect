@@ -11,6 +11,13 @@ app:
     - TEAM_ID: $TEAM_ID
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
 
+    # Used for development
+    - LOCAL_SAMPLE_PATH: $LOCAL_SAMPLE_PATH
+    - LOCAL_PROJECT_NAME: $LOCAL_PROJECT_NAME
+    - LOCAL_SCHEME: $LOCAL_SCHEME
+    # If also defined in .bitrise.secrets.yml, that will take precedence
+    - $KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
+
     - API_TOKEN: $API_TOKEN
     - APP_SLUG: $APP_SLUG
 
@@ -57,6 +64,17 @@ workflows:
       - test_tvos_development
       - test_tvos_managed
       - test_tvos_development_managed
+
+  debug:
+    envs:
+      - SAMPLE_APP_URL: $LOCAL_SAMPLE_PATH
+      - BITRISE_PROJECT_PATH: $LOCAL_PROJECT_NAME
+      - BITRISE_SCHEME: $LOCAL_SCHEME
+      - BITRISE_CONFIGURATION: Debug
+      - DISTRIBUTION_TYPE: development
+      - GENERATE_PROFILES: "yes"
+    after_run:
+      - _common
 
   test_bundle_id:
     envs:
@@ -209,7 +227,12 @@ workflows:
           inputs:
             - content: |-
                 #!/bin/bash
-                git clone -b $BRANCH $SAMPLE_APP_URL .
+                set -ex
+                if [[ $SAMPLE_APP_URL =~ "^https" ]]; then
+                  git clone -b $BRANCH $SAMPLE_APP_URL .
+                else
+                  cp -r $SAMPLE_APP_URL .
+                fi
       - cocoapods-install:
           run_if: '{{enveq "INSTALL_PODS" "true"}}'
           title: CocoaPods install
@@ -225,6 +248,8 @@ workflows:
             - project_path: $BITRISE_PROJECT_PATH
             - scheme: $BITRISE_SCHEME
             - configuration: $BITRISE_CONFIGURATION
+            - keychain_path: $KEYCHAIN_PATH
+            - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
             - verbose_log: "yes"
       - script:
           title: Output test
