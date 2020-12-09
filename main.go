@@ -386,7 +386,7 @@ func main() {
 	}
 
 	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(entitlementsByBundleID); !ok {
-		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to API limitations.", entitlement, bundleID)
+		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
 		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
 	}
 

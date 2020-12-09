@@ -107,17 +107,17 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 		name                   string
 		entitlementsByBundleID map[string]serialized.Object
 		want                   bool
-		want1                  string
-		want2                  string
+		wantEntitlement        string
+		wantBundleID           string
 	}{
 		{
 			name: "no entitlements",
 			entitlementsByBundleID: map[string]serialized.Object{
 				"com.bundleid": map[string]interface{}{},
 			},
-			want:  true,
-			want1: "",
-			want2: "",
+			want:            true,
+			wantEntitlement: "",
+			wantBundleID:    "",
 		},
 		{
 			name: "contains unsupported entitlement",
@@ -127,9 +127,9 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 					"com.apple.developer.contacts.notes": true,
 				},
 			},
-			want:  false,
-			want1: "com.apple.developer.contacts.notes",
-			want2: "com.bundleid",
+			want:            false,
+			wantEntitlement: "com.apple.developer.contacts.notes",
+			wantBundleID:    "com.bundleid",
 		},
 		{
 			name: "contains unsupported entitlement, multiple bundle IDs",
@@ -142,9 +142,9 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 					"com.apple.developer.contacts.notes": true,
 				},
 			},
-			want:  false,
-			want1: "com.apple.developer.contacts.notes",
-			want2: "com.bundleid2",
+			want:            false,
+			wantEntitlement: "com.apple.developer.contacts.notes",
+			wantBundleID:    "com.bundleid2",
 		},
 		{
 			name: "all entitlements supported",
@@ -153,22 +153,22 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 					"aps-environment": true,
 				},
 			},
-			want:  true,
-			want1: "",
-			want2: "",
+			want:            true,
+			wantEntitlement: "",
+			wantBundleID:    "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2 := autoprovision.CanGenerateProfileWithEntitlements(tt.entitlementsByBundleID)
+			got, gotEntilement, gotBundleID := autoprovision.CanGenerateProfileWithEntitlements(tt.entitlementsByBundleID)
 			if got != tt.want {
 				t.Errorf("CanGenerateProfileWithEntitlements() got = %v, want %v", got, tt.want)
 			}
-			if got1 != tt.want1 {
-				t.Errorf("CanGenerateProfileWithEntitlements() got1 = %v, want %v", got1, tt.want1)
+			if gotEntilement != tt.wantEntitlement {
+				t.Errorf("CanGenerateProfileWithEntitlements() got1 = %v, want %v", gotEntilement, tt.wantEntitlement)
 			}
-			if got2 != tt.want2 {
-				t.Errorf("CanGenerateProfileWithEntitlements() got2 = %v, want %v", got2, tt.want2)
+			if gotBundleID != tt.wantBundleID {
+				t.Errorf("CanGenerateProfileWithEntitlements() got2 = %v, want %v", gotBundleID, tt.wantBundleID)
 			}
 		})
 	}
