@@ -102,7 +102,7 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 	endpoint = apiVersion + "/" + endpoint
 	u, err := c.BaseURL.Parse(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("parsing endpoint failed, %v", err)
+		return nil, fmt.Errorf("parsing endpoint failed: %v", err)
 	}
 
 	var buf io.ReadWriter
@@ -111,13 +111,13 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 		enc := json.NewEncoder(buf)
 		enc.SetEscapeHTML(false)
 		if err := enc.Encode(body); err != nil {
-			return nil, fmt.Errorf("encoding body failed, %v", err)
+			return nil, fmt.Errorf("encoding body failed: %v", err)
 		}
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
 	if err != nil {
-		return nil, fmt.Errorf("preparing request failed, %v", err)
+		return nil, fmt.Errorf("preparing request failed: %v", err)
 	}
 
 	if body != nil {
@@ -127,7 +127,7 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 	if _, ok := c.client.(*http.Client); ok {
 		signedToken, err := c.ensureSignedToken()
 		if err != nil {
-			return nil, fmt.Errorf("ensuring JWT token failed, %v", err)
+			return nil, fmt.Errorf("ensuring JWT token failed: %v", err)
 		}
 		req.Header.Set("Authorization", "Bearer "+signedToken)
 	}
