@@ -58,17 +58,17 @@ func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconne
 	projectEnts := serialized.Object(projectEntitlements)
 
 	// Compare profile and project entitlements
-	for profileEntitlement := range projectEntitlements {
+	for localEnt := range projectEntitlements {
 		found := false
-		for projectEntitlement := range projectEntitlements {
-			if projectEntitlement == profileEntitlement {
+		for remoteEnt := range profileEnts {
+			if localEnt == remoteEnt {
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			return false, nil, fmt.Sprintf("project entitlemet (%s) not found in profile")
+			return false, nil, fmt.Sprintf("project entitlemet (%s) not found in profile", localEnt)
 		}
 	}
 
