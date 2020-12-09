@@ -135,7 +135,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 			name: "contains unsupported entitlement, multiple bundle IDs",
 			entitlementsByBundleID: map[string]serialized.Object{
 				"com.bundleid": map[string]interface{}{
-					"com.entitlement-supported": true,
+					"aps-environment": true,
 				},
 				"com.bundleid2": map[string]interface{}{
 					"com.entitlement-ignored":            true,
@@ -150,7 +150,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 			name: "all entitlements supported",
 			entitlementsByBundleID: map[string]serialized.Object{
 				"com.bundleid": map[string]interface{}{
-					"com.entitlement-supported": true,
+					"aps-environment": true,
 				},
 			},
 			want:  true,

@@ -77,8 +77,8 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	// does not appear on developer portal
 	"com.apple.developer.icloud-container-identifiers":   Ignored,
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
-	// UnsupportedEntitlements contains entitlements not supported via the API and this step,
-	// profile needs to be manually generated on Apple Developer Portal
+	// These are entitlements not supported via the API and this step,
+	// profile needs to be manually generated on Apple Developer Portal.
 	"com.apple.developer.contacts.notes":         ProfileAttachedEntitlement,
 	"com.apple.developer.carplay-audio":          ProfileAttachedEntitlement,
 	"com.apple.developer.carplay-communication":  ProfileAttachedEntitlement,
