@@ -70,6 +70,31 @@ func dataProtectionEquals(entVal string, cap appstoreconnect.BundleIDCapability)
 	return true, nil
 }
 
+// CanGenerateProfileWithEntitlements checks all entitlements, wheter they can be generated
+func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
+	for bundleID, entitlements := range entitlementsByBundleID {
+		for entitlementKey, value := range entitlements {
+			if (Entitlement{entitlementKey: value}).IsProfileAttached() {
+				return false, entitlementKey, bundleID
+			}
+		}
+	}
+
+	return true, "", ""
+}
+
+// IsProfileAttached returns an error if an entitlement does not match a Capability but needs to be addded to the profile
+// as an additional entitlement, after submitting a request to Apple.
+func (e Entitlement) IsProfileAttached() bool {
+	if len(e) == 0 {
+		return false
+	}
+	entKey := serialized.Object(e).Keys()[0]
+
+	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
+	return ok && capType == appstoreconnect.ProfileAttachedEntitlement
+}
+
 // AppearsOnDeveloperPortal reports whether the given (project) Entitlement needs to be registered on Apple Developer Portal or not.
 // List of services, to be registered: https://developer.apple.com/documentation/appstoreconnectapi/capabilitytype.
 func (e Entitlement) AppearsOnDeveloperPortal() bool {
@@ -79,7 +104,7 @@ func (e Entitlement) AppearsOnDeveloperPortal() bool {
 	entKey := serialized.Object(e).Keys()[0]
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
-	return ok && capType != appstoreconnect.Ignored
+	return ok && capType != appstoreconnect.Ignored && capType != appstoreconnect.ProfileAttachedEntitlement
 }
 
 // Equal ...

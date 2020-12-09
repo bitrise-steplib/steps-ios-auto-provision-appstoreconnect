@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -18,7 +19,7 @@ func signToken(token *jwt.Token, privateKeyContent []byte) (string, error) {
 	}
 	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to sign JWT token, private key format is invalid: %v", err)
 	}
 
 	privateKey, ok := key.(*ecdsa.PrivateKey)

@@ -385,6 +385,11 @@ func main() {
 		log.Printf("- %s", id)
 	}
 
+	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(entitlementsByBundleID); !ok {
+		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
+		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
+	}
+
 	platform, err := projHelper.Platform(config)
 	if err != nil {
 		failf("Failed to read project platform: %s", err)
