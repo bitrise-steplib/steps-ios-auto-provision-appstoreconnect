@@ -70,7 +70,7 @@ func dataProtectionEquals(entVal string, cap appstoreconnect.BundleIDCapability)
 	return true, nil
 }
 
-// CanGenerateProfileWithEntitlement checks all entitlements, wheter they can be generated
+// CanGenerateProfileWithEntitlements checks all entitlements, wheter they can be generated
 func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (bool, string, string) {
 	for bundleID, entitlements := range entitlementsByBundleID {
 		for entitlementKey, value := range entitlements {
