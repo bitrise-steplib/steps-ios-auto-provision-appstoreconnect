@@ -165,11 +165,12 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
 
 		// Check if BundleID is sync with the project
-		ok, err := autoprovision.CheckBundleIDEntitlements(m.client, *bundleID, autoprovision.Entitlement(entitlements))
+		ok, err, invalidReason := autoprovision.CheckBundleIDEntitlements(m.client, *bundleID, autoprovision.Entitlement(entitlements))
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate bundle ID: %s", err)
 		}
 		if !ok {
+			log.Warnf("  app ID capabilities invalid: %s", invalidReason)
 			log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
 			if err := autoprovision.SyncBundleID(m.client, bundleID.ID, autoprovision.Entitlement(entitlements)); err != nil {
 				return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
@@ -234,7 +235,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes.ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			ok, err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
+			ok, err, reason := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
 				return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
 			}
@@ -242,7 +243,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 				log.Donef("  profile is in sync with the project requirements")
 				return profile, nil
 			}
-			log.Warnf("  the profile is not in sync with the project requirements, regenerating ...")
+			log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", reason)
 		}
 
 		if profile.Attributes.ProfileState == appstoreconnect.Invalid {

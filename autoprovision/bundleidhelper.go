@@ -45,7 +45,7 @@ func FindBundleID(client *appstoreconnect.Client, bundleIDIdentifier string) (*a
 	return nil, nil
 }
 
-func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCapability, projectEntitlements Entitlement) (bool, error) {
+func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCapability, projectEntitlements Entitlement) (bool, error, string) {
 	for k, v := range projectEntitlements {
 		ent := Entitlement{k: v}
 
@@ -57,7 +57,7 @@ func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCa
 		for _, cap := range bundleIDEntitlements {
 			equal, err := ent.Equal(cap)
 			if err != nil {
-				return false, err
+				return false, err, ""
 			}
 
 			if equal {
@@ -67,20 +67,20 @@ func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCa
 		}
 
 		if !found {
-			return false, nil
+			return false, nil, fmt.Sprintf("bundle ID missing Capability (%s) required by project Entitlement (%s)", appstoreconnect.ServiceTypeByKey[k], k)
 		}
 	}
 
-	return true, nil
+	return true, nil, ""
 }
 
 // CheckBundleIDEntitlements checks if a given Bundle ID has every capability enabled, required by the project.
-func CheckBundleIDEntitlements(client *appstoreconnect.Client, bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) (bool, error) {
+func CheckBundleIDEntitlements(client *appstoreconnect.Client, bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) (bool, error, string) {
 	response, err := client.Provisioning.Capabilities(
 		bundleID.Relationships.Capabilities.Links.Related)
 
 	if err != nil {
-		return false, err
+		return false, err, ""
 	}
 
 	return checkBundleIDEntitlements(response.Data, projectEntitlements)

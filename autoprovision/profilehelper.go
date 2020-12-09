@@ -49,10 +49,10 @@ func FindProfile(client *appstoreconnect.Client, name string, profileType appsto
 	return &r.Data[0], nil
 }
 
-func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconnect.Profile, projectEntitlements Entitlement) (bool, error) {
+func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconnect.Profile, projectEntitlements Entitlement) (bool, error, string) {
 	profileEnts, err := parseRawProfileEntitlements(prof)
 	if err != nil {
-		return false, err
+		return false, err, ""
 	}
 
 	projectEnts := serialized.Object(projectEntitlements)
@@ -68,22 +68,22 @@ func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconne
 		}
 
 		if !found {
-			return false, nil
+			return false, nil, fmt.Sprintf("project entitlemet (%s) not found in profile")
 		}
 	}
 
 	missingContainers, err := findMissingContainers(projectEnts, profileEnts)
 	if err != nil {
-		return false, fmt.Errorf("failed to check missing containers: %s", err)
+		return false, fmt.Errorf("failed to check missing containers: %s", err), ""
 	}
 
 	if len(missingContainers) > 0 {
-		return false, fmt.Errorf("project uses containers that are missing from the provisioning profile: %v", missingContainers)
+		return false, fmt.Errorf("project uses containers that are missing from the provisioning profile: %v", missingContainers), ""
 	}
 
 	bundleIDresp, err := client.Provisioning.BundleID(prof.Relationships.BundleID.Links.Related)
 	if err != nil {
-		return false, err
+		return false, err, ""
 	}
 	return CheckBundleIDEntitlements(client, bundleIDresp.Data, projectEntitlements)
 }
@@ -139,7 +139,7 @@ func findMissingContainers(projectEnts, profileEnts serialized.Object) ([]string
 	return missing, nil
 }
 
-func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconnect.Profile, certificateIDs []string) (bool, error) {
+func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconnect.Profile, certificateIDs []string) (bool, error, string) {
 	var nextPageURL string
 	var certificates []appstoreconnect.Certificate
 	for {
@@ -151,7 +151,7 @@ func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconne
 			},
 		)
 		if err != nil {
-			return false, err
+			return false, err, ""
 		}
 
 		certificates = append(certificates, response.Data...)
@@ -168,13 +168,13 @@ func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconne
 	}
 	for _, id := range certificateIDs {
 		if !ids[id] {
-			return false, nil
+			return false, nil, fmt.Sprintf("certificate with ID (%s) not included in the profile", id)
 		}
 	}
-	return true, nil
+	return true, nil, ""
 }
 
-func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Profile, deviceIDs []string) (bool, error) {
+func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Profile, deviceIDs []string) (bool, error, string) {
 	var nextPageURL string
 	ids := map[string]bool{}
 	for {
@@ -186,7 +186,7 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 			},
 		)
 		if err != nil {
-			return false, err
+			return false, err, ""
 		}
 
 		for _, dev := range response.Data {
@@ -201,10 +201,10 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 
 	for _, id := range deviceIDs {
 		if !ids[id] {
-			return false, nil
+			return false, nil, fmt.Sprintf("device with ID (%s) not included in the profile", id)
 		}
 	}
-	return true, nil
+	return true, nil, ""
 }
 
 func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) bool {
@@ -216,21 +216,21 @@ func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) boo
 }
 
 // CheckProfile ...
-func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) (bool, error) {
+func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) (bool, error, string) {
 	if isProfileExpired(prof, minProfileDaysValid) {
-		return false, nil
+		return false, nil, fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid)
 	}
 
-	if ok, err := checkProfileEntitlements(client, prof, entitlements); err != nil {
-		return false, err
+	if ok, err, reason := checkProfileEntitlements(client, prof, entitlements); err != nil {
+		return false, err, ""
 	} else if !ok {
-		return false, nil
+		return false, nil, reason
 	}
 
-	if ok, err := checkProfileCertificates(client, prof, certificateIDs); err != nil {
-		return false, err
+	if ok, err, reason := checkProfileCertificates(client, prof, certificateIDs); err != nil {
+		return false, err, ""
 	} else if !ok {
-		return false, nil
+		return false, nil, reason
 	}
 
 	return checkProfileDevices(client, prof, deviceIDs)
