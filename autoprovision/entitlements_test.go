@@ -102,44 +102,49 @@ func TestICloudContainers(t *testing.T) {
 	}
 }
 
-func TestContainsUnsupportedEntitlement(t *testing.T) {
+func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 	tests := []struct {
-		name                    string
-		entitlementsByBundleID  map[string]serialized.Object
-		unsupportedEntitlements []string
-		wantErr                 bool
+		name                   string
+		entitlementsByBundleID map[string]serialized.Object
+		want                   bool
+		want1                  string
+		want2                  string
 	}{
 		{
 			name: "no entitlements",
 			entitlementsByBundleID: map[string]serialized.Object{
 				"com.bundleid": map[string]interface{}{},
 			},
-			unsupportedEntitlements: []string{"com.entitlements-unsupported"},
+			want:  true,
+			want1: "",
+			want2: "",
 		},
 		{
 			name: "contains unsupported entitlement",
 			entitlementsByBundleID: map[string]serialized.Object{
 				"com.bundleid": map[string]interface{}{
-					"com.entitlement-supported":   true,
-					"com.entitlement-unsupported": true,
+					"com.entitlement-ignored":            true,
+					"com.apple.developer.contacts.notes": true,
 				},
 			},
-			unsupportedEntitlements: []string{"com.entitlement-unsupported"},
-			wantErr:                 true,
+			want:  false,
+			want1: "com.apple.developer.contacts.notes",
+			want2: "com.bundleid",
 		},
 		{
 			name: "contains unsupported entitlement, multiple bundle IDs",
 			entitlementsByBundleID: map[string]serialized.Object{
-				"com.bundleID1": map[string]interface{}{
+				"com.bundleid": map[string]interface{}{
 					"com.entitlement-supported": true,
 				},
-				"com.bundleid": map[string]interface{}{
-					"com.entitlement-supported":   true,
-					"com.entitlement-unsupported": true,
+				"com.bundleid2": map[string]interface{}{
+					"com.entitlement-ignored":            true,
+					"com.apple.developer.contacts.notes": true,
 				},
 			},
-			unsupportedEntitlements: []string{"com.entitlement-unsupported"},
-			wantErr:                 true,
+			want:  false,
+			want1: "com.apple.developer.contacts.notes",
+			want2: "com.bundleid2",
 		},
 		{
 			name: "all entitlements supported",
@@ -148,13 +153,22 @@ func TestContainsUnsupportedEntitlement(t *testing.T) {
 					"com.entitlement-supported": true,
 				},
 			},
-			unsupportedEntitlements: []string{},
+			want:  true,
+			want1: "",
+			want2: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := autoprovision.ContainsUnsupportedEntitlement(tt.entitlementsByBundleID, tt.unsupportedEntitlements); (err != nil) != tt.wantErr {
-				t.Errorf("ContainsUnsupportedEntitlement() error = %v, wantErr %v", err, tt.wantErr)
+			got, got1, got2 := autoprovision.CanGenerateProfileWithEntitlements(tt.entitlementsByBundleID)
+			if got != tt.want {
+				t.Errorf("CanGenerateProfileWithEntitlements() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("CanGenerateProfileWithEntitlements() got1 = %v, want %v", got1, tt.want1)
+			}
+			if got2 != tt.want2 {
+				t.Errorf("CanGenerateProfileWithEntitlements() got2 = %v, want %v", got2, tt.want2)
 			}
 		})
 	}

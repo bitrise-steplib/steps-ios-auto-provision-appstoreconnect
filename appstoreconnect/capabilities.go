@@ -14,6 +14,7 @@ type CapabilityType string
 // CapabilityTypes ...
 const (
 	Ignored                        CapabilityType = "-ignored-"
+	ProfileAttachedEntitlement     CapabilityType = "-profile-attached-"
 	ICloud                         CapabilityType = "ICLOUD"
 	InAppPurchase                  CapabilityType = "IN_APP_PURCHASE"
 	GameCenter                     CapabilityType = "GAME_CENTER"
@@ -76,18 +77,16 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	// does not appear on developer portal
 	"com.apple.developer.icloud-container-identifiers":   Ignored,
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
-}
-
-// UnsupportedEntitlements contains entitlements not supported via the API and this step,
-// profile needs to be manually generated on Apple Developer Portal
-var UnsupportedEntitlements = []string{
-	"com.apple.developer.contacts.notes",
-	"com.apple.developer.carplay-audio",
-	"com.apple.developer.carplay-communication",
-	"com.apple.developer.carplay-charging",
-	"com.apple.developer.carplay-maps",
-	"com.apple.developer.carplay-parking",
-	"com.apple.developer.carplay-quick-ordering",
+	// UnsupportedEntitlements contains entitlements not supported via the API and this step,
+	// profile needs to be manually generated on Apple Developer Portal
+	"com.apple.developer.contacts.notes":         ProfileAttachedEntitlement,
+	"com.apple.developer.carplay-audio":          ProfileAttachedEntitlement,
+	"com.apple.developer.carplay-communication":  ProfileAttachedEntitlement,
+	"com.apple.developer.carplay-charging":       ProfileAttachedEntitlement,
+	"com.apple.developer.carplay-maps":           ProfileAttachedEntitlement,
+	"com.apple.developer.carplay-parking":        ProfileAttachedEntitlement,
+	"com.apple.developer.carplay-quick-ordering": ProfileAttachedEntitlement,
+	"com.apple.developer.exposure-notification":  ProfileAttachedEntitlement,
 }
 
 // CapabilitySettingAllowedInstances ...

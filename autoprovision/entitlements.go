@@ -70,17 +70,29 @@ func dataProtectionEquals(entVal string, cap appstoreconnect.BundleIDCapability)
 	return true, nil
 }
 
-// ContainsUnsupportedEntitlement returns an error if an entitlement is used that we can not generate using the API
-func ContainsUnsupportedEntitlement(entitlementsByBundleID map[string]serialized.Object, unsupportedEntitlements []string) error {
-	for id, entitlements := range entitlementsByBundleID {
-		for entitlement := range entitlements {
-			if sliceutil.IsStringInSlice(entitlement, unsupportedEntitlements) {
-				return fmt.Errorf("unsupported entitlement (%s) set for bundle ID %s", entitlement, id)
+// CanGenerateProfileWithEntitlement checks all entitlements, wheter they can be generated
+func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (bool, string, string) {
+	for bundleID, entitlements := range entitlementsByBundleID {
+		for entitlementKey, value := range entitlements {
+			if (Entitlement{entitlementKey: value}).IsProfileAttached() {
+				return false, entitlementKey, bundleID
 			}
 		}
 	}
 
-	return nil
+	return true, "", ""
+}
+
+// IsProfileAttached returns an error if an entitlement does not match a Capability but needs to be addded to the profile
+// as an additional entitlement, after submitting a request to Apple.
+func (e Entitlement) IsProfileAttached() bool {
+	if len(e) == 0 {
+		return false
+	}
+	entKey := serialized.Object(e).Keys()[0]
+
+	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
+	return ok && capType == appstoreconnect.ProfileAttachedEntitlement
 }
 
 // AppearsOnDeveloperPortal reports whether the given (project) Entitlement needs to be registered on Apple Developer Portal or not.
@@ -92,7 +104,7 @@ func (e Entitlement) AppearsOnDeveloperPortal() bool {
 	entKey := serialized.Object(e).Keys()[0]
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
-	return ok && capType != appstoreconnect.Ignored
+	return ok && capType != appstoreconnect.Ignored && capType != appstoreconnect.ProfileAttachedEntitlement
 }
 
 // Equal ...
