@@ -106,7 +106,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 	tests := []struct {
 		name                   string
 		entitlementsByBundleID map[string]serialized.Object
-		want                   bool
+		wantOk                 bool
 		wantEntitlement        string
 		wantBundleID           string
 	}{
@@ -115,7 +115,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 			entitlementsByBundleID: map[string]serialized.Object{
 				"com.bundleid": map[string]interface{}{},
 			},
-			want:            true,
+			wantOk:          true,
 			wantEntitlement: "",
 			wantBundleID:    "",
 		},
@@ -127,7 +127,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 					"com.apple.developer.contacts.notes": true,
 				},
 			},
-			want:            false,
+			wantOk:          false,
 			wantEntitlement: "com.apple.developer.contacts.notes",
 			wantBundleID:    "com.bundleid",
 		},
@@ -142,7 +142,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 					"com.apple.developer.contacts.notes": true,
 				},
 			},
-			want:            false,
+			wantOk:          false,
 			wantEntitlement: "com.apple.developer.contacts.notes",
 			wantBundleID:    "com.bundleid2",
 		},
@@ -153,16 +153,16 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 					"aps-environment": true,
 				},
 			},
-			want:            true,
+			wantOk:          true,
 			wantEntitlement: "",
 			wantBundleID:    "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotEntilement, gotBundleID := autoprovision.CanGenerateProfileWithEntitlements(tt.entitlementsByBundleID)
-			if got != tt.want {
-				t.Errorf("CanGenerateProfileWithEntitlements() got = %v, want %v", got, tt.want)
+			gotOk, gotEntilement, gotBundleID := autoprovision.CanGenerateProfileWithEntitlements(tt.entitlementsByBundleID)
+			if gotOk != tt.wantOk {
+				t.Errorf("CanGenerateProfileWithEntitlements() got = %v, want %v", gotOk, tt.wantOk)
 			}
 			if gotEntilement != tt.wantEntitlement {
 				t.Errorf("CanGenerateProfileWithEntitlements() got1 = %v, want %v", gotEntilement, tt.wantEntitlement)
