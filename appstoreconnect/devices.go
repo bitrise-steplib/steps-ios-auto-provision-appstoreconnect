@@ -13,6 +13,7 @@ type ListDevicesOptions struct {
 	PagingOptions
 	FilterUDID     string         `url:"filter[udid],omitempty"`
 	FilterPlatform DevicePlatform `url:"filter[platform],omitempty"`
+	FilterStatus   Status         `url:"filter[status],omitempty"`
 }
 
 // DeviceClass ...
@@ -73,7 +74,7 @@ type DevicesResponse struct {
 
 // DeviceResponse ...
 type DeviceResponse struct {
-	Data  Device           `json:"data"`
+	Data  Device             `json:"data"`
 	Links PagedDocumentLinks `json:"links,omitempty"`
 }
 

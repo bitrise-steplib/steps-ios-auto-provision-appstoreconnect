@@ -467,7 +467,7 @@ func main() {
 
 		log.Printf("%d devices are registered on Developer Portal", len(devices))
 		for _, d := range devices {
-			log.Debugf("- %s (%s)", d.Attributes.Name, d.Attributes.UDID)
+			log.Debugf("- %s, %s UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
 		}
 
 		for _, testDevice := range devPortalData.TestDevices {
