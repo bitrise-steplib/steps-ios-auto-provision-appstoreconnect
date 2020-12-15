@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -109,6 +110,12 @@ func findMissingContainers(projectEnts, profileEnts serialized.Object) ([]string
 
 	var missing []string
 	for _, projContainerID := range projContainerIDs {
+		// iCloud container name can contain variables, for example: `iCloud.$(CFBundleIdentifier)`
+		// In that case suppose that the container is set up correctly, as can not resolve variables
+		if strings.ContainsRune(projContainerID, '$') {
+			continue
+		}
+
 		var found bool
 		for _, profContainerID := range profContainerIDs {
 			if projContainerID == profContainerID {
