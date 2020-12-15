@@ -3,6 +3,7 @@ package autoprovision
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -143,6 +144,12 @@ func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconne
 			},
 		)
 		if err != nil {
+			if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
+				if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
+					return false, fmt.Sprintf("profile was concurrently removed from Developer Portal: %s", err), nil
+				}
+			}
+
 			return false, "", err
 		}
 
@@ -178,6 +185,12 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 			},
 		)
 		if err != nil {
+			if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
+				if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
+					return false, fmt.Sprintf("profile was concurrently removed from Developer Portal: %s", err), nil
+				}
+			}
+
 			return false, "", err
 		}
 
@@ -230,7 +243,17 @@ func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, 
 
 // DeleteProfile ...
 func DeleteProfile(client *appstoreconnect.Client, id string) error {
-	return client.Provisioning.DeleteProfile(id)
+	if err := client.Provisioning.DeleteProfile(id); err != nil {
+		if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
+			if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
+				return nil
+			}
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // CreateProfile ...
