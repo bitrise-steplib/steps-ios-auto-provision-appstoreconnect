@@ -58,21 +58,6 @@ func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconne
 
 	projectEnts := serialized.Object(projectEntitlements)
 
-	// Compare profile and project entitlements
-	for localEnt := range projectEntitlements {
-		found := false
-		for remoteEnt := range profileEnts {
-			if localEnt == remoteEnt {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return false, nil, fmt.Sprintf("project entitlemet (%s) not found in profile", localEnt)
-		}
-	}
-
 	missingContainers, err := findMissingContainers(projectEnts, profileEnts)
 	if err != nil {
 		return false, fmt.Errorf("failed to check missing containers: %s", err), ""
