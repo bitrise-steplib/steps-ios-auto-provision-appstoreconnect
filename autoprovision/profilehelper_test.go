@@ -143,6 +143,18 @@ func Test_findMissingContainers(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "project has more containers, containing env var, they are ignored as resolving them is difficult",
+			projectEnts: serialized.Object(map[string]interface{}{
+				"com.apple.developer.icloud-container-identifiers": []interface{}{"iCloud.$(CFBundleIdentifier)"},
+			}),
+			profileEnts: serialized.Object(map[string]interface{}{
+				"com.apple.developer.icloud-container-identifiers": []interface{}{"iCloud.bundle.id"},
+			}),
+
+			want:    nil,
+			wantErr: false,
+		},
+		{
 			name: "project has containers but profile doesn't",
 			projectEnts: serialized.Object(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{"container1"},
