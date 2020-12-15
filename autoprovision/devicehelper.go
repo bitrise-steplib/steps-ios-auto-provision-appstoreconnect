@@ -14,6 +14,7 @@ func ListDevices(client *appstoreconnect.Client, udid string, platform appstorec
 			},
 			FilterUDID:     udid,
 			FilterPlatform: platform,
+			FilterStatus:   appstoreconnect.Enabled,
 		})
 		if err != nil {
 			return nil, err
