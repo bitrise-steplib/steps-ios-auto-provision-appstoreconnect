@@ -64,7 +64,7 @@ func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconne
 	}
 
 	if len(missingContainers) > 0 {
-		return false, "", fmt.Errorf("project uses containers that are missing from the provisioning profile: %v", missingContainers)
+		return false, fmt.Sprintf("project uses containers that are missing from the provisioning profile: %v", missingContainers), nil
 	}
 
 	bundleIDresp, err := client.Provisioning.BundleID(prof.Relationships.BundleID.Links.Related)
