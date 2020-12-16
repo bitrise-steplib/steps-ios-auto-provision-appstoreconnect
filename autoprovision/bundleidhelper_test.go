@@ -11,9 +11,7 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 		name                 string
 		bundleIDEntitlements []appstoreconnect.BundleIDCapability
 		projectEntitlements  Entitlement
-		wantOk               bool
 		wantErr              bool
-		wantReason           string
 	}{
 		{
 			name:                 "Check known entitlements, which does not need to be registered on the Developer Portal",
@@ -24,23 +22,28 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 				"com.apple.developer.icloud-container-identifiers":   "",
 				"com.apple.developer.ubiquity-container-identifiers": "",
 			}),
-			wantOk:     true,
-			wantErr:    false,
-			wantReason: "",
+			wantErr: false,
+		},
+		{
+			name:                 "Needed to register entitlements",
+			bundleIDEntitlements: []appstoreconnect.BundleIDCapability{},
+			projectEntitlements: Entitlement(map[string]interface{}{
+				"com.apple.developer.applesignin": "",
+			}),
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOk, gotReason, err := checkBundleIDEntitlements(tt.bundleIDEntitlements, tt.projectEntitlements)
+			err := checkBundleIDEntitlements(tt.bundleIDEntitlements, tt.projectEntitlements)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("checkBundleIDEntitlements() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if gotOk != tt.wantOk {
-				t.Errorf("checkBundleIDEntitlements() ok = %v, want %v", gotOk, tt.wantOk)
-			}
-			if gotReason != tt.wantReason {
-				t.Errorf("checkBundleIDEntitlements() reason = %v, want %v", gotReason, tt.wantReason)
+			if tt.wantErr {
+				if mErr, ok := err.(NonmatchingProfileError); !ok {
+					t.Errorf("checkBundleIDEntitlements() error = %v, it is not expected type", mErr)
+				}
 			}
 		})
 	}

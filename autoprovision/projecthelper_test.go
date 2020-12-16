@@ -302,7 +302,7 @@ func Test_expandTargetSetting(t *testing.T) {
 				m["CFBundleIdentifier"] = productName
 				return m
 			}(),
-			want:    fmt.Sprintf(productName),
+			want:    productName,
 			wantErr: false,
 		},
 		{
