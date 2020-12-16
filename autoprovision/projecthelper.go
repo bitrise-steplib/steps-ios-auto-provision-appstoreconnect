@@ -324,7 +324,8 @@ func codesignIdentitesMatch(identity1, identity2 string) bool {
 }
 
 func expandTargetSetting(value string, buildSettings serialized.Object) (string, error) {
-	r, err := regexp.Compile(`^(.*)[$][({](.+?)([:].+)?[})](.*)$`)
+	regexpStr := `^(.*)[$][({](.+?)([:].+)?[})](.*)$`
+	r, err := regexp.Compile(regexpStr)
 	if err != nil {
 		return "", err
 	}
@@ -332,7 +333,7 @@ func expandTargetSetting(value string, buildSettings serialized.Object) (string,
 	captures := r.FindStringSubmatch(value)
 
 	if len(captures) < 5 {
-		return "", fmt.Errorf("failed to match regex `^(.*)[$][({](.+?)([:].+)?[})](.*)$` to %s target build setting", value)
+		return "", fmt.Errorf("failed to match regex '%s' to %s target build setting", regexpStr, value)
 	}
 
 	prefix := captures[1]

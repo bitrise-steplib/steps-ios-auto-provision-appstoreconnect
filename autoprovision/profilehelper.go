@@ -60,6 +60,18 @@ func FindProfile(client *appstoreconnect.Client, name string, profileType appsto
 	return &r.Data[0], nil
 }
 
+func wrapInProfileError(err error) error {
+	if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
+		if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
+			return NonmatchingProfileError{
+				Reason: fmt.Sprintf("profile was concurrently removed from Developer Portal: %v", err),
+			}
+		}
+	}
+
+	return err
+}
+
 func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconnect.Profile, projectEntitlements Entitlement) error {
 	profileEnts, err := parseRawProfileEntitlements(prof)
 	if err != nil {
@@ -149,15 +161,7 @@ func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconne
 			},
 		)
 		if err != nil {
-			if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
-				if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
-					return NonmatchingProfileError{
-						Reason: fmt.Sprintf("profile was concurrently removed from Developer Portal: %s", err),
-					}
-				}
-			}
-
-			return err
+			return wrapInProfileError(err)
 		}
 
 		certificates = append(certificates, response.Data...)
@@ -194,15 +198,7 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 			},
 		)
 		if err != nil {
-			if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
-				if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
-					return NonmatchingProfileError{
-						Reason: fmt.Sprintf("profile was concurrently removed from Developer Portal: %s", err),
-					}
-				}
-			}
-
-			return err
+			return wrapInProfileError(err)
 		}
 
 		for _, dev := range response.Data {
