@@ -217,18 +217,18 @@ func Test_codesignIdentitesMatch(t *testing.T) {
 	}
 }
 
-func Test_resolveBundleID(t *testing.T) {
+func Test_expandTargetSetting(t *testing.T) {
 	const productName = "Sample"
 	tests := []struct {
 		name          string
-		bundleID      string
+		value         string
 		buildSettings map[string]interface{}
 		want          string
 		wantErr       bool
 	}{
 		{
-			name:     "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
-			bundleID: "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
+			name:  "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
+			value: "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
 			buildSettings: func() map[string]interface{} {
 				m := make(map[string]interface{})
 				m["PRODUCT_NAME"] = productName
@@ -238,8 +238,8 @@ func Test_resolveBundleID(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:     "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
-			bundleID: "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
+			name:  "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
+			value: "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
 			buildSettings: func() map[string]interface{} {
 				m := make(map[string]interface{})
 				m["PRODUCT_NAME"] = productName
@@ -250,8 +250,8 @@ func Test_resolveBundleID(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:     "Bitrise.Test.$(PRODUCT_NAME:rfc1034identifier).Suffix",
-			bundleID: "Bitrise.Test.$(PRODUCT_NAME:rfc1034identifier).Suffix",
+			name:  "Bitrise.Test.$(PRODUCT_NAME:rfc1034identifier).Suffix",
+			value: "Bitrise.Test.$(PRODUCT_NAME:rfc1034identifier).Suffix",
 			buildSettings: func() map[string]interface{} {
 				m := make(map[string]interface{})
 				m["PRODUCT_NAME"] = productName
@@ -261,16 +261,67 @@ func Test_resolveBundleID(t *testing.T) {
 			want:    fmt.Sprintf("Bitrise.Test.%s.Suffix", productName),
 			wantErr: false,
 		},
+		{
+			name:  "iCloud.$(CFBundleIdentifier)",
+			value: "iCloud.$(CFBundleIdentifier)",
+			buildSettings: func() map[string]interface{} {
+				m := make(map[string]interface{})
+				m["CFBundleIdentifier"] = productName
+				return m
+			}(),
+			want:    fmt.Sprintf("iCloud.%s", productName),
+			wantErr: false,
+		},
+		{
+			name:  "iCloud.${CFBundleIdentifier}",
+			value: "iCloud.${CFBundleIdentifier}",
+			buildSettings: func() map[string]interface{} {
+				m := make(map[string]interface{})
+				m["CFBundleIdentifier"] = productName
+				return m
+			}(),
+			want:    fmt.Sprintf("iCloud.%s", productName),
+			wantErr: false,
+		},
+		{
+			name:  "${CFBundleIdentifier}.Suffix",
+			value: "${CFBundleIdentifier}.Suffix",
+			buildSettings: func() map[string]interface{} {
+				m := make(map[string]interface{})
+				m["CFBundleIdentifier"] = productName
+				return m
+			}(),
+			want:    fmt.Sprintf("%s.Suffix", productName),
+			wantErr: false,
+		},
+		{
+			name:  "$(CFBundleIdentifier)",
+			value: "$(CFBundleIdentifier)",
+			buildSettings: func() map[string]interface{} {
+				m := make(map[string]interface{})
+				m["CFBundleIdentifier"] = productName
+				return m
+			}(),
+			want:    fmt.Sprintf(productName),
+			wantErr: false,
+		},
+		{
+			name:          "iCloud.bundle.id",
+			value:         "iCloud.bundle.id",
+			buildSettings: nil,
+			want:          "",
+			wantErr:       true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := resolveBundleID(tt.bundleID, tt.buildSettings)
+			got, err := expandTargetSetting(tt.value, tt.buildSettings)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("resolveBundleID() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("expandTargetSetting() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("resolveBundleID() = %v, want %v", got, tt.want)
+				t.Errorf("expandTargetSetting() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -460,6 +511,7 @@ func TestProjectHelper_targetEntitlements(t *testing.T) {
 		name          string
 		targetName    string
 		conf          string
+		bundleID      string
 		want          serialized.Object
 		projectHelper ProjectHelper
 		wantErr       bool
@@ -509,13 +561,102 @@ func TestProjectHelper_targetEntitlements(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.projectHelper.targetEntitlements(tt.targetName, tt.conf)
+			got, err := tt.projectHelper.targetEntitlements(tt.targetName, tt.conf, tt.bundleID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ProjectHelper.targetEntitlements() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ProjectHelper.targetEntitlements() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_resolveEntitlementVariables(t *testing.T) {
+	type args struct {
+		entitlements Entitlement
+		bundleID     string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    serialized.Object
+		wantErr bool
+	}{
+		{
+			name: "Existing entitlememts are unchanged",
+			args: args{
+				entitlements: map[string]interface{}{
+					"com.apple.developer.contacts.notes": true,
+				},
+			},
+			want: map[string]interface{}{
+				"com.apple.developer.contacts.notes": true,
+			},
+		},
+		{
+			name: "iCloud entitlememts are unchanged, if service is in use",
+			args: args{
+				entitlements: map[string]interface{}{
+					"com.apple.developer.icloud-services": []interface{}{"CloudKit"},
+					"com.apple.developer.icloud-container-identifiers": []interface{}{
+						"iCloud.bundle.id",
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"com.apple.developer.icloud-services": []interface{}{"CloudKit"},
+				"com.apple.developer.icloud-container-identifiers": []interface{}{
+					"iCloud.bundle.id",
+				},
+			},
+		},
+		{
+			name: "iCloud entitlememts are unchanged, if service is not in use",
+			args: args{
+				entitlements: map[string]interface{}{
+					"com.apple.developer.icloud-services": []interface{}{},
+					"com.apple.developer.icloud-container-identifiers": []interface{}{
+						"iCloud.bundle.id",
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"com.apple.developer.icloud-services": []interface{}{},
+				"com.apple.developer.icloud-container-identifiers": []interface{}{
+					"iCloud.bundle.id",
+				},
+			},
+		},
+		{
+			name: "iCloud containers CFBundleIdentifier variable is expanded",
+			args: args{
+				entitlements: map[string]interface{}{
+					"com.apple.developer.icloud-services": []interface{}{"CloudKit"},
+					"com.apple.developer.icloud-container-identifiers": []interface{}{
+						"iCloud.${CFBundleIdentifier}",
+					},
+				},
+				bundleID: "bundle.id",
+			},
+			want: map[string]interface{}{
+				"com.apple.developer.icloud-services": []interface{}{"CloudKit"},
+				"com.apple.developer.icloud-container-identifiers": []interface{}{
+					"iCloud.bundle.id",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveEntitlementVariables(tt.args.entitlements, tt.args.bundleID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("resolveEntitlementVariables() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("resolveEntitlementVariables() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -20,6 +20,8 @@ var DataProtections = map[string]appstoreconnect.CapabilityOptionKey{
 	"NSFileProtectionCompleteUntilFirstUserAuthentication": appstoreconnect.ProtectedUntilFirstUserAuth,
 }
 
+const iCloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-identifiers"
+
 func iCloudEquals(ent Entitlement, cap appstoreconnect.BundleIDCapability) (bool, error) {
 	documents, cloudKit, kvStorage, err := ent.iCloudServices()
 	if err != nil {
@@ -167,7 +169,7 @@ func (e Entitlement) ICloudContainers() ([]string, error) {
 		return nil, nil
 	}
 
-	containers, err := serialized.Object(e).StringSlice("com.apple.developer.icloud-container-identifiers")
+	containers, err := serialized.Object(e).StringSlice(iCloudIdentifiersEntitlementKey)
 	if err != nil && !serialized.IsKeyNotFoundError(err) {
 		return nil, err
 	}
