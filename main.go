@@ -165,19 +165,22 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
 
 		// Check if BundleID is sync with the project
-		ok, invalidReason, err := autoprovision.CheckBundleIDEntitlements(m.client, *bundleID, autoprovision.Entitlement(entitlements))
+		err := autoprovision.CheckBundleIDEntitlements(m.client, *bundleID, autoprovision.Entitlement(entitlements))
 		if err != nil {
+			if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
+				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
+				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
+				if err := autoprovision.SyncBundleID(m.client, bundleID.ID, autoprovision.Entitlement(entitlements)); err != nil {
+					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
+				}
+
+				return bundleID, nil
+			}
+
 			return nil, fmt.Errorf("failed to validate bundle ID: %s", err)
 		}
-		if !ok {
-			log.Warnf("  app ID capabilities invalid: %s", invalidReason)
-			log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
-			if err := autoprovision.SyncBundleID(m.client, bundleID.ID, autoprovision.Entitlement(entitlements)); err != nil {
-				return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
-			}
-		} else {
-			log.Printf("  app ID capabilities are in sync with the project capabilities")
-		}
+
+		log.Printf("  app ID capabilities are in sync with the project capabilities")
 
 		return bundleID, nil
 	}
@@ -235,15 +238,17 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes.ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			ok, reason, err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
+			err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
-				return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
-			}
-			if ok {
+				if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
+					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
+				} else {
+					return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
+				}
+			} else { // Profile matches
 				log.Donef("  profile is in sync with the project requirements")
 				return profile, nil
 			}
-			log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", reason)
 		}
 
 		if profile.Attributes.ProfileState == appstoreconnect.Invalid {
