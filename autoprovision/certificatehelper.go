@@ -155,7 +155,7 @@ func (e MissingCertificateError) Error() string {
 }
 
 // GetValidCertificates ...
-func GetValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string) (map[appstoreconnect.CertificateType][]APICertificate, error) {
+func GetValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string, isDebugLog bool) (map[appstoreconnect.CertificateType][]APICertificate, error) {
 	typeToLocalCerts, err := GetValidLocalCertificates(localCertificates, teamID)
 	if err != nil {
 		return nil, err
@@ -170,8 +170,10 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 	}
 
 	// only for debugging
-	if err := LogAllAPICertificates(client, typeToLocalCerts); err != nil {
-		log.Debugf("Failed to log all Developer Portal certificates: %s", err)
+	if isDebugLog {
+		if err := LogAllAPICertificates(client, typeToLocalCerts); err != nil {
+			log.Debugf("Failed to log all Developer Portal certificates: %s", err)
+		}
 	}
 
 	validAPICertificates := map[appstoreconnect.CertificateType][]APICertificate{}

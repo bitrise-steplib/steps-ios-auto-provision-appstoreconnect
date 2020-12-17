@@ -3,6 +3,7 @@ package autoprovision
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"time"
@@ -12,6 +13,16 @@ import (
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
+
+// NonmatchingProfileError is returned when a profile/bundle ID does not match project requirements
+// It is not a fatal error, as the profile can be regenerated
+type NonmatchingProfileError struct {
+	Reason string
+}
+
+func (e NonmatchingProfileError) Error() string {
+	return fmt.Sprintf("provisioning profile does not match requirements: %s", e.Reason)
+}
 
 // ProfileName generates profile name with layout: Bitrise <platform> <distribution type> - (<bundle id>)
 func ProfileName(profileType appstoreconnect.ProfileType, bundleID string) (string, error) {
@@ -49,27 +60,41 @@ func FindProfile(client *appstoreconnect.Client, name string, profileType appsto
 	return &r.Data[0], nil
 }
 
-func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconnect.Profile, projectEntitlements Entitlement) (bool, error) {
+func wrapInProfileError(err error) error {
+	if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
+		if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
+			return NonmatchingProfileError{
+				Reason: fmt.Sprintf("profile was concurrently removed from Developer Portal: %v", err),
+			}
+		}
+	}
+
+	return err
+}
+
+func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconnect.Profile, projectEntitlements Entitlement) error {
 	profileEnts, err := parseRawProfileEntitlements(prof)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	projectEnts := serialized.Object(projectEntitlements)
 
 	missingContainers, err := findMissingContainers(projectEnts, profileEnts)
 	if err != nil {
-		return false, fmt.Errorf("failed to check missing containers: %s", err)
+		return fmt.Errorf("failed to check missing containers: %s", err)
 	}
-
 	if len(missingContainers) > 0 {
-		return false, fmt.Errorf("project uses containers that are missing from the provisioning profile: %v", missingContainers)
+		return NonmatchingProfileError{
+			Reason: fmt.Sprintf("project uses containers that are missing from the provisioning profile: %v", missingContainers),
+		}
 	}
 
 	bundleIDresp, err := client.Provisioning.BundleID(prof.Relationships.BundleID.Links.Related)
 	if err != nil {
-		return false, err
+		return err
 	}
+
 	return CheckBundleIDEntitlements(client, bundleIDresp.Data, projectEntitlements)
 }
 
@@ -124,7 +149,7 @@ func findMissingContainers(projectEnts, profileEnts serialized.Object) ([]string
 	return missing, nil
 }
 
-func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconnect.Profile, certificateIDs []string) (bool, error) {
+func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconnect.Profile, certificateIDs []string) error {
 	var nextPageURL string
 	var certificates []appstoreconnect.Certificate
 	for {
@@ -136,7 +161,7 @@ func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconne
 			},
 		)
 		if err != nil {
-			return false, err
+			return wrapInProfileError(err)
 		}
 
 		certificates = append(certificates, response.Data...)
@@ -153,13 +178,15 @@ func checkProfileCertificates(client *appstoreconnect.Client, prof appstoreconne
 	}
 	for _, id := range certificateIDs {
 		if !ids[id] {
-			return false, nil
+			return NonmatchingProfileError{
+				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
+			}
 		}
 	}
-	return true, nil
+	return nil
 }
 
-func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Profile, deviceIDs []string) (bool, error) {
+func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Profile, deviceIDs []string) error {
 	var nextPageURL string
 	ids := map[string]bool{}
 	for {
@@ -171,7 +198,7 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 			},
 		)
 		if err != nil {
-			return false, err
+			return wrapInProfileError(err)
 		}
 
 		for _, dev := range response.Data {
@@ -186,10 +213,13 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 
 	for _, id := range deviceIDs {
 		if !ids[id] {
-			return false, nil
+			return NonmatchingProfileError{
+				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
+			}
 		}
 	}
-	return true, nil
+
+	return nil
 }
 
 func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) bool {
@@ -201,21 +231,19 @@ func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) boo
 }
 
 // CheckProfile ...
-func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) (bool, error) {
+func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
 	if isProfileExpired(prof, minProfileDaysValid) {
-		return false, nil
+		return NonmatchingProfileError{
+			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
+		}
 	}
 
-	if ok, err := checkProfileEntitlements(client, prof, entitlements); err != nil {
-		return false, err
-	} else if !ok {
-		return false, nil
+	if err := checkProfileEntitlements(client, prof, entitlements); err != nil {
+		return err
 	}
 
-	if ok, err := checkProfileCertificates(client, prof, certificateIDs); err != nil {
-		return false, err
-	} else if !ok {
-		return false, nil
+	if err := checkProfileCertificates(client, prof, certificateIDs); err != nil {
+		return err
 	}
 
 	return checkProfileDevices(client, prof, deviceIDs)
@@ -223,7 +251,17 @@ func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, 
 
 // DeleteProfile ...
 func DeleteProfile(client *appstoreconnect.Client, id string) error {
-	return client.Provisioning.DeleteProfile(id)
+	if err := client.Provisioning.DeleteProfile(id); err != nil {
+		if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
+			if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
+				return nil
+			}
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // CreateProfile ...

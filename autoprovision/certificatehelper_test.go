@@ -268,7 +268,7 @@ func TestGetValidCertificates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetValidCertificates(tt.args.localCertificates, tt.args.client, tt.args.requiredCertificateTypes, tt.args.teamID)
+			got, err := GetValidCertificates(tt.args.localCertificates, tt.args.client, tt.args.requiredCertificateTypes, tt.args.teamID, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetValidCertificates() error = %v, wantErr %v", err, tt.wantErr)
 				return

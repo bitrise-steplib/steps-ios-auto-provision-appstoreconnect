@@ -86,7 +86,7 @@ func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]ser
 			return nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 
-		entitlements, err := p.targetEntitlements(target.Name, p.Configuration)
+		entitlements, err := p.targetEntitlements(target.Name, p.Configuration, bundleID)
 		if err != nil && !serialized.IsKeyNotFoundError(err) {
 			return nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
@@ -258,7 +258,7 @@ func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 
 	log.Debugf("CFBundleIdentifier defined with variable: %s, trying to resolve it...", bundleID)
 
-	resolved, err := resolveBundleID(bundleID, settings)
+	resolved, err := expandTargetSetting(bundleID, settings)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve bundle ID: %s", err)
 	}
@@ -268,12 +268,48 @@ func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 	return resolved, nil
 }
 
-func (p *ProjectHelper) targetEntitlements(name, config string) (serialized.Object, error) {
-	o, err := p.XcProj.TargetCodeSignEntitlements(name, config)
+func (p *ProjectHelper) targetEntitlements(name, config, bundleID string) (serialized.Object, error) {
+	entitlements, err := p.XcProj.TargetCodeSignEntitlements(name, config)
 	if err != nil && !serialized.IsKeyNotFoundError(err) {
 		return nil, err
 	}
-	return o, nil
+
+	return resolveEntitlementVariables(Entitlement(entitlements), bundleID)
+}
+
+// resolveEntitlementVariables expands variables in the project entitlements.
+// Entitlement values can contain variables, for example: `iCloud.$(CFBundleIdentifier)`.
+// Expanding iCloud Container values only, as they are compared to the profile values later.
+// Expand CFBundleIdentifier variable only, other variables are not yet supported.
+func resolveEntitlementVariables(entitlements Entitlement, bundleID string) (serialized.Object, error) {
+	containers, err := entitlements.ICloudContainers()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(containers) == 0 {
+		return serialized.Object(entitlements), nil
+	}
+
+	var expandedContainers []interface{}
+	for _, container := range containers {
+		if strings.ContainsRune(container, '$') {
+			expanded, err := expandTargetSetting(container, serialized.Object{"CFBundleIdentifier": bundleID})
+			if err != nil {
+				log.Warnf("Ignoring iCloud container ID (%s) as can not expand variable: %v", container, err)
+				continue
+			}
+
+			expandedContainers = append(expandedContainers, expanded)
+			continue
+		}
+
+		expandedContainers = append(expandedContainers, container)
+	}
+
+	entitlements[iCloudIdentifiersEntitlementKey] = expandedContainers
+
+	return serialized.Object(entitlements), nil
 }
 
 // 'iPhone Developer' should match to 'iPhone Developer: Bitrise Bot (ABCD)'
@@ -287,28 +323,29 @@ func codesignIdentitesMatch(identity1, identity2 string) bool {
 	return false
 }
 
-func resolveBundleID(bundleID string, buildSettings serialized.Object) (string, error) {
-	r, err := regexp.Compile(".+[.][$][(].+[:].+[)]*")
+func expandTargetSetting(value string, buildSettings serialized.Object) (string, error) {
+	regexpStr := `^(.*)[$][({](.+?)([:].+)?[})](.*)$`
+	r, err := regexp.Compile(regexpStr)
 	if err != nil {
 		return "", err
 	}
 
-	if !r.MatchString(bundleID) {
-		return "", fmt.Errorf("failed to match regex .+[.][$][(].+[:].+[)]* to %s bundleID", bundleID)
+	captures := r.FindStringSubmatch(value)
+
+	if len(captures) < 5 {
+		return "", fmt.Errorf("failed to match regex '%s' to %s target build setting", regexpStr, value)
 	}
 
-	captures := r.FindString(bundleID)
-
-	prefix := strings.Split(captures, "$")[0]
-	envKey := strings.Split(strings.SplitAfter(captures, "(")[1], ":")[0]
-	suffix := strings.Join(strings.SplitAfter(captures, ")")[1:], "")
+	prefix := captures[1]
+	envKey := captures[2]
+	suffix := captures[4]
 
 	envValue, err := buildSettings.String(envKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to find environment variable value for key %s: %s", envKey, err)
 	}
-	return prefix + envValue + suffix, nil
 
+	return prefix + envValue + suffix, nil
 }
 
 func configuration(configurationName string, scheme xcscheme.Scheme, xcproj xcodeproj.XcodeProj) (string, error) {

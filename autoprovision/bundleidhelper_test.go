@@ -11,7 +11,6 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 		name                 string
 		bundleIDEntitlements []appstoreconnect.BundleIDCapability
 		projectEntitlements  Entitlement
-		want                 bool
 		wantErr              bool
 	}{
 		{
@@ -23,19 +22,28 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 				"com.apple.developer.icloud-container-identifiers":   "",
 				"com.apple.developer.ubiquity-container-identifiers": "",
 			}),
-			want:    true,
 			wantErr: false,
+		},
+		{
+			name:                 "Needed to register entitlements",
+			bundleIDEntitlements: []appstoreconnect.BundleIDCapability{},
+			projectEntitlements: Entitlement(map[string]interface{}{
+				"com.apple.developer.applesignin": "",
+			}),
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := checkBundleIDEntitlements(tt.bundleIDEntitlements, tt.projectEntitlements)
+			err := checkBundleIDEntitlements(tt.bundleIDEntitlements, tt.projectEntitlements)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("checkBundleIDEntitlements() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("checkBundleIDEntitlements() = %v, want %v", got, tt.want)
+			if tt.wantErr {
+				if mErr, ok := err.(NonmatchingProfileError); !ok {
+					t.Errorf("checkBundleIDEntitlements() error = %v, it is not expected type", mErr)
+				}
 			}
 		})
 	}
