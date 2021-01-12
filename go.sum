@@ -1,5 +1,7 @@
 github.com/bitrise-io/bitrise-add-new-project v0.0.0-20200924142630-b81d78fe2fd3 h1:NS7ZXBMFyRLzaLLN7aNnJWQKYg4/ivvwEe+euiLdKHA=
 github.com/bitrise-io/bitrise-add-new-project v0.0.0-20200924142630-b81d78fe2fd3/go.mod h1:2jszWdzj+13aj51nbF1ZDW/E7Ogpwn7FTxdg8ljEk6g=
+github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210108155445-42984b5f8f91 h1:3dmqDvE2dUc5SQs0Ve+dgI4EEOQObme7rNPHV/HxTI4=
+github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210108155445-42984b5f8f91/go.mod h1:2jszWdzj+13aj51nbF1ZDW/E7Ogpwn7FTxdg8ljEk6g=
 github.com/bitrise-io/go-steputils v0.0.0-20201016102104-03ae3a6ded35 h1:iKtx/RxSrA9xcjZ17W3yu3jMzwowNB6nxLF/1BwVYQ8=
 github.com/bitrise-io/go-steputils v0.0.0-20201016102104-03ae3a6ded35/go.mod h1:GXgBV3Frd3qcnsg+NryQTyx1CHjZHr/2w7Bx4WAcB4o=
 github.com/bitrise-io/go-utils v0.0.0-20201019131314-6cc2aa4d248a h1:i1hLZTX2L30oYmaeSnSjDRPQDvwgsFkH4OCr16Vyy+8=
@@ -8,6 +10,8 @@ github.com/bitrise-io/go-utils v0.0.0-20201211082830-859032e9adf0 h1:HR5o2gHKo0r
 github.com/bitrise-io/go-utils v0.0.0-20201211082830-859032e9adf0/go.mod h1:tTEsKvbz1LbzuN/KpVFHXnLtcAPdEgIdM41s0lL407s=
 github.com/bitrise-io/go-xcode v0.0.0-20201002120723-7d05f87f6e9c h1:y+kKHSWXTswG1QJ+lFt+O8tqZI4DXBZr5I2fs/fpchY=
 github.com/bitrise-io/go-xcode v0.0.0-20201002120723-7d05f87f6e9c/go.mod h1:EFvdJln2CESNPSz2+ChAGOtfHNN/l56csk1nuRnz8nI=
+github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c h1:qQN0yfeDE0rxt6/HPrGzfbeB77A3thPLgB7zMs4jLKA=
+github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c/go.mod h1:EFvdJln2CESNPSz2+ChAGOtfHNN/l56csk1nuRnz8nI=
 github.com/bitrise-io/xcode-project v0.0.0-20201201152656-317aa3ad821e h1:x9xn4loHxRrFg0aUdgNPOO/AeTZz8Q495mwqjM0YBl4=
 github.com/bitrise-io/xcode-project v0.0.0-20201201152656-317aa3ad821e/go.mod h1:L7ue7ix2GIAf0pQovKmWub7l956nsHU68kk5fU4KczQ=
 github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021 h1:8Z9OwHyonaBSNto7VT3gD76n8hK2e2KL9WfTpY+9k7Y=
