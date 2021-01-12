@@ -132,12 +132,6 @@ func (p *ProjectHelper) ProjectTeamID(config string) (string, error) {
 		if currentTeamID == "" {
 			targetAttributes, err := p.XcProj.Proj.Attributes.TargetAttributes.Object(target.ID)
 			if err != nil {
-				// Skip projects not using target attributes
-				if serialized.IsKeyNotFoundError(err) {
-					log.Debugf("Target (%s) does not have TargetAttributes: No Team ID found.", target.Name)
-					continue
-				}
-
 				return "", fmt.Errorf("failed to parse target (%s) attributes: %s", target.ID, err)
 			}
 
