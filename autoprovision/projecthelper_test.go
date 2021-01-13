@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-io/xcode-project/xcodeproj"
+	"github.com/stretchr/testify/require"
 )
 
 var schemeCases []string
@@ -99,6 +100,20 @@ func TestNew(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
+	log.SetEnableDebugLog(true)
+
+	helper := ProjectHelper{
+		Targets: []xcodeproj.Target{{Name: "AppTarget"}},
+		// bypass calling xcodebuild -showBuildSettings
+		buildSettingsCache: map[string]map[string]serialized.Object{"AppTarget": {"Debug": {}}},
+		// project withouth TargetAttributes
+		XcProj: xcodeproj.XcodeProj{Proj: xcodeproj.Proj{Attributes: xcodeproj.ProjectAtributes{TargetAttributes: nil}}},
+	}
+	_, err := helper.ProjectTeamID("Debug")
+	require.NoError(t, err)
 }
 
 func TestProjectHelper_ProjectTeamID(t *testing.T) {

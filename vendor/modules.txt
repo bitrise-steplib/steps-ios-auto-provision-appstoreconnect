@@ -1,11 +1,11 @@
-# github.com/bitrise-io/bitrise-add-new-project v0.0.0-20200924142630-b81d78fe2fd3
+# github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210108155445-42984b5f8f91
 ## explicit
 github.com/bitrise-io/bitrise-add-new-project/httputil
 # github.com/bitrise-io/go-steputils v0.0.0-20201016102104-03ae3a6ded35
 ## explicit
 github.com/bitrise-io/go-steputils/stepconf
 github.com/bitrise-io/go-steputils/tools
-# github.com/bitrise-io/go-utils v0.0.0-20201019131314-6cc2aa4d248a
+# github.com/bitrise-io/go-utils v0.0.0-20201211082830-859032e9adf0
 ## explicit
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
@@ -19,7 +19,7 @@ github.com/bitrise-io/go-utils/pkcs12/internal/rc2
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-xcode v0.0.0-20201002120723-7d05f87f6e9c
+# github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c
 ## explicit
 github.com/bitrise-io/go-xcode/certificateutil
 github.com/bitrise-io/go-xcode/exportoptions
@@ -27,7 +27,7 @@ github.com/bitrise-io/go-xcode/models
 github.com/bitrise-io/go-xcode/plistutil
 github.com/bitrise-io/go-xcode/profileutil
 github.com/bitrise-io/go-xcode/utility
-# github.com/bitrise-io/xcode-project v0.0.0-20201201152656-317aa3ad821e
+# github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021
 ## explicit
 github.com/bitrise-io/xcode-project
 github.com/bitrise-io/xcode-project/pretty
@@ -44,8 +44,6 @@ github.com/dgrijalva/jwt-go
 # github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 ## explicit
 github.com/fullsailor/pkcs7
-# github.com/google/go-cmp v0.5.4
-## explicit
 # github.com/google/go-querystring v1.0.0
 ## explicit
 github.com/google/go-querystring/query
@@ -59,19 +57,19 @@ github.com/pkg/errors
 github.com/pmezard/go-difflib/difflib
 # github.com/stretchr/objx v0.1.0
 github.com/stretchr/objx
-# github.com/stretchr/testify v1.5.1
+# github.com/stretchr/testify v1.6.1
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
-# golang.org/x/text v0.3.3
+# golang.org/x/text v0.3.5
 ## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
 # golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 ## explicit
-# gopkg.in/yaml.v2 v2.2.8
-gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3
 # howett.net/plist v0.0.0-20201203080718-1454fab16a06
 ## explicit
 howett.net/plist
