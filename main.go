@@ -508,7 +508,7 @@ func main() {
 	// Ensure devices
 	var devices []appstoreconnect.Device
 
-	if needToRegisterDevices(distrTypes) {
+	if needToRegisterDevices(distrTypes) && conn != nil {
 		fmt.Println()
 		log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
 
