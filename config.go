@@ -6,6 +6,7 @@ import (
 
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/appleauth"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
@@ -16,6 +17,10 @@ type CertificateFileURL struct {
 
 // Config holds the step inputs
 type Config struct {
+	BitriseConnection string `env:"connection,opt[automatic,api_key,off]"`
+	APIKeyPath        string `env:"api_key_path"`
+	APIIssuer         string `env:"api_issuer"`
+
 	BuildAPIToken string `env:"build_api_token,required"`
 	BuildURL      string `env:"build_url,required"`
 
@@ -72,4 +77,22 @@ func (c Config) CertificateFileURLs() ([]CertificateFileURL, error) {
 // SplitAndClean ...
 func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 	return sliceutil.CleanWhitespace(strings.Split(list, sep), omitEmpty)
+}
+
+func parseAuthSources(bitriseConnection string) ([]appleauth.Source, error) {
+	switch bitriseConnection {
+	case "automatic":
+		return []appleauth.Source{
+			&appleauth.ConnectionAPIKeySource{},
+			&appleauth.InputAPIKeySource{},
+		}, nil
+	case "api_key":
+		return []appleauth.Source{&appleauth.ConnectionAPIKeySource{}}, nil
+	case "off":
+		return []appleauth.Source{
+			&appleauth.InputAPIKeySource{},
+		}, nil
+	default:
+		return nil, fmt.Errorf("invalid connection input: %s", bitriseConnection)
+	}
 }
