@@ -17,9 +17,10 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-io/xcode-project/xcodeproj"
+	"github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/appleauth"
+	"github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportaldata"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
 )
 
@@ -337,6 +338,25 @@ func isMultipleProfileErr(err error) bool {
 	return strings.Contains(strings.ToLower(err.Error()), "multiple profiles found with the name")
 }
 
+const notConnected = `Connected Apple Developer Portal Account not found.
+Most likely because there is no Apple Developer Portal Account connected to the build, or the build is running locally.
+Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
+
+func handleSessionDataError(err error) {
+	if err == nil {
+		return
+	}
+
+	if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusNotFound {
+		log.Debugf("")
+		log.Debugf("%s", notConnected)
+	} else {
+		fmt.Println()
+		log.Errorf("Failed to activate Bitrise Apple Developer Portal connection: %s", err)
+		log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
+	}
+}
+
 func main() {
 	var stepConf Config
 	if err := stepconf.Parse(&stepConf); err != nil {
@@ -350,13 +370,48 @@ func main() {
 	fmt.Println()
 	log.Infof("Creating AppstoreConnectAPI client")
 
-	devPortalDataDownloader := devportaldata.NewDownloader(stepConf.BuildURL, stepConf.BuildAPIToken)
-	devPortalData, err := devPortalDataDownloader.GetDevPortalData()
-	if err != nil {
-		failf("Failed get developer portal data: %s", err)
+	authInputs := appleauth.Inputs{
+		APIIssuer:  stepConf.APIIssuer,
+		APIKeyPath: stepConf.APIKeyPath,
+	}
+	if err := authInputs.Validate(); err != nil {
+		failf("Issue with authentication related inputs: %v", err)
 	}
 
-	client := appstoreconnect.NewClient(http.DefaultClient, devPortalData.KeyID, devPortalData.IssuerID, []byte(devPortalData.PrivateKeyWithHeader()))
+	authSources, err := parseAuthSources(stepConf.BitriseConnection)
+	if err != nil {
+		failf("Input error: unexpected value for Bitrise Apple Developer Connection (%s)", stepConf.BitriseConnection)
+	}
+
+	var devportalConnectionProvider *devportalservice.BitriseClient
+	if stepConf.BuildURL != "" && stepConf.BuildAPIToken != "" {
+		devportalConnectionProvider = devportalservice.NewBitriseClient(http.DefaultClient, stepConf.BuildURL, string(stepConf.BuildAPIToken))
+	} else {
+		log.Warnf("Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
+	}
+	var conn *devportalservice.AppleDeveloperConnection
+	if stepConf.BitriseConnection != "off" && devportalConnectionProvider != nil {
+		var err error
+		conn, err = devportalConnectionProvider.GetAppleDeveloperConnection()
+		if err != nil {
+			handleSessionDataError(err)
+		}
+
+		if conn == nil || (conn.JWTConnection == nil && conn.SessionConnection == nil) {
+			fmt.Println()
+			log.Debugf("%s", notConnected)
+		}
+	}
+
+	authConfig, err := appleauth.Select(conn, authSources, authInputs)
+	if err != nil {
+		failf("Could not configure Apple Service authentication: %v", err)
+	}
+	if authConfig.AppleID != nil && authConfig.AppleID.AppSpecificPassword == "" {
+		log.Warnf("If 2FA enabled, Application-specific password is required when using Apple ID authentication.")
+	}
+
+	client := appstoreconnect.NewClient(http.DefaultClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
 
 	// Turn off client debug logs includeing HTTP call debug logs
 	client.EnableDebugLogs = false
@@ -458,9 +513,9 @@ func main() {
 
 	if needToRegisterDevices(distrTypes) {
 		fmt.Println()
-		log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(devPortalData.TestDevices))
+		log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
 
-		for _, d := range devPortalData.TestDevices {
+		for _, d := range conn.TestDevices {
 			log.Debugf("- %s", d)
 		}
 
@@ -475,7 +530,7 @@ func main() {
 			log.Debugf("- %s, %s UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
 		}
 
-		for _, testDevice := range devPortalData.TestDevices {
+		for _, testDevice := range conn.TestDevices {
 			log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
 
 			found := false
