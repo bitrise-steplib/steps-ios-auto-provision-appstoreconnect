@@ -88,7 +88,7 @@ workflows:
       - BITRISE_CONFIGURATION: Release
       - DISTRIBUTION_TYPE: ad-hoc
       - GENERATE_PROFILES: "yes"
-      - CONNECTION: "api_key"
+      - CONNECTION: "off"
       - API_KEY_PATH: $BITRISEIO_ASC_API_KEY_URL
       - API_ISSUER: $ASC_API_KEY_ISSUER
     after_run:
@@ -103,7 +103,7 @@ workflows:
       - BITRISE_CONFIGURATION:
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "no"
-      - CONNECTION: "automatic"
+      - CONNECTION: "api_key"
       - API_KEY_PATH:
       - API_ISSUER: 
     after_run:
