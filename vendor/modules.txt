@@ -36,7 +36,7 @@ github.com/bitrise-io/xcode-project/xcodebuild
 github.com/bitrise-io/xcode-project/xcodeproj
 github.com/bitrise-io/xcode-project/xcscheme
 github.com/bitrise-io/xcode-project/xcworkspace
-# github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202080906-d0d310563f29
+# github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202124928-5bcafbf745ab
 ## explicit
 github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/appleauth
 github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/devportalservice
@@ -51,11 +51,6 @@ github.com/fullsailor/pkcs7
 # github.com/google/go-querystring v1.0.0
 ## explicit
 github.com/google/go-querystring/query
-# github.com/hashicorp/go-cleanhttp v0.5.1
-github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-retryablehttp v0.6.8
-## explicit
-github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/go-version v1.2.1
 ## explicit
 github.com/hashicorp/go-version

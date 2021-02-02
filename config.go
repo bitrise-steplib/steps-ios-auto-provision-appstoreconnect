@@ -87,7 +87,9 @@ func parseAuthSources(bitriseConnection string) ([]appleauth.Source, error) {
 			&appleauth.InputAPIKeySource{},
 		}, nil
 	case "api_key":
-		return []appleauth.Source{&appleauth.ConnectionAPIKeySource{}}, nil
+		return []appleauth.Source{
+			&appleauth.ConnectionAPIKeySource{},
+		}, nil
 	case "off":
 		return []appleauth.Source{
 			&appleauth.InputAPIKeySource{},
