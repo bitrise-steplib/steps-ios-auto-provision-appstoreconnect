@@ -25,6 +25,10 @@ app:
 
 workflows:
   test:
+    envs:
+    - CONNECTION: "automatic"
+    - API_KEY_PATH:
+    - API_ISSUER: 
     before_run:
       - audit-this-step
     steps:
@@ -244,6 +248,9 @@ workflows:
           title: Step Test
           run_if: true
           inputs:
+            - connection: $CONNECTION
+            - api_key_path: $API_KEY_PATH
+            - api_issuer: $API_ISSUER
             - build_api_token: $BITRISE_BUILD_API_TOKEN
             - build_url: $BITRISE_BUILD_URL
             - certificate_urls: $BITRISE_CERTIFICATE_URL
