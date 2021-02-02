@@ -21,9 +21,6 @@ type Config struct {
 	APIKeyPath        string `env:"api_key_path"`
 	APIIssuer         string `env:"api_issuer"`
 
-	BuildAPIToken string `env:"build_api_token,required"`
-	BuildURL      string `env:"build_url,required"`
-
 	ProjectPath   string `env:"project_path,dir"`
 	Scheme        string `env:"scheme,required"`
 	Configuration string `env:"configuration"`
@@ -37,6 +34,9 @@ type Config struct {
 	KeychainPassword          stepconf.Secret `env:"keychain_password,required"`
 
 	VerboseLog bool `env:"verbose_log,opt[no,yes]"`
+
+	BuildAPIToken string `env:"build_api_token"`
+	BuildURL      string `env:"build_url"`
 }
 
 // DistributionType ...

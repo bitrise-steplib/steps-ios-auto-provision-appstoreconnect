@@ -15,6 +15,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/xcode-project/pretty"
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-io/xcode-project/xcodeproj"
 	"github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/appleauth"
@@ -407,9 +408,8 @@ func main() {
 	if err != nil {
 		failf("Could not configure Apple Service authentication: %v", err)
 	}
-	if authConfig.AppleID != nil && authConfig.AppleID.AppSpecificPassword == "" {
-		log.Warnf("If 2FA enabled, Application-specific password is required when using Apple ID authentication.")
-	}
+
+	fmt.Println(pretty.Object(authConfig.APIKey))
 
 	client := appstoreconnect.NewClient(http.DefaultClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
 
