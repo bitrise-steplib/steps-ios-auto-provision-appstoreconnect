@@ -198,7 +198,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 
 	containers, err := capabilities.ICloudContainers()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get list of iCloud containers: %s", err)
+		return nil, fmt.Errorf("failed to get list of iCloud containers: %s", err)
 	}
 
 	if len(containers) > 0 {
