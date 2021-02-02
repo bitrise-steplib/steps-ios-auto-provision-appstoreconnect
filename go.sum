@@ -10,8 +10,8 @@ github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c h1:qQN0yfeDE0r
 github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c/go.mod h1:EFvdJln2CESNPSz2+ChAGOtfHNN/l56csk1nuRnz8nI=
 github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021 h1:8Z9OwHyonaBSNto7VT3gD76n8hK2e2KL9WfTpY+9k7Y=
 github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021/go.mod h1:R2iDrjJlNQtVwIdXT+F9bcx/YTNJPdd0tXfFRJsxHaM=
-github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202124928-5bcafbf745ab h1:8JeXX3p/EGUE1MksdCcGUjXkFE/JHrvakWlp5UNYlU0=
-github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202124928-5bcafbf745ab/go.mod h1:mG5kKjSyK3sZNp7e5QpFBAtxJRWeA+4PSMh3ZfwggNs=
+github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202131141-60bc9fc816c7 h1:+bJZKyPWA75DynhwROWZ2xZ7bsz8FbIv+Qik6ApGSSo=
+github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202131141-60bc9fc816c7/go.mod h1:mG5kKjSyK3sZNp7e5QpFBAtxJRWeA+4PSMh3ZfwggNs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

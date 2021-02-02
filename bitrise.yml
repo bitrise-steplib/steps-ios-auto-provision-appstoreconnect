@@ -27,10 +27,6 @@ app:
 
 workflows:
   test:
-    envs:
-    - CONNECTION: "automatic"
-    - API_KEY_PATH:
-    - API_ISSUER: 
     before_run:
       - audit-this-step
     steps:
@@ -107,6 +103,9 @@ workflows:
       - BITRISE_CONFIGURATION:
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "no"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -119,6 +118,9 @@ workflows:
       - BITRISE_CONFIGURATION:
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -131,6 +133,9 @@ workflows:
       - BITRISE_CONFIGURATION:
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -144,6 +149,9 @@ workflows:
       - INSTALL_PODS: "true"
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -157,6 +165,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -170,6 +181,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -183,6 +197,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "no"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -196,6 +213,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
       - GENERATE_PROFILES: "no"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -205,15 +225,18 @@ workflows:
       Test only wired in on Bitrise.io, since this workflow needs to run on new Xcode 11 stack,  
       while previous tests are running on stacks with lower Xcode version.
     envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-ios-simple-objc.git
-    - BRANCH: new-certificates
-    - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
-    - BITRISE_SCHEME: ios-simple-objc
-    - BITRISE_CONFIGURATION: Release
-    - DISTRIBUTION_TYPE: app-store
-    - GENERATE_PROFILES: "yes"
-    - BITRISE_CERTIFICATE_PASSPHRASE: |
-    - BITRISE_CERTIFICATE_URL: $BITRISEIO_DEVELOPMENT_AND_DISTRIBUTION_CERTIFICATES_URL
+      - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-ios-simple-objc.git
+      - BRANCH: new-certificates
+      - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
+      - BITRISE_SCHEME: ios-simple-objc
+      - BITRISE_CONFIGURATION: Release
+      - DISTRIBUTION_TYPE: app-store
+      - GENERATE_PROFILES: "yes"
+      - BITRISE_CERTIFICATE_PASSPHRASE: |
+      - BITRISE_CERTIFICATE_URL: $BITRISEIO_DEVELOPMENT_AND_DISTRIBUTION_CERTIFICATES_URL
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
     - _common
 
