@@ -11,6 +11,8 @@ app:
     - TEAM_ID: $TEAM_ID
     - KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
+    - ASC_API_KEY_ISSUER: $ASC_API_KEY_ISSUER
+    - BITRISEIO_ASC_API_KEY_URL: $BITRISEIO_ASC_API_KEY_URL
 
     # Used for development
     - LOCAL_SAMPLE_PATH: $LOCAL_SAMPLE_PATH
@@ -90,6 +92,9 @@ workflows:
       - BITRISE_CONFIGURATION: Release
       - DISTRIBUTION_TYPE: ad-hoc
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "api_key"
+      - API_KEY_PATH: $BITRISEIO_ASC_API_KEY_URL
+      - API_ISSUER: $ASC_API_KEY_ISSUER
     after_run:
       - _common
 
