@@ -181,6 +181,7 @@ inputs:
       title: Build API token
       description: |-
         Every build gets a temporary Bitrise API token to download the connected API key in a JSON file.
+      is_dont_change_value: true
   - build_url: $BITRISE_BUILD_URL
     opts:
       title: Build URL
