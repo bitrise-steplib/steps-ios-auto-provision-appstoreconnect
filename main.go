@@ -382,7 +382,7 @@ func main() {
 
 	authSources, err := parseAuthSources(stepConf.BitriseConnection)
 	if err != nil {
-		failf("Input error: unexpected value for Bitrise Apple Developer Connection (%s)", stepConf.BitriseConnection)
+		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", stepConf.BitriseConnection)
 	}
 
 	var devportalConnectionProvider *devportalservice.BitriseClient
