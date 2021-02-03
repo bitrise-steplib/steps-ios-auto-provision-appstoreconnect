@@ -400,9 +400,9 @@ func main() {
 			handleSessionDataError(err)
 		}
 
-		if conn == nil || (conn.APIKeyConnection == nil && conn.AppleIDConnection == nil) {
+		if conn != nil && (conn.APIKeyConnection == nil) {
 			fmt.Println()
-			log.Debugf("%s", notConnected)
+			log.Warnf("%s", notConnected)
 		}
 	}
 
