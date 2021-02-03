@@ -97,7 +97,7 @@ inputs:
     opts:
       title: "API Key Issuer ID"
       description: |-
-        Issuer ID. Required if API Key URL (api_key_path) is specified.
+        Issuer ID. Required if **API Key URL** (`api_key_path`) is specified.
   - distribution_type: development
     opts:
       title: Distribution type
