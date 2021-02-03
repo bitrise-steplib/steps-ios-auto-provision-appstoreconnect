@@ -67,14 +67,14 @@ inputs:
   - connection: "automatic"
     opts:
       title: Bitrise Apple Developer Connection
-      summary: The Apple Service authentication method the Step uses. By default, Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.
+      summary: The Apple Service authentication method the Step uses. By default, the Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.
       description: |-
-        The input determines the method used for Apple Service authentication. By default, Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.
+        The input determines the method used for Apple Service authentication. By default, the Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.
         
-        You can choose to use Bitrise Apple Developer connection or you can tell the Step to only use Step inputs for authentication:
-        - `automatic`: Use Apple Developer connection based on API key. Step inputs are only used as a fallback.
+        You can either use the established Bitrise Apple Developer connection or you can tell the Step to only use the Step inputs for authentication.
+        - `automatic`: Use the Apple Developer connection based on API key. Step inputs are only used as a fallback.
         - `api_key`: Use the Apple Developer connection based on API key authentication. Authentication-related Step inputs are ignored.
-        - `off`: Do not use any Apple Developer Connection. Only authentication-related Step inputs are considered.
+        - `off`: Do not use any already configured Apple Developer Connection. Only authentication-related Step inputs are considered.
       is_required: true
       value_options:
       - "automatic"
@@ -89,7 +89,7 @@ inputs:
         
         For example: `https://URL/TO/AuthKey_something.p8` or `file:///PATH/TO/AuthKey_something.p8`
         
-        You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the environment variable for the file here.
+        You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the Environment Variable for the file here.
         
         For example: `$BITRISEIO_MYKEY_URL`
       is_sensitive: true
