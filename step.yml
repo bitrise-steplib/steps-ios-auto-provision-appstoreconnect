@@ -187,6 +187,7 @@ inputs:
       title: Build URL
       description: |-
         URL of the current build or local path URL to your apple_developer_portal_data.json.
+      is_dont_change_value: true
 outputs:
   - BITRISE_EXPORT_METHOD:
     opts:
