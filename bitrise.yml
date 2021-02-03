@@ -76,6 +76,9 @@ workflows:
       - DISTRIBUTION_TYPE: development
       - GENERATE_PROFILES: "yes"
       - KEYCHAIN_PATH: $LOCAL_KEYCHAIN_PATH
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
