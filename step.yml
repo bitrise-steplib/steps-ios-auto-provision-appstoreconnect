@@ -71,7 +71,7 @@ inputs:
       description: |-
         The input determines the method used for Apple Service authentication. By default, Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.
         
-        You can choose if Bitrise Apple Developer connection to use or you can tell the Step to only use Step inputs for authentication:
+        You can choose to use Bitrise Apple Developer connection or you can tell the Step to only use Step inputs for authentication:
         - `automatic`: Use Apple Developer connection based on API key. Step inputs are only used as a fallback.
         - `api_key`: Use the Apple Developer connection based on API key authentication. Authentication-related Step inputs are ignored.
         - `off`: Do not use any Apple Developer Connection. Only authentication-related Step inputs are considered.
@@ -216,4 +216,3 @@ outputs:
       title: "The main target's production provisioning profile UUID"
       description: |-
         The production provisioning profile's UUID which belongs to the main target, for example, `c5be4123-1234-4f9d-9843-0d9be985a068`.
-
