@@ -18,7 +18,7 @@ type CertificateFileURL struct {
 // Config holds the step inputs
 type Config struct {
 	BitriseConnection string `env:"connection,opt[automatic,api_key,off]"`
-	APIKeyPath        string `env:"api_key_path"`
+	APIKeyPath        stepconf.Secret `env:"api_key_path"`
 	APIIssuer         string `env:"api_issuer"`
 
 	ProjectPath   string `env:"project_path,dir"`
