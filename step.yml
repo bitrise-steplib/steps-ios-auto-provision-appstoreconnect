@@ -86,8 +86,11 @@ inputs:
       summary: Path to local or remote file
       description: |-
         Specify the path in an URL format where your API key is stored.
+        
         For example: `https://URL/TO/AuthKey_something.p8` or `file:///PATH/TO/AuthKey_something.p8`
+        
         You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the environment variable for the file here.
+        
         For example: `$BITRISEIO_MYKEY_URL`
       is_sensitive: true
   - api_issuer: ""
