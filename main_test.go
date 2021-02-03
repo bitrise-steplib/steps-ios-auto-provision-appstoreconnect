@@ -138,7 +138,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 	manager := ProfileManager{
 		client: client,
 		// cache io.bitrise.testapp bundle ID, so that no need to mock bundle ID GET requests
-		bundleIDByBundleIDIdentifer: map[string]*appstoreconnect.BundleID{"io.bitrise.testapp": &appstoreconnect.BundleID{
+		bundleIDByBundleIDIdentifer: map[string]*appstoreconnect.BundleID{"io.bitrise.testapp": {
 			Relationships: appstoreconnect.BundleIDRelationships{
 				Profiles: appstoreconnect.RelationshipsLinks{
 					Links: appstoreconnect.Links{
