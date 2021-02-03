@@ -374,7 +374,7 @@ func main() {
 
 	authInputs := appleauth.Inputs{
 		APIIssuer:  stepConf.APIIssuer,
-		APIKeyPath: stepConf.APIKeyPath,
+		APIKeyPath: string(stepConf.APIKeyPath),
 	}
 	if err := authInputs.Validate(); err != nil {
 		failf("Issue with authentication related inputs: %v", err)
