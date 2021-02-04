@@ -36,6 +36,10 @@ github.com/bitrise-io/xcode-project/xcodebuild
 github.com/bitrise-io/xcode-project/xcodeproj
 github.com/bitrise-io/xcode-project/xcscheme
 github.com/bitrise-io/xcode-project/xcworkspace
+# github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202131141-60bc9fc816c7
+## explicit
+github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/appleauth
+github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/devportalservice
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -57,7 +61,7 @@ github.com/pkg/errors
 github.com/pmezard/go-difflib/difflib
 # github.com/stretchr/objx v0.1.0
 github.com/stretchr/objx
-# github.com/stretchr/testify v1.6.1
+# github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock

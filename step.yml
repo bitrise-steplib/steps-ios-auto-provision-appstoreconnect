@@ -64,18 +64,40 @@ toolkit:
     package_name: github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
 
 inputs:
-  - build_api_token: $BITRISE_BUILD_API_TOKEN
+  - connection: "automatic"
     opts:
-      title: Build API token
+      title: Bitrise Apple Developer Connection
+      summary: The Apple Service authentication method the Step uses. By default, the Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.
       description: |-
-        Every build gets a temporary Bitrise API token to download the connected API key in a JSON file.
+        The input determines the method used for Apple Service authentication. By default, the Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.
+        
+        You can either use the established Bitrise Apple Developer connection or you can tell the Step to only use the Step inputs for authentication.
+        - `automatic`: Use the Apple Developer connection based on API key. Step inputs are only used as a fallback.
+        - `api_key`: Use the Apple Developer connection based on API key authentication. Authentication-related Step inputs are ignored.
+        - `off`: Do not use any already configured Apple Developer Connection. Only authentication-related Step inputs are considered.
       is_required: true
-  - build_url: $BITRISE_BUILD_URL
+      value_options:
+      - "automatic"
+      - "api_key"
+      - "off"
+  - api_key_path: ""
     opts:
-      title: Build URL
+      title: "API Key URL"
+      summary: Path to local or remote file
       description: |-
-        URL of the current build or local path URL to your apple_developer_portal_data.json.
-      is_required: true
+        Specify the path in an URL format where your API key is stored.
+        
+        For example: `https://URL/TO/AuthKey_something.p8` or `file:///PATH/TO/AuthKey_something.p8`
+        
+        You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the Environment Variable for the file here.
+        
+        For example: `$BITRISEIO_MYKEY_URL`
+      is_sensitive: true
+  - api_issuer: ""
+    opts:
+      title: "API Key Issuer ID"
+      description: |-
+        Issuer ID. Required if **API Key URL** (`api_key_path`) is specified.
   - distribution_type: development
     opts:
       title: Distribution type
@@ -154,6 +176,18 @@ inputs:
       description: The Keychain's password.
       is_required: true
       is_sensitive: true
+  - build_api_token: $BITRISE_BUILD_API_TOKEN
+    opts:
+      title: Build API token
+      description: |-
+        Every build gets a temporary Bitrise API token to download the connected API key in a JSON file.
+      is_dont_change_value: true
+  - build_url: $BITRISE_BUILD_URL
+    opts:
+      title: Build URL
+      description: |-
+        URL of the current build or local path URL to your apple_developer_portal_data.json.
+      is_dont_change_value: true
 outputs:
   - BITRISE_EXPORT_METHOD:
     opts:
@@ -187,4 +221,3 @@ outputs:
       title: "The main target's production provisioning profile UUID"
       description: |-
         The production provisioning profile's UUID which belongs to the main target, for example, `c5be4123-1234-4f9d-9843-0d9be985a068`.
-

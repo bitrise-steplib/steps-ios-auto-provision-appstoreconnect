@@ -11,6 +11,8 @@ app:
     - TEAM_ID: $TEAM_ID
     - KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
+    - ASC_API_KEY_ISSUER: $ASC_API_KEY_ISSUER
+    - BITRISEIO_ASC_API_KEY_URL: $BITRISEIO_ASC_API_KEY_URL
 
     # Used for development
     - LOCAL_SAMPLE_PATH: $LOCAL_SAMPLE_PATH
@@ -74,6 +76,9 @@ workflows:
       - DISTRIBUTION_TYPE: development
       - GENERATE_PROFILES: "yes"
       - KEYCHAIN_PATH: $LOCAL_KEYCHAIN_PATH
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -86,6 +91,9 @@ workflows:
       - BITRISE_CONFIGURATION: Release
       - DISTRIBUTION_TYPE: ad-hoc
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "off"
+      - API_KEY_PATH: $BITRISEIO_ASC_API_KEY_URL
+      - API_ISSUER: $ASC_API_KEY_ISSUER
     after_run:
       - _common
 
@@ -98,6 +106,9 @@ workflows:
       - BITRISE_CONFIGURATION:
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "no"
+      - CONNECTION: "api_key"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -110,6 +121,9 @@ workflows:
       - BITRISE_CONFIGURATION:
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -122,6 +136,9 @@ workflows:
       - BITRISE_CONFIGURATION:
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -135,6 +152,9 @@ workflows:
       - INSTALL_PODS: "true"
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -148,6 +168,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -161,6 +184,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
       - GENERATE_PROFILES: "yes"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -174,6 +200,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - GENERATE_PROFILES: "no"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -187,6 +216,9 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
       - GENERATE_PROFILES: "no"
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
       - _common
 
@@ -196,15 +228,18 @@ workflows:
       Test only wired in on Bitrise.io, since this workflow needs to run on new Xcode 11 stack,  
       while previous tests are running on stacks with lower Xcode version.
     envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-ios-simple-objc.git
-    - BRANCH: new-certificates
-    - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
-    - BITRISE_SCHEME: ios-simple-objc
-    - BITRISE_CONFIGURATION: Release
-    - DISTRIBUTION_TYPE: app-store
-    - GENERATE_PROFILES: "yes"
-    - BITRISE_CERTIFICATE_PASSPHRASE: |
-    - BITRISE_CERTIFICATE_URL: $BITRISEIO_DEVELOPMENT_AND_DISTRIBUTION_CERTIFICATES_URL
+      - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-ios-simple-objc.git
+      - BRANCH: new-certificates
+      - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
+      - BITRISE_SCHEME: ios-simple-objc
+      - BITRISE_CONFIGURATION: Release
+      - DISTRIBUTION_TYPE: app-store
+      - GENERATE_PROFILES: "yes"
+      - BITRISE_CERTIFICATE_PASSPHRASE: |
+      - BITRISE_CERTIFICATE_URL: $BITRISEIO_DEVELOPMENT_AND_DISTRIBUTION_CERTIFICATES_URL
+      - CONNECTION: "automatic"
+      - API_KEY_PATH:
+      - API_ISSUER: 
     after_run:
     - _common
 
@@ -244,6 +279,9 @@ workflows:
           title: Step Test
           run_if: true
           inputs:
+            - connection: $CONNECTION
+            - api_key_path: $API_KEY_PATH
+            - api_issuer: $API_ISSUER
             - build_api_token: $BITRISE_BUILD_API_TOKEN
             - build_url: $BITRISE_BUILD_URL
             - certificate_urls: $BITRISE_CERTIFICATE_URL
