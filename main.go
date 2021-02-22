@@ -511,13 +511,9 @@ func main() {
 	// Ensure devices
 	var devices []appstoreconnect.Device
 
-	if needToRegisterDevices(distrTypes) && conn != nil {
+	if needToRegisterDevices(distrTypes) {
 		fmt.Println()
-		log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
-
-		for _, d := range conn.TestDevices {
-			log.Debugf("- %s", d)
-		}
+		log.Infof("Fetching test devices")
 
 		var err error
 		devices, err = autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
@@ -527,40 +523,46 @@ func main() {
 
 		log.Printf("%d devices are registered on Developer Portal", len(devices))
 		for _, d := range devices {
-			log.Debugf("- %s, %s UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
+			log.Debugf("- %s, %s, UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
 		}
 
-		for _, testDevice := range conn.TestDevices {
-			log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
-
-			found := false
-			for _, device := range devices {
-				if device.Attributes.UDID == testDevice.DeviceID {
-					found = true
-					break
-				}
+		if conn != nil && conn.TestDevices != nil {
+			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
+			for _, d := range conn.TestDevices {
+				log.Debugf("- %s, type (%s), UDID (%s), added (%s)", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
 			}
 
-			if found {
-				log.Printf("device already registered")
-			} else {
-				log.Printf("registering device")
-				req := appstoreconnect.DeviceCreateRequest{
-					Data: appstoreconnect.DeviceCreateRequestData{
-						Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
-							Name:     "Bitrise test device",
-							Platform: appstoreconnect.IOS,
-							UDID:     testDevice.DeviceID,
-						},
-						Type: "devices",
-					},
+			for _, testDevice := range conn.TestDevices {
+				log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
+
+				found := false
+				for _, device := range devices {
+					if device.Attributes.UDID == testDevice.DeviceID {
+						found = true
+						break
+					}
 				}
 
-				if _, err := client.Provisioning.RegisterNewDevice(req); err != nil {
-					if rerr, ok := err.(appstoreconnect.ErrorResponse); ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
-						log.Warnf("Failed to register device (Mac devices can not be automatically registered): %s", err)
-					} else {
-						failf("Failed to register device: %s", err)
+				if found {
+					log.Printf("device already registered")
+				} else {
+					log.Printf("registering device")
+					req := appstoreconnect.DeviceCreateRequest{
+						Data: appstoreconnect.DeviceCreateRequestData{
+							Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
+								Name:     "Bitrise test device",
+								Platform: appstoreconnect.IOS,
+								UDID:     testDevice.DeviceID,
+							},
+							Type: "devices",
+						},
+					}
+
+					registeredDevice, err := client.Provisioning.RegisterNewDevice(req)
+					if err != nil {
+						log.Warnf("Failed to register device (possible reason can be invalid UDID or Mac device): %s", err)
+					} else if registeredDevice != nil {
+						devices = append(devices, registeredDevice.Data)
 					}
 				}
 			}
