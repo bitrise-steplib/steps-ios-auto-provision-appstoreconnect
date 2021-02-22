@@ -347,7 +347,7 @@ func handleSessionDataError(err error) {
 		return
 	}
 
-if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
+	if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
 		fmt.Println()
 		log.Warnf("%s", "Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
 
@@ -389,7 +389,7 @@ func main() {
 	if stepConf.BuildURL != "" && stepConf.BuildAPIToken != "" {
 		devportalConnectionProvider = devportalservice.NewBitriseClient(http.DefaultClient, stepConf.BuildURL, string(stepConf.BuildAPIToken))
 	} else {
-                fmt.Println()
+		fmt.Println()
 		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
 	}
 	var conn *devportalservice.AppleDeveloperConnection
@@ -557,7 +557,11 @@ func main() {
 				}
 
 				if _, err := client.Provisioning.RegisterNewDevice(req); err != nil {
-					failf("Failed to register device: %s", err)
+					if rerr, ok := err.(appstoreconnect.ErrorResponse); ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
+						log.Warnf("Failed to register device (Mac devices can not be automatically registered): %s", err)
+					} else {
+						failf("Failed to register device: %s", err)
+					}
 				}
 			}
 		}
