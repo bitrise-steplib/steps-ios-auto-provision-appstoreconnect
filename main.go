@@ -526,10 +526,10 @@ func main() {
 			log.Debugf("- %s, %s, UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
 		}
 
-		if conn != nil && conn.TestDevices != nil {
+		if conn != nil && len(conn.TestDevices) != 0 {
 			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
 			for _, d := range conn.TestDevices {
-				log.Debugf("- %s, type (%s), UDID (%s), added (%s)", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+				log.Debugf("- %s, type (%s), UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
 			}
 
 			for _, testDevice := range conn.TestDevices {
@@ -545,25 +545,31 @@ func main() {
 
 				if found {
 					log.Printf("device already registered")
-				} else {
-					log.Printf("registering device")
-					req := appstoreconnect.DeviceCreateRequest{
-						Data: appstoreconnect.DeviceCreateRequestData{
-							Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
-								Name:     "Bitrise test device",
-								Platform: appstoreconnect.IOS,
-								UDID:     testDevice.DeviceID,
-							},
-							Type: "devices",
-						},
-					}
+					continue
+				}
 
-					registeredDevice, err := client.Provisioning.RegisterNewDevice(req)
-					if err != nil {
+				log.Printf("registering device")
+				req := appstoreconnect.DeviceCreateRequest{
+					Data: appstoreconnect.DeviceCreateRequestData{
+						Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
+							Name:     "Bitrise test device",
+							Platform: appstoreconnect.IOS,
+							UDID:     testDevice.DeviceID,
+						},
+						Type: "devices",
+					},
+				}
+
+				registeredDevice, err := client.Provisioning.RegisterNewDevice(req)
+				if err != nil {
+					if rerr, ok := err.(appstoreconnect.ErrorResponse); ok && rerr.Response != nil && rerr.Response.StatusCode == 409 {
 						log.Warnf("Failed to register device (possible reason can be invalid UDID or Mac device): %s", err)
-					} else if registeredDevice != nil {
-						devices = append(devices, registeredDevice.Data)
+						continue
 					}
+					failf("Failed to register device: %s", err)
+				}
+				if registeredDevice != nil {
+					devices = append(devices, registeredDevice.Data)
 				}
 			}
 		}
