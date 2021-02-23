@@ -365,34 +365,3 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 	require.Equal(t, want, got, "registerMissingDevices()")
 	mockClient.AssertExpectations(t)
 }
-
-func Test_normalizeDeviceUDID(t *testing.T) {
-	tests := []struct {
-		name string
-		udid string
-		want string
-	}{
-		{
-			name: "Separator and uppercase identifier",
-			udid: "00008020-00213C3D2201002F",
-			want: "0000802000213c3d2201002f",
-		},
-		{
-			name: "Already lowercase and no separators",
-			udid: "612cb2257",
-			want: "612cb2257",
-		},
-		{
-			name: "Whitespace is removed",
-			udid: "612c b2257 ",
-			want: "612cb2257",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := normalizeDeviceUDID(tt.udid)
-
-			require.Equal(t, tt.want, got, "normalizeDeviceUDID()")
-		})
-	}
-}

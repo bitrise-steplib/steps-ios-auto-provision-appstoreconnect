@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -93,10 +94,13 @@ func (c *BitriseClient) GetAppleDeveloperConnection() (*AppleDeveloperConnection
 		d.APIKeyConnection.PrivateKey = privateKeyWithHeader(d.APIKeyConnection.PrivateKey)
 	}
 
+	testDevices, duplicatedDevices := normalizeTestDevices(d.TestDevices)
+
 	return &AppleDeveloperConnection{
-		AppleIDConnection: d.AppleIDConnection,
-		APIKeyConnection:  d.APIKeyConnection,
-		TestDevices:       d.TestDevices,
+		AppleIDConnection:     d.AppleIDConnection,
+		APIKeyConnection:      d.APIKeyConnection,
+		TestDevices:           testDevices,
+		DuplicatedTestDevices: duplicatedDevices,
 	}, nil
 }
 
@@ -127,7 +131,7 @@ func (c *BitriseClient) download() ([]byte, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, NetworkError{Status: resp.StatusCode, Body: string(body)}
+		return nil, NetworkError{Status: resp.StatusCode}
 	}
 
 	return body, nil
@@ -147,10 +151,10 @@ type cookie struct {
 
 // AppleIDConnection represents a Bitrise.io Apple ID-based Apple Developer connection.
 type AppleIDConnection struct {
-	AppleID              string              `json:"apple_id"`
-	Password             string              `json:"password"`
-	ConnectionExpiryDate string              `json:"connection_expiry_date"`
-	SessionCookies       map[string][]cookie `json:"session_cookies"`
+	AppleID           string              `json:"apple_id"`
+	Password          string              `json:"password"`
+	SessionExpiryDate *time.Time          `json:"connection_expiry_date"`
+	SessionCookies    map[string][]cookie `json:"session_cookies"`
 }
 
 // APIKeyConnection represents a Bitrise.io API key-based Apple Developer connection.
@@ -162,40 +166,27 @@ type APIKeyConnection struct {
 
 // TestDevice ...
 type TestDevice struct {
-	ID         int    `json:"id"`
-	UserID     int    `json:"user_id"`
-	DeviceID   string `json:"device_identifier"`
-	Title      string `json:"title"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
-	DeviceType string `json:"device_type"`
+	ID     int `json:"id"`
+	UserID int `json:"user_id"`
+	// DeviceID is the Apple device UDID
+	DeviceID   string    `json:"device_identifier"`
+	Title      string    `json:"title"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	DeviceType string    `json:"device_type"`
+}
+
+// CompareUDID compares two UDIDs (stored in the DeviceID field of TestDevice)
+func CompareUDID(UDID string, otherUDID string) bool {
+	return normalizeDeviceUDID(UDID) == normalizeDeviceUDID(otherUDID)
 }
 
 // AppleDeveloperConnection represents a Bitrise.io Apple Developer connection.
 // https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/
 type AppleDeveloperConnection struct {
-	AppleIDConnection *AppleIDConnection
-	APIKeyConnection  *APIKeyConnection
-	TestDevices       []TestDevice `json:"test_devices"`
-}
-
-// Expiry returns the expiration of the Bitrise Apple ID-based Apple Developer connection.
-func (c *AppleIDConnection) Expiry() *time.Time {
-	t, err := time.Parse(time.RFC3339, c.ConnectionExpiryDate)
-	if err != nil {
-		log.Warnf("Could not parse Apple ID session expiry date: %s", err)
-		return nil
-	}
-	return &t
-}
-
-// Expired returns whether the Bitrise Apple ID-based Apple Developer connection is expired.
-func (c *AppleIDConnection) Expired() bool {
-	expiry := c.Expiry()
-	if expiry == nil {
-		return false
-	}
-	return expiry.Before(time.Now())
+	AppleIDConnection                  *AppleIDConnection
+	APIKeyConnection                   *APIKeyConnection
+	TestDevices, DuplicatedTestDevices []TestDevice
 }
 
 // FastlaneLoginSession returns the Apple ID login session in a ruby/object:HTTP::Cookie format.
@@ -232,4 +223,31 @@ func (c *AppleIDConnection) FastlaneLoginSession() (string, error) {
 		rubyCookies = append(rubyCookies, b.String()+"\n")
 	}
 	return strings.Join(rubyCookies, ""), nil
+}
+
+func validDeviceUDID(udid string) string {
+	r := regexp.MustCompile("[^a-zA-Z0-9-]")
+	return r.ReplaceAllLiteralString(udid, "")
+}
+
+func normalizeDeviceUDID(udid string) string {
+	return strings.ToLower(strings.ReplaceAll(validDeviceUDID(udid), "-", ""))
+}
+
+func normalizeTestDevices(deviceList []TestDevice) (validDevices, duplicatedDevices []TestDevice) {
+	bitriseDevices := make(map[string]bool)
+	for _, device := range deviceList {
+		normalizedID := normalizeDeviceUDID(device.DeviceID)
+		if _, ok := bitriseDevices[normalizedID]; ok {
+			duplicatedDevices = append(duplicatedDevices, device)
+
+			continue
+		}
+
+		bitriseDevices[normalizedID] = true
+		device.DeviceID = validDeviceUDID(device.DeviceID)
+		validDevices = append(validDevices, device)
+	}
+
+	return validDevices, duplicatedDevices
 }

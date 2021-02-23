@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -140,29 +139,9 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func normalizeDeviceUDID(udid string) string {
-	r := regexp.MustCompile("[^a-zA-Z0-9]")
-	return strings.ToLower(r.ReplaceAllLiteralString(udid, ""))
-}
-
-func registerMissingDevices(client *appstoreconnect.Client, bitriseDeviceList []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
+func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
 	if client == nil {
 		return []appstoreconnect.Device{}, fmt.Errorf("App Store Connect client not provided")
-	}
-
-	bitriseDevices := make(map[string]devportalservice.TestDevice)
-	for _, device := range bitriseDeviceList {
-		normalizedID := normalizeDeviceUDID(device.DeviceID)
-		if otherDevice, ok := bitriseDevices[normalizedID]; ok {
-			log.Warnf("Test devices with duplicate UDID registered on Bitrise:")
-			for _, d := range []devportalservice.TestDevice{device, otherDevice} {
-				log.Warnf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
-			}
-
-			continue
-		}
-
-		bitriseDevices[normalizedID] = device
 	}
 
 	newDevices := []appstoreconnect.Device{}
@@ -171,7 +150,7 @@ func registerMissingDevices(client *appstoreconnect.Client, bitriseDeviceList []
 
 		found := false
 		for _, device := range devportalDevices {
-			if normalizeDeviceUDID(device.Attributes.UDID) == normalizeDeviceUDID(testDevice.DeviceID) {
+			if devportalservice.CompareUDID(device.Attributes.UDID, testDevice.DeviceID) {
 				found = true
 				break
 			}
@@ -183,13 +162,16 @@ func registerMissingDevices(client *appstoreconnect.Client, bitriseDeviceList []
 			continue
 		}
 
+		// The API seems to recognize existing devices even with different casing and '-' separator removed.
+		// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
+		// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged
 		log.Printf("registering device")
 		req := appstoreconnect.DeviceCreateRequest{
 			Data: appstoreconnect.DeviceCreateRequestData{
 				Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
 					Name:     "Bitrise test device",
 					Platform: appstoreconnect.IOS,
-					UDID:     strings.TrimSpace(testDevice.DeviceID),
+					UDID:     testDevice.DeviceID,
 				},
 				Type: "devices",
 			},
@@ -605,6 +587,13 @@ func main() {
 			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
 			for _, d := range conn.TestDevices {
 				log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+			}
+
+			if len(conn.DuplicatedTestDevices) != 0 {
+				log.Warnf("Devices with duplicated UDID are registered on Bitrise, will be ignored:")
+				for _, d := range conn.DuplicatedTestDevices {
+					log.Warnf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+				}
 			}
 
 			registeredDevices, err := registerMissingDevices(client, conn.TestDevices, devices)

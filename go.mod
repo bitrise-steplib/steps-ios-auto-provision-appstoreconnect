@@ -8,7 +8,7 @@ require (
 	github.com/bitrise-io/go-utils v0.0.0-20201211082830-859032e9adf0
 	github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c
 	github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021
-	github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210202131141-60bc9fc816c7
+	github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210223151844-c27ac4b9bff7
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
 	github.com/google/go-querystring v1.0.0
