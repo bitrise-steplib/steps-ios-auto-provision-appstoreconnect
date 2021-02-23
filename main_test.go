@@ -277,14 +277,14 @@ func Test_registerMissingDevices_alreadyRegistered(t *testing.T) {
 			args: args{
 				client: successClient,
 				bitriseDevices: []devportalservice.TestDevice{{
-					DeviceID:   "71153a920968f2842d360db00b4d3bc46c92f511",
+					DeviceID:   "71153a920968f2842d360",
 					DeviceType: "ios",
 				}},
 				devportalDevices: []appstoreconnect.Device{{
 					Attributes: appstoreconnect.DeviceAttributes{
-						UDID: "71153a920968f2842d360db00b4d3bc46c92f511",
+						UDID: "71153a920968f2842d360",
 					},
-					ID: "1",
+					ID: "12",
 				}},
 			},
 			want: []appstoreconnect.Device{},
@@ -333,7 +333,7 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 			args: args{
 				client: successClient,
 				bitriseDevices: []devportalservice.TestDevice{{
-					DeviceID:   "71153a920968f2842d360db00b4d3bc46c92f511",
+					DeviceID:   "71153a920968f2842d360",
 					DeviceType: "ios",
 				}},
 				devportalDevices: []appstoreconnect.Device{},
@@ -382,11 +382,22 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 			name: "Device not registered, invalid UDID",
 			args: args{
 				client: failureClient,
-				bitriseDevices: []devportalservice.TestDevice{{
-					DeviceID:   "invalid-udid",
-					DeviceType: "ios",
+				bitriseDevices: []devportalservice.TestDevice{
+					{
+						DeviceID:   "invalid-udid",
+						DeviceType: "ios",
+					},
+					{
+						DeviceID:   "71153a920968f2842d360",
+						DeviceType: "ios",
+					},
+				},
+				devportalDevices: []appstoreconnect.Device{{
+					Attributes: appstoreconnect.DeviceAttributes{
+						UDID: "71153a920968f2842d360",
+					},
+					ID: "12",
 				}},
-				devportalDevices: []appstoreconnect.Device{},
 			},
 			want: []appstoreconnect.Device{},
 		},
