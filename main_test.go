@@ -261,47 +261,31 @@ func Test_registerMissingDevices_alreadyRegistered(t *testing.T) {
 	mockClient := &MockClientRegisterDevice{}
 	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
-	type args struct {
+	args := struct {
 		client           *appstoreconnect.Client
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []appstoreconnect.Device
-		wantErr bool
 	}{
-		{
-			name: "Device already registered",
-			args: args{
-				client: successClient,
-				bitriseDevices: []devportalservice.TestDevice{{
-					DeviceID:   "71153a920968f2842d360",
-					DeviceType: "ios",
-				}},
-				devportalDevices: []appstoreconnect.Device{{
-					Attributes: appstoreconnect.DeviceAttributes{
-						UDID: "71153a920968f2842d360",
-					},
-					ID: "12",
-				}},
+		client: successClient,
+		bitriseDevices: []devportalservice.TestDevice{{
+			DeviceID:   "71153a920968f2842d360",
+			DeviceType: "ios",
+		}},
+		devportalDevices: []appstoreconnect.Device{{
+			Attributes: appstoreconnect.DeviceAttributes{
+				UDID: "71153a920968f2842d360",
 			},
-			want: []appstoreconnect.Device{},
-		},
+			ID: "12",
+		}},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := registerMissingDevices(tt.args.client, tt.args.bitriseDevices, tt.args.devportalDevices)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("registerMissingDevices() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			require.Equal(t, tt.want, got, "registerMissingDevices()=")
-			mockClient.AssertNotCalled(t, "PostDevice")
-			mockClient.AssertExpectations(t)
-		})
-	}
+	want := []appstoreconnect.Device{}
+
+	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
+
+	require.NoError(t, err, "registerMissingDevices() error")
+	require.Equal(t, want, got, "registerMissingDevices()")
+	mockClient.AssertNotCalled(t, "PostDevice")
+	mockClient.AssertExpectations(t)
 }
 
 func Test_registerMissingDevices_newDevice(t *testing.T) {
@@ -317,44 +301,28 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 		), nil)
 	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
-	type args struct {
+	args := struct {
 		client           *appstoreconnect.Client
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []appstoreconnect.Device
-		wantErr bool
 	}{
-		{
-			name: "Device missing from Developer Portal",
-			args: args{
-				client: successClient,
-				bitriseDevices: []devportalservice.TestDevice{{
-					DeviceID:   "71153a920968f2842d360",
-					DeviceType: "ios",
-				}},
-				devportalDevices: []appstoreconnect.Device{},
-			},
-			want: []appstoreconnect.Device{{
-				Attributes: appstoreconnect.DeviceAttributes{},
-				ID:         "12",
-			}},
-		},
+		client: successClient,
+		bitriseDevices: []devportalservice.TestDevice{{
+			DeviceID:   "71153a920968f2842d360",
+			DeviceType: "ios",
+		}},
+		devportalDevices: []appstoreconnect.Device{},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := registerMissingDevices(tt.args.client, tt.args.bitriseDevices, tt.args.devportalDevices)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("registerMissingDevices() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			require.Equal(t, tt.want, got, "registerMissingDevices()=")
-			mockClient.AssertExpectations(t)
-		})
-	}
+	want := []appstoreconnect.Device{{
+		Attributes: appstoreconnect.DeviceAttributes{},
+		ID:         "12",
+	}}
+
+	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
+
+	require.NoError(t, err, "registerMissingDevices()")
+	require.Equal(t, want, got, "registerMissingDevices()")
+	mockClient.AssertExpectations(t)
 }
 
 func Test_registerMissingDevices_invalidUDID(t *testing.T) {
@@ -367,50 +335,64 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 			}), nil)
 	failureClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
-	type args struct {
+	args := struct {
 		client           *appstoreconnect.Client
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
+	}{
+		client: failureClient,
+		bitriseDevices: []devportalservice.TestDevice{
+			{
+				DeviceID:   "invalid-udid",
+				DeviceType: "ios",
+			},
+			{
+				DeviceID:   "71153a920968f2842d360",
+				DeviceType: "ios",
+			},
+		},
+		devportalDevices: []appstoreconnect.Device{{
+			Attributes: appstoreconnect.DeviceAttributes{
+				UDID: "71153a920968f2842d360",
+			},
+			ID: "12",
+		}},
 	}
+	want := []appstoreconnect.Device{}
+
+	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
+	require.NoError(t, err, "registerMissingDevices()")
+	require.Equal(t, want, got, "registerMissingDevices()")
+	mockClient.AssertExpectations(t)
+}
+
+func Test_normalizeDeviceUDID(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		want    []appstoreconnect.Device
-		wantErr bool
+		name string
+		udid string
+		want string
 	}{
 		{
-			name: "Device not registered, invalid UDID",
-			args: args{
-				client: failureClient,
-				bitriseDevices: []devportalservice.TestDevice{
-					{
-						DeviceID:   "invalid-udid",
-						DeviceType: "ios",
-					},
-					{
-						DeviceID:   "71153a920968f2842d360",
-						DeviceType: "ios",
-					},
-				},
-				devportalDevices: []appstoreconnect.Device{{
-					Attributes: appstoreconnect.DeviceAttributes{
-						UDID: "71153a920968f2842d360",
-					},
-					ID: "12",
-				}},
-			},
-			want: []appstoreconnect.Device{},
+			name: "Separator and uppercase identifier",
+			udid: "00008020-00213C3D2201002F",
+			want: "0000802000213c3d2201002f",
+		},
+		{
+			name: "Already lowercase and no separators",
+			udid: "612cb2257",
+			want: "612cb2257",
+		},
+		{
+			name: "Whitespace is removed",
+			udid: "612c b2257 ",
+			want: "612cb2257",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := registerMissingDevices(tt.args.client, tt.args.bitriseDevices, tt.args.devportalDevices)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("registerMissingDevices() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			require.Equal(t, tt.want, got, "registerMissingDevices()=")
-			mockClient.AssertExpectations(t)
+			got := normalizeDeviceUDID(tt.udid)
+
+			require.Equal(t, tt.want, got, "normalizeDeviceUDID()")
 		})
 	}
 }

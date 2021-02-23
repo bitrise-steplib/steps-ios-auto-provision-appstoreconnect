@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -139,9 +140,29 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
+func normalizeDeviceUDID(udid string) string {
+	r := regexp.MustCompile("[^a-zA-Z0-9]")
+	return strings.ToLower(r.ReplaceAllLiteralString(udid, ""))
+}
+
+func registerMissingDevices(client *appstoreconnect.Client, bitriseDeviceList []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
 	if client == nil {
 		return []appstoreconnect.Device{}, fmt.Errorf("App Store Connect client not provided")
+	}
+
+	bitriseDevices := make(map[string]devportalservice.TestDevice)
+	for _, device := range bitriseDeviceList {
+		normalizedID := normalizeDeviceUDID(device.DeviceID)
+		if otherDevice, ok := bitriseDevices[normalizedID]; ok {
+			log.Warnf("Test devices with duplicate UDID registered on Bitrise:")
+			for _, d := range []devportalservice.TestDevice{device, otherDevice} {
+				log.Warnf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+			}
+
+			continue
+		}
+
+		bitriseDevices[normalizedID] = device
 	}
 
 	newDevices := []appstoreconnect.Device{}
@@ -150,7 +171,7 @@ func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []dev
 
 		found := false
 		for _, device := range devportalDevices {
-			if device.Attributes.UDID == testDevice.DeviceID {
+			if normalizeDeviceUDID(device.Attributes.UDID) == normalizeDeviceUDID(testDevice.DeviceID) {
 				found = true
 				break
 			}
@@ -168,7 +189,7 @@ func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []dev
 				Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
 					Name:     "Bitrise test device",
 					Platform: appstoreconnect.IOS,
-					UDID:     testDevice.DeviceID,
+					UDID:     strings.TrimSpace(testDevice.DeviceID),
 				},
 				Type: "devices",
 			},
