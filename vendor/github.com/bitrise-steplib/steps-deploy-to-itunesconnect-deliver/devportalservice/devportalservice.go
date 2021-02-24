@@ -94,7 +94,7 @@ func (c *BitriseClient) GetAppleDeveloperConnection() (*AppleDeveloperConnection
 		d.APIKeyConnection.PrivateKey = privateKeyWithHeader(d.APIKeyConnection.PrivateKey)
 	}
 
-	testDevices, duplicatedDevices := normalizeTestDevices(d.TestDevices)
+	testDevices, duplicatedDevices := validateTestDevice(d.TestDevices)
 
 	return &AppleDeveloperConnection{
 		AppleIDConnection:     d.AppleIDConnection,
@@ -176,8 +176,8 @@ type TestDevice struct {
 	DeviceType string    `json:"device_type"`
 }
 
-// CompareUDID compares two UDIDs (stored in the DeviceID field of TestDevice)
-func CompareUDID(UDID string, otherUDID string) bool {
+// IsEqualUDID compares two UDIDs (stored in the DeviceID field of TestDevice)
+func IsEqualUDID(UDID string, otherUDID string) bool {
 	return normalizeDeviceUDID(UDID) == normalizeDeviceUDID(otherUDID)
 }
 
@@ -234,7 +234,9 @@ func normalizeDeviceUDID(udid string) string {
 	return strings.ToLower(strings.ReplaceAll(validDeviceUDID(udid), "-", ""))
 }
 
-func normalizeTestDevices(deviceList []TestDevice) (validDevices, duplicatedDevices []TestDevice) {
+// validateTestDevice filters out duplicated devices
+// it does not change UDID casing or remove '-' separator, only to filter out whitespace or unsupported characters
+func validateTestDevice(deviceList []TestDevice) (validDevices, duplicatedDevices []TestDevice) {
 	bitriseDevices := make(map[string]bool)
 	for _, device := range deviceList {
 		normalizedID := normalizeDeviceUDID(device.DeviceID)

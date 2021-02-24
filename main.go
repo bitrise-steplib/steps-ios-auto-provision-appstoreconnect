@@ -150,7 +150,7 @@ func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []dev
 
 		found := false
 		for _, device := range devportalDevices {
-			if devportalservice.CompareUDID(device.Attributes.UDID, testDevice.DeviceID) {
+			if devportalservice.IsEqualUDID(device.Attributes.UDID, testDevice.DeviceID) {
 				found = true
 				break
 			}
@@ -164,7 +164,7 @@ func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []dev
 
 		// The API seems to recognize existing devices even with different casing and '-' separator removed.
 		// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
-		// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged
+		// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged.
 		log.Printf("registering device")
 		req := appstoreconnect.DeviceCreateRequest{
 			Data: appstoreconnect.DeviceCreateRequestData{

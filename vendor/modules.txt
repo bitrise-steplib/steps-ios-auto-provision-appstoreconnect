@@ -1,4 +1,4 @@
-# github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210108155445-42984b5f8f91
+# github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210128171059-b8350f0f8630
 ## explicit
 github.com/bitrise-io/bitrise-add-new-project/httputil
 # github.com/bitrise-io/go-steputils v0.0.0-20201016102104-03ae3a6ded35
@@ -36,7 +36,7 @@ github.com/bitrise-io/xcode-project/xcodebuild
 github.com/bitrise-io/xcode-project/xcodeproj
 github.com/bitrise-io/xcode-project/xcscheme
 github.com/bitrise-io/xcode-project/xcworkspace
-# github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210223151844-c27ac4b9bff7
+# github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210224072225-c55aafe5df5a
 ## explicit
 github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/appleauth
 github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/devportalservice
@@ -66,12 +66,9 @@ github.com/stretchr/objx
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
-# golang.org/x/text v0.3.5
-## explicit
+# golang.org/x/text v0.3.4
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-## explicit
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 gopkg.in/yaml.v3
 # howett.net/plist v0.0.0-20201203080718-1454fab16a06
