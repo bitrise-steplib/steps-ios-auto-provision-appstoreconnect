@@ -350,7 +350,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 	}
 
 	for i, schemeCase := range schemeCases {
-		xcProj, err := findBuiltProject(
+		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
 			configCases[i],
@@ -491,7 +491,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 	var projHelpCases []ProjectHelper
 
 	for i, schemeCase := range schemeCases {
-		xcProj, err := findBuiltProject(
+		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
 			configCases[i],

@@ -39,29 +39,28 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 		return nil, "", fmt.Errorf("provided path does not exists: %s", projOrWSPath)
 	}
 
-	// Get the project of the provided .xcodeproj or .xcworkspace
-	xcproj, err := findBuiltProject(projOrWSPath, schemeName, configurationName)
+	// Get the project and scheme of the provided .xcodeproj or .xcworkspace
+	// It is important to keep the returned scheme, as it can be located under the .xcworkspace and not the .xcodeproj.
+	// Fetching the scheme from the project based on name is not possible later.
+	xcproj, scheme, err := findBuiltProject(projOrWSPath, schemeName, configurationName)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to find build project: %s", err)
 	}
 
-	mainTarget, err := mainTargetOfScheme(xcproj, schemeName)
+	mainTarget, err := mainTargetOfScheme(xcproj, scheme)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
 
-	scheme, _, err := xcproj.Scheme(schemeName)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to find scheme with name: %s in project: %s: %s", schemeName, projOrWSPath, err)
-	}
-
-	// Check if the archive is available for the scheme or not
-	if _, archivable := scheme.AppBuildActionEntry(); !archivable {
-		return nil, "", fmt.Errorf("archive action not defined for scheme: %s", scheme.Name)
-	}
-
 	// Configuration
-	conf, err := configuration(configurationName, *scheme, xcproj)
+	if configurationName == "" {
+		configurationName = scheme.ArchiveAction.BuildConfiguration
+	}
+	if configurationName == "" {
+		return nil, "", fmt.Errorf("no configuration provided nor default defined for the scheme's (%s) archive action", schemeName)
+	}
+
+	conf, err := configuration(configurationName, scheme, xcproj)
 	if err != nil {
 		return nil, "", err
 	}
@@ -377,15 +376,9 @@ func configuration(configurationName string, scheme xcscheme.Scheme, xcproj xcod
 }
 
 // mainTargetOfScheme return the main target
-func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme string) (xcodeproj.Target, error) {
-	projTargets := proj.Proj.Targets
-	sch, _, err := proj.Scheme(scheme)
-	if err != nil {
-		return xcodeproj.Target{}, fmt.Errorf("failed to find scheme (%s) in project: %s", scheme, err)
-	}
-
+func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcodeproj.Target, error) {
 	var blueIdent string
-	for _, entry := range sch.BuildAction.BuildActionEntries {
+	for _, entry := range scheme.BuildAction.BuildActionEntries {
 		if entry.BuildableReference.IsAppReference() {
 			blueIdent = entry.BuildableReference.BlueprintIdentifier
 			break
@@ -393,44 +386,37 @@ func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme string) (xcodeproj.Targ
 	}
 
 	// Search for the main target
-	for _, t := range projTargets {
+	for _, t := range proj.Proj.Targets {
 		if t.ID == blueIdent {
 			return t, nil
-
 		}
 	}
+
 	return xcodeproj.Target{}, fmt.Errorf("failed to find the project's main target for scheme (%s)", scheme)
 }
 
-// findBuiltProject returns the Xcode project which will be built for the provided scheme
-func findBuiltProject(pth, schemeName, configurationName string) (xcodeproj.XcodeProj, error) {
+// findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
+// The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
+func findBuiltProject(pth, schemeName, configurationName string) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
 	scheme, schemeContainerDir, err := project.Scheme(pth, schemeName)
 	if err != nil {
-		return xcodeproj.XcodeProj{}, fmt.Errorf("could not get scheme with name %s from path %s", schemeName, pth)
+		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, fmt.Errorf("could not get scheme with name %s from path %s", schemeName, pth)
 	}
 
-	if configurationName == "" {
-		configurationName = scheme.ArchiveAction.BuildConfiguration
-	}
-
-	if configurationName == "" {
-		return xcodeproj.XcodeProj{}, fmt.Errorf("no configuration provided nor default defined for the scheme's (%s) archive action", schemeName)
-	}
-
-	archiveEntry, ok := scheme.AppBuildActionEntry()
-	if !ok {
-		return xcodeproj.XcodeProj{}, fmt.Errorf("archivable entry not found")
+	archiveEntry, archivable := scheme.AppBuildActionEntry()
+	if !archivable {
+		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, fmt.Errorf("archive action not defined for scheme: %s", scheme.Name)
 	}
 
 	projectPth, err := archiveEntry.BuildableReference.ReferencedContainerAbsPath(filepath.Dir(schemeContainerDir))
 	if err != nil {
-		return xcodeproj.XcodeProj{}, err
+		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, err
 	}
 
 	xcodeProj, err := xcodeproj.Open(projectPth)
 	if err != nil {
-		return xcodeproj.XcodeProj{}, err
+		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, err
 	}
 
-	return xcodeProj, nil
+	return xcodeProj, *scheme, nil
 }
