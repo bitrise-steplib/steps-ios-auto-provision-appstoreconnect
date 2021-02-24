@@ -139,6 +139,63 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
+func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
+	if client == nil {
+		return []appstoreconnect.Device{}, fmt.Errorf("App Store Connect client not provided")
+	}
+
+	newDevices := []appstoreconnect.Device{}
+	for _, testDevice := range bitriseDevices {
+		log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
+
+		found := false
+		for _, device := range devportalDevices {
+			if devportalservice.IsEqualUDID(device.Attributes.UDID, testDevice.DeviceID) {
+				found = true
+				break
+			}
+		}
+
+		if found {
+			log.Printf("device already registered")
+
+			continue
+		}
+
+		// The API seems to recognize existing devices even with different casing and '-' separator removed.
+		// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
+		// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged.
+		log.Printf("registering device")
+		req := appstoreconnect.DeviceCreateRequest{
+			Data: appstoreconnect.DeviceCreateRequestData{
+				Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
+					Name:     "Bitrise test device",
+					Platform: appstoreconnect.IOS,
+					UDID:     testDevice.DeviceID,
+				},
+				Type: "devices",
+			},
+		}
+
+		registeredDevice, err := client.Provisioning.RegisterNewDevice(req)
+		if err != nil {
+			rerr, ok := err.(*appstoreconnect.ErrorResponse)
+			if ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
+				log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", err)
+
+				continue
+			}
+
+			return []appstoreconnect.Device{}, fmt.Errorf("%v", err)
+		}
+		if registeredDevice != nil {
+			newDevices = append(newDevices, registeredDevice.Data)
+		}
+	}
+
+	return newDevices, nil
+}
+
 // ProfileManager ...
 type ProfileManager struct {
 	client                      *appstoreconnect.Client
@@ -347,7 +404,7 @@ func handleSessionDataError(err error) {
 		return
 	}
 
-if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
+	if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
 		fmt.Println()
 		log.Warnf("%s", "Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
 
@@ -389,7 +446,7 @@ func main() {
 	if stepConf.BuildURL != "" && stepConf.BuildAPIToken != "" {
 		devportalConnectionProvider = devportalservice.NewBitriseClient(http.DefaultClient, stepConf.BuildURL, string(stepConf.BuildAPIToken))
 	} else {
-                fmt.Println()
+		fmt.Println()
 		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
 	}
 	var conn *devportalservice.AppleDeveloperConnection
@@ -511,13 +568,9 @@ func main() {
 	// Ensure devices
 	var devices []appstoreconnect.Device
 
-	if needToRegisterDevices(distrTypes) && conn != nil {
+	if needToRegisterDevices(distrTypes) {
 		fmt.Println()
-		log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
-
-		for _, d := range conn.TestDevices {
-			log.Debugf("- %s", d)
-		}
+		log.Infof("Fetching test devices")
 
 		var err error
 		devices, err = autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
@@ -527,39 +580,27 @@ func main() {
 
 		log.Printf("%d devices are registered on Developer Portal", len(devices))
 		for _, d := range devices {
-			log.Debugf("- %s, %s UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
+			log.Debugf("- %s, %s, UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
 		}
 
-		for _, testDevice := range conn.TestDevices {
-			log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
+		if conn != nil && len(conn.TestDevices) != 0 {
+			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
+			for _, d := range conn.TestDevices {
+				log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+			}
 
-			found := false
-			for _, device := range devices {
-				if device.Attributes.UDID == testDevice.DeviceID {
-					found = true
-					break
+			if len(conn.DuplicatedTestDevices) != 0 {
+				log.Warnf("Devices with duplicated UDID are registered on Bitrise, will be ignored:")
+				for _, d := range conn.DuplicatedTestDevices {
+					log.Warnf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
 				}
 			}
 
-			if found {
-				log.Printf("device already registered")
-			} else {
-				log.Printf("registering device")
-				req := appstoreconnect.DeviceCreateRequest{
-					Data: appstoreconnect.DeviceCreateRequestData{
-						Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
-							Name:     "Bitrise test device",
-							Platform: appstoreconnect.IOS,
-							UDID:     testDevice.DeviceID,
-						},
-						Type: "devices",
-					},
-				}
-
-				if _, err := client.Provisioning.RegisterNewDevice(req); err != nil {
-					failf("Failed to register device: %s", err)
-				}
+			registeredDevices, err := registerMissingDevices(client, conn.TestDevices, devices)
+			if err != nil {
+				failf("Failed to add devices registered on Bitrise to Developer Portal: %s", err)
 			}
+			devices = append(devices, registeredDevices...)
 		}
 	}
 
