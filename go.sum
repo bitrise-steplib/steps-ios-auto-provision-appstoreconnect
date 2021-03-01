@@ -1,5 +1,7 @@
 github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210128171059-b8350f0f8630 h1:l3xkkAsloq+TZNZRQEc/58Q64OdS8zUgI8PHgavwU+M=
 github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210128171059-b8350f0f8630/go.mod h1:2jszWdzj+13aj51nbF1ZDW/E7Ogpwn7FTxdg8ljEk6g=
+github.com/bitrise-io/go-plist v0.0.0-20210226122646-b10b30d5f24e h1:SO3VQx/A9IPBxXnkzOZU2qj/4oW+/r31eBCboHVIR9w=
+github.com/bitrise-io/go-plist v0.0.0-20210226122646-b10b30d5f24e/go.mod h1:1Ph8wEWcr1vpfs2YFXoggbPADYPJ8VlZTF4NivhgHFA=
 github.com/bitrise-io/go-steputils v0.0.0-20201016102104-03ae3a6ded35 h1:iKtx/RxSrA9xcjZ17W3yu3jMzwowNB6nxLF/1BwVYQ8=
 github.com/bitrise-io/go-steputils v0.0.0-20201016102104-03ae3a6ded35/go.mod h1:GXgBV3Frd3qcnsg+NryQTyx1CHjZHr/2w7Bx4WAcB4o=
 github.com/bitrise-io/go-utils v0.0.0-20201019131314-6cc2aa4d248a/go.mod h1:tTEsKvbz1LbzuN/KpVFHXnLtcAPdEgIdM41s0lL407s=
@@ -7,10 +9,12 @@ github.com/bitrise-io/go-utils v0.0.0-20201211082830-859032e9adf0 h1:HR5o2gHKo0r
 github.com/bitrise-io/go-utils v0.0.0-20201211082830-859032e9adf0/go.mod h1:tTEsKvbz1LbzuN/KpVFHXnLtcAPdEgIdM41s0lL407s=
 github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c h1:qQN0yfeDE0rxt6/HPrGzfbeB77A3thPLgB7zMs4jLKA=
 github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c/go.mod h1:EFvdJln2CESNPSz2+ChAGOtfHNN/l56csk1nuRnz8nI=
-github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021 h1:8Z9OwHyonaBSNto7VT3gD76n8hK2e2KL9WfTpY+9k7Y=
-github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021/go.mod h1:R2iDrjJlNQtVwIdXT+F9bcx/YTNJPdd0tXfFRJsxHaM=
-github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210224072225-c55aafe5df5a h1:kDmwMefcpzzBOnexF1FNWTcf9IgVApFWxLXhZdT4/Ls=
-github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210224072225-c55aafe5df5a/go.mod h1:mG5kKjSyK3sZNp7e5QpFBAtxJRWeA+4PSMh3ZfwggNs=
+github.com/bitrise-io/xcode-project v0.0.0-20210301084224-085ca3b0cf81 h1:0+GJBSwtr9bcHO3ULKvi2PxJj7Q9OCPnD7IZcYjqqtE=
+github.com/bitrise-io/xcode-project v0.0.0-20210301084224-085ca3b0cf81/go.mod h1:Je/qMbRfJtOilCM/RX8VkmBDz1NsAhbthhjV86/kq/U=
+github.com/bitrise-steplib/bitrise-step-export-universal-apk v0.0.0-20200729103519-a582681d23d6 h1:7UWHsApY8/iIGw1jVbDiL3FMnI70Y/t0BxG9nQupHhI=
+github.com/bitrise-steplib/bitrise-step-export-universal-apk v0.0.0-20200729103519-a582681d23d6/go.mod h1:WBGpmu+FXynGkpED0re/InExsBaRG7Y2tMabxnFgSuA=
+github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210225084122-4a4d9384c633 h1:6Rw2tRuYzY5baiyAWDhX+psWihsOCZRX2TqtfHzq8TU=
+github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210225084122-4a4d9384c633/go.mod h1:+XuCsvAc2xcQpdVnCmQC4Ej+jMc0n60oTtg0oz/BkC4=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -25,7 +29,6 @@ github.com/google/go-querystring v1.0.0/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO
 github.com/hashicorp/go-version v1.2.1 h1:zEfKbn2+PDgroKdiOzqiE8rsmLqU2uwi5PB5pBJ3TkI=
 github.com/hashicorp/go-version v1.2.1/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
-github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
@@ -40,7 +43,6 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/stretchr/objx v0.1.0 h1:4G4v2dO3VZwixGIRoQ5Lfboy6nUhCyYzaqnIAPPhYs4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
-github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
@@ -67,6 +69,7 @@ golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8T
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0/go.mod h1:WDnlLJ4WF5VGsH/HVa3CI79GS0ol3YnhVnKP89i0kNg=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.8 h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=
