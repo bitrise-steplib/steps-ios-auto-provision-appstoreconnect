@@ -335,9 +335,9 @@ func parsePBXProjContent(content []byte) (*XcodeProj, error) {
 		return nil, fmt.Errorf("failed to unmarshal project.pbxproj: %s", err)
 	}
 
-	annotatedPbxProj := deepCopy(rawPbxProj) // Preserve annotations
+	annotatedPbxProj := deepCopyObject(rawPbxProj) // Preserve annotations
 	removeCustomInfo(rawPbxProj)
-	originalPbxProj := deepCopy(rawPbxProj)
+	originalPbxProj := deepCopyObject(rawPbxProj)
 
 	objects, err := rawPbxProj.Object("objects")
 	if err != nil {
@@ -533,21 +533,21 @@ func removeCustomInfo(object serialized.Object) {
 	}
 }
 
-func deepCopy(object serialized.Object) serialized.Object {
+func deepCopyObject(object serialized.Object) serialized.Object {
 	newObj := make(map[string]interface{})
 	for k, v := range object {
-		newObj[k] = copy(v)
+		newObj[k] = deepCopy(v)
 	}
 
 	return newObj
 }
 
-func copy(o interface{}) interface{} {
+func deepCopy(o interface{}) interface{} {
 	m, ok := o.(map[string]interface{})
 	if ok {
 		newObj := make(map[string]interface{})
 		for k, v := range m {
-			newObj[k] = copy(v)
+			newObj[k] = deepCopy(v)
 		}
 		return newObj
 	}
@@ -557,27 +557,6 @@ func copy(o interface{}) interface{} {
 type change struct {
 	start, end int
 	rawObject  []byte
-}
-
-type changes []change
-
-func (c changes) Len() int {
-	return len(c)
-}
-
-func (c changes) Swap(a, b int) {
-	c[a], c[b] = c[b], c[a]
-}
-
-func (c changes) Less(a, b int) bool {
-	return c[a].Less(c[b])
-}
-
-func (c change) Less(other change) bool {
-	if c.start == other.start {
-		return c.end < other.end
-	}
-	return c.start < other.start
 }
 
 func (p XcodeProj) perObjectModify() ([]byte, error) {
@@ -594,7 +573,7 @@ func (p XcodeProj) perObjectModify() ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse project: %v", err)
 	}
 
-	var mods changes
+	var mods []change
 	for keyMod := range objectsMod {
 		objectMod, err := objectsMod.Object(keyMod)
 		if err != nil {
@@ -616,31 +595,19 @@ func (p XcodeProj) perObjectModify() ([]byte, error) {
 			continue
 		}
 
-		customPosDictInt, ok := objectsAnnotated[customAnnotationKey]
-		if !ok {
-			return nil, fmt.Errorf("no raw object position available")
+		customPosDict, err := objectsAnnotated.Object(customAnnotationKey)
+		if err != nil {
+			return nil, fmt.Errorf("no raw object position available: %v", err)
 		}
-		customPosDict, ok := customPosDictInt.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("raw object position map has unexpected format")
+		startPos, err := customPosDict.Int64(startKey)
+		if err != nil {
+			return nil, fmt.Errorf("no raw object start position available: %v", err)
+		}
+		endPos, err := customPosDict.Int64(endKey)
+		if err != nil {
+			return nil, fmt.Errorf("no raw end position availbale: %v", err)
 		}
 
-		startPosInt, ok := customPosDict[startKey]
-		if !ok {
-			return nil, fmt.Errorf("no raw object start position available")
-		}
-		startPos, ok := startPosInt.(int64)
-		if !ok {
-			return nil, fmt.Errorf("unexepected value for object start %s", startPosInt)
-		}
-		endPosInt, ok := customPosDict[endKey]
-		if !ok {
-			return nil, fmt.Errorf("no raw end position availbale")
-		}
-		endPos, ok := endPosInt.(int64)
-		if !ok {
-			return nil, fmt.Errorf("unexpected value for object end %s", endPosInt)
-		}
 		contentMod, err := plist.MarshalIndent(objectMod, p.Format, "\t")
 		if err != nil {
 			return nil, fmt.Errorf("could not marshal object (%s): %v", objectsMod, err)
@@ -657,22 +624,27 @@ func (p XcodeProj) perObjectModify() ([]byte, error) {
 		return p.originalContents, nil
 	}
 
-	sort.Sort(mods)
+	sort.Slice(mods, func(i, j int) bool {
+		if mods[i].start == mods[j].start {
+			return mods[i].end < mods[j].end
+		}
+		return mods[i].start < mods[j].start
+	})
 
 	var contentsMod []byte
-	lastPos := 0
+	previousEndPos := 0
 	for i, mod := range mods {
 		if i < len(mods)-1 && mod.end >= mods[i+1].start {
 			return nil, fmt.Errorf("overlapping changes: %d, %d", mods[i].end, mods[i+1].start)
 		}
 
-		contentsMod = append(contentsMod, p.originalContents[lastPos:mod.start]...)
+		contentsMod = append(contentsMod, p.originalContents[previousEndPos:mod.start]...)
 		contentsMod = append(contentsMod, mod.rawObject...)
-		lastPos = mod.end
+		previousEndPos = mod.end
 	}
 
-	if lastPos <= len(p.originalContents)-1 {
-		contentsMod = append(contentsMod, p.originalContents[lastPos:]...)
+	if previousEndPos <= len(p.originalContents)-1 {
+		contentsMod = append(contentsMod, p.originalContents[previousEndPos:]...)
 	}
 
 	return contentsMod, nil
