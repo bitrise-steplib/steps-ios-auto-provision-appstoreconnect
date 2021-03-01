@@ -42,7 +42,7 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	// Get the project and scheme of the provided .xcodeproj or .xcworkspace
 	// It is important to keep the returned scheme, as it can be located under the .xcworkspace and not the .xcodeproj.
 	// Fetching the scheme from the project based on name is not possible later.
-	xcproj, scheme, err := findBuiltProject(projOrWSPath, schemeName, configurationName)
+	xcproj, scheme, err := findBuiltProject(projOrWSPath, schemeName)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to find build project: %s", err)
 	}
@@ -52,18 +52,14 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 		return nil, "", fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
 
-	// Configuration
-	if configurationName == "" {
-		configurationName = scheme.ArchiveAction.BuildConfiguration
-	}
-	if configurationName == "" {
-		return nil, "", fmt.Errorf("no configuration provided nor default defined for the scheme's (%s) archive action", schemeName)
-	}
-
 	conf, err := configuration(configurationName, scheme, xcproj)
 	if err != nil {
 		return nil, "", err
 	}
+	if conf == "" {
+		return nil, "", fmt.Errorf("no configuration provided nor default defined for the scheme's (%s) archive action", schemeName)
+	}
+
 	return &ProjectHelper{
 			MainTarget:    mainTarget,
 			Targets:       xcproj.Proj.Targets,
@@ -397,7 +393,7 @@ func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcode
 
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
-func findBuiltProject(pth, schemeName, configurationName string) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
+func findBuiltProject(pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
 	scheme, schemeContainerDir, err := project.Scheme(pth, schemeName)
 	if err != nil {
 		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, fmt.Errorf("could not get scheme with name %s from path %s", schemeName, pth)

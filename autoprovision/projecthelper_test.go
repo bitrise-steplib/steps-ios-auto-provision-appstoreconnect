@@ -53,6 +53,14 @@ func TestNew(t *testing.T) {
 			wantErr:           false,
 		},
 		{
+			name:              "Xcode 10 workspace - iOS - Scheme in workspace",
+			projOrWSPath:      xcProjCases[6].Path,
+			schemeName:        "Xcode-10_default",
+			configurationName: "",
+			wantConfiguration: "Release",
+			wantErr:           false,
+		},
+		{
 			name:              "Xcode 10 workspace - iOS - Default configuration - Gdańsk scheme",
 			projOrWSPath:      xcProjCases[0].Path,
 			schemeName:        "Gdańsk",
@@ -353,7 +361,6 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
-			configCases[i],
 		)
 		if err != nil {
 			t.Fatalf("Failed to generate XcodeProj for test case: %s", err)
@@ -461,6 +468,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		"Xcode-10_mac",
 		"TV_OS",
 		"TV_OS",
+		"Xcode-10-default",
 	}
 
 	schemeCases = []string{
@@ -470,6 +478,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		"Xcode-10_mac",
 		"TV_OS",
 		"TV_OS",
+		"Xcode-10_default",
 	}
 	configCases = []string{
 		"Debug",
@@ -478,6 +487,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		"Release",
 		"Debug",
 		"Release",
+		"Debug",
 	}
 	projectCases = []string{
 		p + "/ios_project_files/Xcode-10_default.xcworkspace",
@@ -486,6 +496,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		p + "/ios_project_files/Xcode-10_mac.xcodeproj",
 		p + "/ios_project_files/TV_OS.xcodeproj",
 		p + "/ios_project_files/TV_OS.xcodeproj",
+		p + "/ios_project_files/Xcode-10_with_scheme.xcworkspace",
 	}
 	var xcProjCases []xcodeproj.XcodeProj
 	var projHelpCases []ProjectHelper
@@ -494,7 +505,6 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
-			configCases[i],
 		)
 		if err != nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("Failed to generate XcodeProj for test case: %s", err)
