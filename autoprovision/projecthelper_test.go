@@ -23,7 +23,7 @@ var configCases []string
 
 func TestNew(t *testing.T) {
 	var err error
-	schemeCases, _, xcProjCases, projHelpCases, configCases, err = initTestCases()
+	schemeCases, _, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
@@ -38,7 +38,7 @@ func TestNew(t *testing.T) {
 	}{
 		{
 			name:              "Xcode 10 workspace - iOS",
-			projOrWSPath:      xcProjCases[0].Path,
+			projOrWSPath:      projectCases[0],
 			schemeName:        "Xcode-10_default",
 			configurationName: "Debug",
 			wantConfiguration: "Debug",
@@ -46,7 +46,15 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name:              "Xcode 10 workspace - iOS - Default configuration",
-			projOrWSPath:      xcProjCases[0].Path,
+			projOrWSPath:      projectCases[0],
+			schemeName:        "Xcode-10_default",
+			configurationName: "",
+			wantConfiguration: "Release",
+			wantErr:           false,
+		},
+		{
+			name:              "Xcode 10 workspace - iOS - Scheme in workspace",
+			projOrWSPath:      projectCases[6],
 			schemeName:        "Xcode-10_default",
 			configurationName: "",
 			wantConfiguration: "Release",
@@ -54,7 +62,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name:              "Xcode 10 workspace - iOS - Default configuration - Gdańsk scheme",
-			projOrWSPath:      xcProjCases[0].Path,
+			projOrWSPath:      projectCases[0],
 			schemeName:        "Gdańsk",
 			configurationName: "",
 			wantConfiguration: "Release",
@@ -62,7 +70,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name:              "Xcode-10_mac project - MacOS - Debug configuration",
-			projOrWSPath:      xcProjCases[2].Path,
+			projOrWSPath:      projectCases[2],
 			schemeName:        "Xcode-10_mac",
 			configurationName: "Debug",
 			wantConfiguration: "Debug",
@@ -70,7 +78,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name:              "Xcode-10_mac project - MacOS - Default configuration",
-			projOrWSPath:      xcProjCases[2].Path,
+			projOrWSPath:      projectCases[2],
 			schemeName:        "Xcode-10_mac",
 			configurationName: "",
 			wantConfiguration: "Release",
@@ -78,7 +86,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name:              "TV_OS.xcodeproj project - TVOS - Default configuration",
-			projOrWSPath:      xcProjCases[4].Path,
+			projOrWSPath:      projectCases[4],
 			schemeName:        "TV_OS",
 			configurationName: "",
 			wantConfiguration: "Release",
@@ -120,7 +128,7 @@ func TestProjectHelper_ProjectTeamID(t *testing.T) {
 	log.SetEnableDebugLog(true)
 
 	var err error
-	schemeCases, _, _, projHelpCases, configCases, err = initTestCases()
+	schemeCases, _, _, projHelpCases, configCases, projectCases, err = initTestCases()
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
@@ -344,16 +352,15 @@ func Test_expandTargetSetting(t *testing.T) {
 
 func TestProjectHelper_TargetBundleID(t *testing.T) {
 	var err error
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, err = initTestCases()
+	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
 
 	for i, schemeCase := range schemeCases {
-		xcProj, err := findBuiltProject(
+		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
-			configCases[i],
 		)
 		if err != nil {
 			t.Fatalf("Failed to generate XcodeProj for test case: %s", err)
@@ -437,11 +444,11 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 	}
 }
 
-func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper, []string, error) {
+func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper, []string, []string, error) {
 	//
 	// If the test cases already initialized return them
 	if schemeCases != nil {
-		return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, nil
+		return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
 	}
 
 	p, err := pathutil.NormalizedOSTempDirPath("_autoprov")
@@ -461,6 +468,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		"Xcode-10_mac",
 		"TV_OS",
 		"TV_OS",
+		"Xcode-10-default",
 	}
 
 	schemeCases = []string{
@@ -470,6 +478,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		"Xcode-10_mac",
 		"TV_OS",
 		"TV_OS",
+		"Xcode-10_default",
 	}
 	configCases = []string{
 		"Debug",
@@ -478,6 +487,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		"Release",
 		"Debug",
 		"Release",
+		"Debug",
 	}
 	projectCases = []string{
 		p + "/ios_project_files/Xcode-10_default.xcworkspace",
@@ -486,18 +496,18 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		p + "/ios_project_files/Xcode-10_mac.xcodeproj",
 		p + "/ios_project_files/TV_OS.xcodeproj",
 		p + "/ios_project_files/TV_OS.xcodeproj",
+		p + "/ios_project_files/Xcode-10_with_scheme.xcworkspace",
 	}
 	var xcProjCases []xcodeproj.XcodeProj
 	var projHelpCases []ProjectHelper
 
 	for i, schemeCase := range schemeCases {
-		xcProj, err := findBuiltProject(
+		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
-			configCases[i],
 		)
 		if err != nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("Failed to generate XcodeProj for test case: %s", err)
+			return nil, nil, nil, nil, nil, nil, fmt.Errorf("Failed to generate XcodeProj for test case: %s", err)
 		}
 		xcProjCases = append(xcProjCases, xcProj)
 
@@ -507,17 +517,17 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 			configCases[i],
 		)
 		if err != nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("Failed to generate projectHelper for test case: %s", err)
+			return nil, nil, nil, nil, nil, nil, fmt.Errorf("Failed to generate projectHelper for test case: %s", err)
 		}
 		projHelpCases = append(projHelpCases, *projHelp)
 	}
 
-	return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, nil
+	return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
 }
 
 func TestProjectHelper_targetEntitlements(t *testing.T) {
 	var err error
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, err = initTestCases()
+	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
