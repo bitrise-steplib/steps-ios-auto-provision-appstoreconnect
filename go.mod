@@ -7,7 +7,7 @@ require (
 	github.com/bitrise-io/go-steputils v0.0.0-20201016102104-03ae3a6ded35
 	github.com/bitrise-io/go-utils v0.0.0-20201211082830-859032e9adf0
 	github.com/bitrise-io/go-xcode v0.0.0-20210112081035-13f817b37b1c
-	github.com/bitrise-io/xcode-project v0.0.0-20201203153351-7ad13a1dd021
+	github.com/bitrise-io/xcode-project v0.0.0-20210302080829-f3e0bfbcd5cb
 	github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver v0.0.0-20210225084122-4a4d9384c633
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
@@ -16,6 +16,5 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/text v0.3.5 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 )

@@ -6,18 +6,20 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
-	"github.com/bitrise-io/xcode-project/pretty"
-
+	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/xcode-project/pretty"
 	"github.com/bitrise-io/xcode-project/serialized"
 	"github.com/bitrise-io/xcode-project/xcodebuild"
 	"github.com/bitrise-io/xcode-project/xcscheme"
 	"golang.org/x/text/unicode/norm"
-	"howett.net/plist"
 )
 
 // XcodeProj ...
@@ -25,6 +27,10 @@ type XcodeProj struct {
 	Proj    Proj
 	RawProj serialized.Object
 	Format  int
+	// Used to replace project in-place. This leaves the order of objects and comments for unchanged objects unchanged.
+	// It allows better compatibility with Cordova and the Xcode agvtool
+	originalContents                  []byte
+	originalPbxProj, annotatedPbxProj serialized.Object
 
 	Name string
 	Path string
@@ -306,13 +312,12 @@ func Open(pth string) (XcodeProj, error) {
 
 	pbxProjPth := filepath.Join(absPth, "project.pbxproj")
 
-	var b []byte
-	b, err = fileutil.ReadBytesFromFile(pbxProjPth)
+	content, err := fileutil.ReadBytesFromFile(pbxProjPth)
 	if err != nil {
 		return XcodeProj{}, err
 	}
 
-	p, err := parsePBXProjContent(b)
+	p, err := parsePBXProjContent(content)
 	if err != nil {
 		return XcodeProj{}, err
 	}
@@ -325,10 +330,14 @@ func Open(pth string) (XcodeProj, error) {
 
 func parsePBXProjContent(content []byte) (*XcodeProj, error) {
 	var rawPbxProj serialized.Object
-	format, err := plist.Unmarshal(content, &rawPbxProj)
+	format, err := plist.UnmarshalWithCustomAnnotation(content, &rawPbxProj)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal project.pbxproj: %s", err)
 	}
+
+	annotatedPbxProj := deepCopyObject(rawPbxProj) // Preserve annotations
+	rawPbxProj = removeCustomInfoObject(rawPbxProj)
+	originalPbxProj := deepCopyObject(rawPbxProj)
 
 	objects, err := rawPbxProj.Object("objects")
 	if err != nil {
@@ -365,9 +374,12 @@ func parsePBXProjContent(content []byte) (*XcodeProj, error) {
 	}
 
 	return &XcodeProj{
-		Proj:    proj,
-		RawProj: rawPbxProj,
-		Format:  format,
+		Proj:             proj,
+		RawProj:          rawPbxProj,
+		Format:           format,
+		originalPbxProj:  originalPbxProj,
+		annotatedPbxProj: annotatedPbxProj,
+		originalContents: content,
 	}, nil
 }
 
@@ -487,13 +499,188 @@ func (p XcodeProj) Save() error {
 	return p.savePBXProj()
 }
 
-// savePBXProj overrides the project.pbxproj file of the XcodeProj with the contents of `rawProj`
+// savePBXProj overrides the project.pbxproj file of  the XcodeProj with the contents of `rawProj`
 func (p XcodeProj) savePBXProj() error {
-	b, err := plist.Marshal(p.RawProj, p.Format)
+	pth := path.Join(p.Path, "project.pbxproj")
+	newContent, merr := p.perObjectModify()
+	if merr == nil {
+		return ioutil.WriteFile(pth, newContent, 0644)
+	}
+	// merr != nil
+	log.Warnf("failed to modify project in-place: %v", merr)
+
+	newContent, err := plist.MarshalIndent(p.RawProj, p.Format, "\t")
 	if err != nil {
-		return fmt.Errorf("failed to marshal .pbxproj")
+		return fmt.Errorf("failed to marshal .pbxproj: %v", err)
 	}
 
-	pth := path.Join(p.Path, "project.pbxproj")
-	return ioutil.WriteFile(pth, b, 0644)
+	return ioutil.WriteFile(pth, newContent, 0644)
+}
+
+const (
+	customAnnotationKey = plist.CustomAnnotationKey
+	startKey            = plist.CustomAnnotationStartKey
+	endKey              = plist.CustomAnnotationEndKey
+)
+
+func removeCustomInfoObject(o serialized.Object) serialized.Object {
+	for _, v := range o {
+		removeCustomInfo(v)
+	}
+
+	return o
+}
+
+func removeCustomInfo(o interface{}) interface{} {
+	switch container := o.(type) {
+	case map[string]interface{}:
+		{
+			delete(container, customAnnotationKey)
+			for _, val := range container {
+				removeCustomInfo(val)
+			}
+
+			return container
+		}
+	case []interface{}:
+		{
+			for _, element := range container {
+				removeCustomInfo(element)
+			}
+
+			return container
+		}
+	default:
+		return o
+	}
+}
+
+func deepCopyObject(object serialized.Object) serialized.Object {
+	newObj := make(map[string]interface{})
+	for k, v := range object {
+		newObj[k] = deepCopy(v)
+	}
+
+	return newObj
+}
+
+func deepCopy(o interface{}) interface{} {
+	switch container := o.(type) {
+	case map[string]interface{}:
+		{
+			newObj := make(map[string]interface{})
+			for k, v := range container {
+				newObj[k] = deepCopy(v)
+			}
+
+			return newObj
+		}
+	case []interface{}:
+		{
+			destArray := make([]interface{}, len(container))
+			for i, element := range container {
+				destArray[i] = deepCopy(element)
+			}
+
+			return destArray
+		}
+	default:
+		return o
+	}
+}
+
+type change struct {
+	start, end int
+	rawObject  []byte
+}
+
+func (p XcodeProj) perObjectModify() ([]byte, error) {
+	objectsMod, err := p.RawProj.Object("objects")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project: %v", err)
+	}
+	objectsOrig, err := p.originalPbxProj.Object("objects")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project: %v", err)
+	}
+	objectsAnnotated, err := p.annotatedPbxProj.Object("objects")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project: %v", err)
+	}
+
+	var mods []change
+	for keyMod := range objectsMod {
+		objectMod, err := objectsMod.Object(keyMod)
+		if err != nil {
+			return nil, fmt.Errorf("%s", err)
+		}
+
+		objectOrig, err := objectsOrig.Object(keyMod)
+		if err != nil {
+			return nil, fmt.Errorf("new object added, not in original project: %v", err)
+		}
+
+		objectsAnnotated, err := objectsAnnotated.Object(keyMod)
+		if err != nil {
+			return nil, fmt.Errorf("new object added, not in original annotated project: %v", err)
+		}
+
+		// If object did not change do nothing
+		if reflect.DeepEqual(objectOrig, objectMod) {
+			continue
+		}
+
+		customPosDict, err := objectsAnnotated.Object(customAnnotationKey)
+		if err != nil {
+			return nil, fmt.Errorf("no raw object position available: %v", err)
+		}
+		startPos, err := customPosDict.Int64(startKey)
+		if err != nil {
+			return nil, fmt.Errorf("no raw object start position available: %v", err)
+		}
+		endPos, err := customPosDict.Int64(endKey)
+		if err != nil {
+			return nil, fmt.Errorf("no raw end position availbale: %v", err)
+		}
+
+		contentMod, err := plist.MarshalIndent(objectMod, p.Format, "\t")
+		if err != nil {
+			return nil, fmt.Errorf("could not marshal object (%s): %v", objectsMod, err)
+		}
+
+		mods = append(mods, change{
+			start:     int(startPos),
+			end:       int(endPos),
+			rawObject: contentMod,
+		})
+	}
+
+	if len(mods) == 0 {
+		return p.originalContents, nil
+	}
+
+	sort.Slice(mods, func(i, j int) bool {
+		if mods[i].start == mods[j].start {
+			return mods[i].end < mods[j].end
+		}
+		return mods[i].start < mods[j].start
+	})
+
+	var contentsMod []byte
+	previousEndPos := 0
+	for i, mod := range mods {
+		if i < len(mods)-1 && mod.end >= mods[i+1].start {
+			return nil, fmt.Errorf("overlapping changes: %d, %d", mods[i].end, mods[i+1].start)
+		}
+
+		contentsMod = append(contentsMod, p.originalContents[previousEndPos:mod.start]...)
+		contentsMod = append(contentsMod, mod.rawObject...)
+		previousEndPos = mod.end
+	}
+
+	if previousEndPos <= len(p.originalContents)-1 {
+		contentsMod = append(contentsMod, p.originalContents[previousEndPos:]...)
+	}
+
+	return contentsMod, nil
 }
