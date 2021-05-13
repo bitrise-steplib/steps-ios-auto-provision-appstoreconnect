@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/xcode-project/serialized"
-	"github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

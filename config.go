@@ -6,7 +6,7 @@ import (
 
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/sliceutil"
-	"github.com/bitrise-steplib/steps-deploy-to-itunesconnect-deliver/appleauth"
+	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
@@ -17,9 +17,9 @@ type CertificateFileURL struct {
 
 // Config holds the step inputs
 type Config struct {
-	BitriseConnection string `env:"connection,opt[automatic,api_key,off]"`
+	BitriseConnection string          `env:"connection,opt[automatic,api_key,off]"`
 	APIKeyPath        stepconf.Secret `env:"api_key_path"`
-	APIIssuer         string `env:"api_issuer"`
+	APIIssuer         string          `env:"api_issuer"`
 
 	ProjectPath   string `env:"project_path,dir"`
 	Scheme        string `env:"scheme,required"`
