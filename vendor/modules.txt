@@ -1,6 +1,5 @@
-# github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210128171059-b8350f0f8630
+# github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210514095205-9adc9700e1c0
 ## explicit
-github.com/bitrise-io/bitrise-add-new-project/httputil
 # github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 github.com/bitrise-io/go-plist
 # github.com/bitrise-io/go-steputils v0.0.0-20210507072936-92fde382fb33
@@ -15,6 +14,7 @@ github.com/bitrise-io/go-utils/command
 github.com/bitrise-io/go-utils/errorutil
 github.com/bitrise-io/go-utils/filedownloader
 github.com/bitrise-io/go-utils/fileutil
+github.com/bitrise-io/go-utils/httputil
 github.com/bitrise-io/go-utils/log
 github.com/bitrise-io/go-utils/parseutil
 github.com/bitrise-io/go-utils/pathutil
@@ -54,16 +54,13 @@ github.com/fullsailor/pkcs7
 ## explicit
 github.com/google/go-querystring/query
 # github.com/hashicorp/go-cleanhttp v0.5.2
-## explicit
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.7.0
-## explicit
 github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/go-version v1.3.0
 ## explicit
 github.com/hashicorp/go-version
 # github.com/pkg/errors v0.9.1
-## explicit
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -75,7 +72,6 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
 # golang.org/x/text v0.3.6
-## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b

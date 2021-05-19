@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/bitrise-io/bitrise-add-new-project/httputil"
+	"github.com/bitrise-io/go-utils/httputil"
 	"github.com/bitrise-io/go-utils/log"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/go-querystring/query"
