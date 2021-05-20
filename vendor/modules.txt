@@ -1,13 +1,11 @@
-# github.com/bitrise-io/bitrise-add-new-project v0.0.0-20210514095205-9adc9700e1c0
-## explicit
 # github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 github.com/bitrise-io/go-plist
-# github.com/bitrise-io/go-steputils v0.0.0-20210507072936-92fde382fb33
+# github.com/bitrise-io/go-steputils v0.0.0-20210514150206-5b6261447e77
 ## explicit
 github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/stepconf
 github.com/bitrise-io/go-steputils/tools
-# github.com/bitrise-io/go-utils v0.0.0-20210507100250-37de47dfa6ce
+# github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5
 ## explicit
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
@@ -19,9 +17,10 @@ github.com/bitrise-io/go-utils/log
 github.com/bitrise-io/go-utils/parseutil
 github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
+github.com/bitrise-io/go-utils/pretty
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-xcode v0.0.0-20210512084902-047d3c3d372a
+# github.com/bitrise-io/go-xcode v0.0.0-20210520114025-bdbec53ee59f
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/certificateutil
@@ -31,18 +30,15 @@ github.com/bitrise-io/go-xcode/models
 github.com/bitrise-io/go-xcode/plistutil
 github.com/bitrise-io/go-xcode/profileutil
 github.com/bitrise-io/go-xcode/utility
+github.com/bitrise-io/go-xcode/xcodeproject/schemeint
+github.com/bitrise-io/go-xcode/xcodeproject/serialized
+github.com/bitrise-io/go-xcode/xcodeproject/xcodebuild
+github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj
+github.com/bitrise-io/go-xcode/xcodeproject/xcscheme
+github.com/bitrise-io/go-xcode/xcodeproject/xcworkspace
 # github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630
 github.com/bitrise-io/pkcs12
 github.com/bitrise-io/pkcs12/internal/rc2
-# github.com/bitrise-io/xcode-project v0.0.0-20210302080829-f3e0bfbcd5cb
-## explicit
-github.com/bitrise-io/xcode-project
-github.com/bitrise-io/xcode-project/pretty
-github.com/bitrise-io/xcode-project/serialized
-github.com/bitrise-io/xcode-project/xcodebuild
-github.com/bitrise-io/xcode-project/xcodeproj
-github.com/bitrise-io/xcode-project/xcscheme
-github.com/bitrise-io/xcode-project/xcworkspace
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -50,17 +46,22 @@ github.com/davecgh/go-spew/spew
 github.com/dgrijalva/jwt-go
 # github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 github.com/fullsailor/pkcs7
+# github.com/google/go-cmp v0.5.5
+## explicit
 # github.com/google/go-querystring v1.1.0
 ## explicit
 github.com/google/go-querystring/query
 # github.com/hashicorp/go-cleanhttp v0.5.2
+## explicit
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.7.0
+## explicit
 github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/go-version v1.3.0
 ## explicit
 github.com/hashicorp/go-version
 # github.com/pkg/errors v0.9.1
+## explicit
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -72,6 +73,7 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
 # golang.org/x/text v0.3.6
+## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b

@@ -3,7 +3,7 @@ package autoprovision_test
 import (
 	"testing"
 
-	"github.com/bitrise-io/xcode-project/serialized"
+	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/stretchr/testify/require"
 )
