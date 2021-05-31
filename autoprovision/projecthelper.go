@@ -80,6 +80,7 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 		nil
 }
 
+// ArchivableTargets ...
 func (p *ProjectHelper) ArchivableTargets() []xcodeproj.Target {
 	return append([]xcodeproj.Target{p.MainTarget}, p.DependentTargets...)
 }
@@ -220,7 +221,7 @@ func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Objec
 	return settings, nil
 }
 
-// ForceUITestTargetBundleID...
+// ForceUITestTargetBundleID ...
 // Based on: https://github.com/appium/appium/issues/13086#issuecomment-588596234
 func (p *ProjectHelper) ForceUITestTargetBundleID(bundleID, targetID, configurationName string) error {
 	var target xcodeproj.Target
