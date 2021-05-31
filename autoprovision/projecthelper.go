@@ -218,6 +218,59 @@ func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Objec
 	return settings, nil
 }
 
+// ForceUITestTargetBundleID...
+// Based on: https://github.com/appium/appium/issues/13086#issuecomment-588596234
+func (p *ProjectHelper) ForceUITestTargetBundleID(bundleID, targetID, configurationName string) error {
+	var target xcodeproj.Target
+	for _, t := range p.UITestTargets {
+		if t.ID == targetID {
+			target = t
+			break
+		}
+	}
+
+	var configuration xcodeproj.BuildConfiguration
+	for _, c := range target.BuildConfigurationList.BuildConfigurations {
+		if c.Name == configurationName {
+			configuration = c
+			break
+		}
+	}
+	// Clear PRODUCT_BUNDLE_IDENTIFIER Build Settings
+	configuration.BuildSettings["PRODUCT_BUNDLE_IDENTIFIER"] = ""
+
+	// Set Main target's bundle id in Info.plist
+	relInfoPlistPth, err := configuration.BuildSettings.String("INFOPLIST_FILE")
+	if err != nil {
+		return err
+	}
+	infoPlistPth := filepath.Join(filepath.Dir(p.XcProj.Path), relInfoPlistPth)
+
+	b, err := fileutil.ReadBytesFromFile(infoPlistPth)
+	if err != nil {
+		return err
+	}
+
+	var rawInfoPlist serialized.Object
+	format, err := plist.Unmarshal(b, &rawInfoPlist)
+	if err != nil {
+		return err
+	}
+
+	rawInfoPlist["CFBundleIdentifier"] = bundleID
+
+	b, err = plist.MarshalIndent(rawInfoPlist, format, "\t")
+	if err != nil {
+		return err
+	}
+
+	if err := fileutil.WriteBytesToFile(infoPlistPth, b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // TargetBundleID returns the target bundle ID
 // First it tries to fetch the bundle ID from the `PRODUCT_BUNDLE_IDENTIFIER` build settings
 // If it's no available it will fetch the target's Info.plist and search for the `CFBundleIdentifier` key.

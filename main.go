@@ -761,6 +761,10 @@ func main() {
 		log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
 		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
+		if err := projHelper.ForceUITestTargetBundleID(mainTargetBundleID, uiTestTarget.ID, config); err != nil {
+			failf("Failed to force UITest target bundle id: %s", err)
+		}
+
 		if err := projHelper.XcProj.ForceCodeSign(config, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
 			failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
 		}
