@@ -696,7 +696,7 @@ func main() {
 
 	// Force Codesign Settings
 	fmt.Println()
-	log.Infof("Apply Bitrise managed codesigning on executable targets")
+	log.Infof("Apply Bitrise managed codesigning on the executable targets")
 	for _, target := range projHelper.ArchivableTargets() {
 		fmt.Println()
 		log.Infof("  Target: %s", target.Name)
@@ -731,7 +731,7 @@ func main() {
 	}
 
 	fmt.Println()
-	log.Infof("Apply Bitrise managed codesigning on UITest targets")
+	log.Infof("Apply Bitrise managed codesigning on the UITest targets")
 	for _, uiTestTarget := range projHelper.UITestTargets {
 		fmt.Println()
 		log.Infof("  Target: %s", uiTestTarget.Name)

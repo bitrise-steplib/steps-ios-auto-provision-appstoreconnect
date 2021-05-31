@@ -52,7 +52,9 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
+
 	dependentTargets := mainTarget.DependentExecutableProductTargets()
+
 	var uiTestTargets []xcodeproj.Target
 	for _, target := range xcproj.Proj.Targets {
 		if target.IsUITestProduct() && target.DependesOn(mainTarget.ID) {
