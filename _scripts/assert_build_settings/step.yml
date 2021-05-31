@@ -1,0 +1,48 @@
+title: iOS Auto Provision with App Store Connect API
+summary: Automatically manages your iOS Provisioning Profiles for your Xcode project.
+description: ""
+
+website: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
+source_code_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
+support_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/issues
+
+toolkit:
+  bash:
+    entry_file: script.sh
+
+inputs:
+- project: ""
+  opts:
+    title: ""
+    summary: ""
+    is_required: true
+
+- target: ""
+  opts:
+    title: ""
+    summary: ""
+    is_required: true
+
+- configuration: ""
+  opts:
+    title: ""
+    summary: ""
+    is_required: true
+
+- development_team: ""
+  opts:
+    title: ""
+    summary: ""
+    is_required: true
+
+- code_sign_identity: ""
+  opts:
+    title: ""
+    summary: ""
+    is_required: true
+
+- provisioning_profile: ""
+  opts:
+    title: ""
+    summary: ""
+    is_required: true
