@@ -18,7 +18,6 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
@@ -697,10 +696,8 @@ func main() {
 
 	// Force Codesign Settings
 	fmt.Println()
-	log.Infof("Apply Bitrise managed codesigning on the project")
-
-	targets := append([]xcodeproj.Target{projHelper.MainTarget}, projHelper.MainTarget.DependentExecutableProductTargets(false)...)
-	for _, target := range targets {
+	log.Infof("Apply Bitrise managed codesigning on executable project")
+	for _, target := range projHelper.ArchivableTargets() {
 		fmt.Println()
 		log.Infof("  Target: %s", target.Name)
 
@@ -731,11 +728,46 @@ func main() {
 		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
 			failf("Failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
+	}
 
-		if err := projHelper.XcProj.Save(); err != nil {
-			failf("Failed to save project: %s", err)
+	fmt.Println()
+	log.Infof("Apply Bitrise managed codesigning on UITest targets")
+	for _, uiTestTarget := range projHelper.UITestTargets {
+		fmt.Println()
+		log.Infof("  Target: %s", uiTestTarget.Name)
+
+		forceCodesignDistribution := stepConf.DistributionType()
+		if _, isDevelopmentAvailable := codesignSettingsByDistributionType[autoprovision.Development]; isDevelopmentAvailable {
+			forceCodesignDistribution = autoprovision.Development
 		}
 
+		codesignSettings, ok := codesignSettingsByDistributionType[forceCodesignDistribution]
+		if !ok {
+			failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
+		}
+		teamID = codesignSettings.Certificate.TeamID
+
+		mainTargetBundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+		if err != nil {
+			failf(err.Error())
+		}
+
+		profile, ok := codesignSettings.ProfilesByBundleID[mainTargetBundleID]
+		if !ok {
+			failf("No profile ensured for the main target bundleID %s", mainTargetBundleID)
+		}
+
+		log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
+		log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
+		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
+
+		if err := projHelper.XcProj.ForceCodeSign(config, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
+			failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
+		}
+	}
+
+	if err := projHelper.XcProj.Save(); err != nil {
+		failf("Failed to save project: %s", err)
 	}
 
 	// Install certificates and profiles

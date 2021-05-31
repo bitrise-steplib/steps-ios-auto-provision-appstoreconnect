@@ -20,10 +20,11 @@ import (
 
 // ProjectHelper ...
 type ProjectHelper struct {
-	MainTarget    xcodeproj.Target
-	Targets       []xcodeproj.Target
-	XcProj        xcodeproj.XcodeProj
-	Configuration string
+	MainTarget       xcodeproj.Target
+	DependentTargets []xcodeproj.Target
+	UITestTargets    []xcodeproj.Target
+	XcProj           xcodeproj.XcodeProj
+	Configuration    string
 
 	buildSettingsCache map[string]map[string]serialized.Object // target/config/buildSettings(serialized.Object)
 }
@@ -51,6 +52,13 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
+	dependentTargets := mainTarget.DependentExecutableProductTargets()
+	var uiTestTargets []xcodeproj.Target
+	for _, target := range xcproj.Proj.Targets {
+		if target.IsUITestProduct() && target.DependesOn(mainTarget.ID) {
+			uiTestTargets = append(uiTestTargets, target)
+		}
+	}
 
 	conf, err := configuration(configurationName, scheme, xcproj)
 	if err != nil {
@@ -61,21 +69,24 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	}
 
 	return &ProjectHelper{
-			MainTarget:    mainTarget,
-			Targets:       xcproj.Proj.Targets,
-			XcProj:        xcproj,
-			Configuration: conf,
+			MainTarget:       mainTarget,
+			DependentTargets: dependentTargets,
+			UITestTargets:    uiTestTargets,
+			XcProj:           xcproj,
+			Configuration:    conf,
 		}, conf,
 		nil
 }
 
+func (p *ProjectHelper) ArchivableTargets() []xcodeproj.Target {
+	return append([]xcodeproj.Target{p.MainTarget}, p.DependentTargets...)
+}
+
 // ArchivableTargetBundleIDToEntitlements ...
 func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]serialized.Object, error) {
-	targets := append([]xcodeproj.Target{p.MainTarget}, p.MainTarget.DependentExecutableProductTargets(false)...)
-
 	entitlementsByBundleID := map[string]serialized.Object{}
 
-	for _, target := range targets {
+	for _, target := range p.ArchivableTargets() {
 		bundleID, err := p.TargetBundleID(target.Name, p.Configuration)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
@@ -116,7 +127,7 @@ func (p *ProjectHelper) Platform(configurationName string) (Platform, error) {
 func (p *ProjectHelper) ProjectTeamID(config string) (string, error) {
 	var teamID string
 
-	for _, target := range p.Targets {
+	for _, target := range p.XcProj.Proj.Targets {
 		currentTeamID, err := p.targetTeamID(target.Name, config)
 		if err != nil {
 			log.Debugf("%", err)
