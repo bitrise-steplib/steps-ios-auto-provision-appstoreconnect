@@ -1,10 +1,8 @@
-title: iOS Auto Provision with App Store Connect API
-summary: Automatically manages your iOS Provisioning Profiles for your Xcode project.
-description: ""
-
-website: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
-source_code_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
-support_url: https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/issues
+title: Assert Build Settings
+summary: |-
+  Check if codesign related target build settings are configured as expected,  
+  by matching the provided codesign properties (development_team, code_sign_identity, provisioning_profile)  
+  to the output of xcodebuild -showBuildSettings call.
 
 toolkit:
   bash:

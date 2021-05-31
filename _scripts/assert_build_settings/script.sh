@@ -4,6 +4,7 @@ set -e
 echo "Inputs:"
 echo "project: $project"
 echo "target: $target"
+echo "configuration: $configuration"
 echo "development_team: $development_team"
 echo "code_sign_identity: $code_sign_identity"
 echo "provisioning_profile: $provisioning_profile"
