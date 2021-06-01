@@ -21,9 +21,10 @@ type Config struct {
 	APIKeyPath        stepconf.Secret `env:"api_key_path"`
 	APIIssuer         string          `env:"api_issuer"`
 
-	ProjectPath   string `env:"project_path,dir"`
-	Scheme        string `env:"scheme,required"`
-	Configuration string `env:"configuration"`
+	ProjectPath       string `env:"project_path,dir"`
+	Scheme            string `env:"scheme,required"`
+	Configuration     string `env:"configuration"`
+	SignUITestTargets bool   `env:sign_uitest_targets,opt[yes,no]`
 
 	Distribution        string `env:"distribution_type,opt[development,app-store,ad-hoc,enterprise]"`
 	MinProfileDaysValid int    `env:"min_profile_days_valid"`

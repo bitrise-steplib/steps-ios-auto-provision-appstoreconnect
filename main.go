@@ -730,45 +730,47 @@ func main() {
 		}
 	}
 
-	fmt.Println()
-	log.Infof("Apply Bitrise managed codesigning on the UITest targets")
-	for _, uiTestTarget := range projHelper.UITestTargets {
+	if stepConf.SignUITestTargets {
 		fmt.Println()
-		log.Infof("  Target: %s", uiTestTarget.Name)
+		log.Infof("Apply Bitrise managed codesigning on the UITest targets")
+		for _, uiTestTarget := range projHelper.UITestTargets {
+			fmt.Println()
+			log.Infof("  Target: %s", uiTestTarget.Name)
 
-		forceCodesignDistribution := stepConf.DistributionType()
-		if _, isDevelopmentAvailable := codesignSettingsByDistributionType[autoprovision.Development]; isDevelopmentAvailable {
-			forceCodesignDistribution = autoprovision.Development
-		}
+			forceCodesignDistribution := stepConf.DistributionType()
+			if _, isDevelopmentAvailable := codesignSettingsByDistributionType[autoprovision.Development]; isDevelopmentAvailable {
+				forceCodesignDistribution = autoprovision.Development
+			}
 
-		codesignSettings, ok := codesignSettingsByDistributionType[forceCodesignDistribution]
-		if !ok {
-			failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
-		}
-		teamID = codesignSettings.Certificate.TeamID
+			codesignSettings, ok := codesignSettingsByDistributionType[forceCodesignDistribution]
+			if !ok {
+				failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
+			}
+			teamID = codesignSettings.Certificate.TeamID
 
-		// Use the main target's codesign settings
-		mainTargetBundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
-		if err != nil {
-			failf(err.Error())
-		}
+			// Use the main target's codesign settings
+			mainTargetBundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+			if err != nil {
+				failf(err.Error())
+			}
 
-		profile, ok := codesignSettings.ProfilesByBundleID[mainTargetBundleID]
-		if !ok {
-			failf("No profile ensured for the main target bundleID %s", mainTargetBundleID)
-		}
+			profile, ok := codesignSettings.ProfilesByBundleID[mainTargetBundleID]
+			if !ok {
+				failf("No profile ensured for the main target bundleID %s", mainTargetBundleID)
+			}
 
-		log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
-		log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
-		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
+			log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
+			log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
+			log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
-		// Ensure UITest target's bundle id matches the main target's bundle id
-		if err := projHelper.ForceUITestTargetBundleID(mainTargetBundleID, uiTestTarget.ID, config); err != nil {
-			failf("Failed to force UITest target bundle id: %s", err)
-		}
+			// Ensure UITest target's bundle id matches the main target's bundle id
+			if err := projHelper.ForceUITestTargetBundleID(mainTargetBundleID, uiTestTarget.Name, config); err != nil {
+				failf("Failed to force UITest target bundle id: %s", err)
+			}
 
-		if err := projHelper.XcProj.ForceCodeSign(config, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
-			failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
+			if err := projHelper.XcProj.ForceCodeSign(config, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
+				failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
+			}
 		}
 	}
 

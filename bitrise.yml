@@ -125,6 +125,7 @@ workflows:
         - keychain_path: $KEYCHAIN_PATH
         - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
         - verbose_log: "yes"
+        - sign_uitest_targets: "yes"
     - xcode-build-for-test@0:
         inputs:
         - scheme: $BITRISE_SCHEME
