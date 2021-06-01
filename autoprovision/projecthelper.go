@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/pretty"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/schemeint"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
@@ -223,24 +224,60 @@ func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Objec
 
 // ForceUITestTargetBundleID ...
 // Based on: https://github.com/appium/appium/issues/13086#issuecomment-588596234
-func (p *ProjectHelper) ForceUITestTargetBundleID(bundleID, targetID, configurationName string) error {
+func (p *ProjectHelper) ForceUITestTargetBundleID(bundleID, targetName, configurationName string) error {
 	// Clear PRODUCT_BUNDLE_IDENTIFIER Build Settings
-	buildSettings, err := p.XcProj.TargetBuildSettings(targetID, configurationName)
-	if err != nil {
-		return err
+	target, ok := p.XcProj.Proj.TargetByName(targetName)
+	if !ok {
+		return fmt.Errorf("failed to find target with name: %s", targetName)
 	}
+
+	buildConfigurationList, err := p.XcProj.BuildConfigurationList(target.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get target's (%s) buildConfigurationList, error: %s", target.ID, err)
+	}
+
+	buildConfigurations, err := p.XcProj.BuildConfigurations(buildConfigurationList)
+	if err != nil {
+		return fmt.Errorf("failed to get buildConfigurations of buildConfigurationList (%s), error: %s", pretty.Object(buildConfigurationList), err)
+	}
+
+	var buildConfiguration serialized.Object
+	for _, b := range buildConfigurations {
+		if b["name"] == configurationName {
+			buildConfiguration = b
+			break
+		}
+	}
+
+	if buildConfiguration == nil {
+		return fmt.Errorf("failed to find buildConfiguration for configuration %s in the buildConfiguration list: %s", configurationName, pretty.Object(buildConfigurations))
+	}
+
+	buildSettings, err := buildConfiguration.Object("buildSettings")
+	if err != nil {
+		return fmt.Errorf("failed to get buildSettings of buildConfiguration (%s), error: %s", pretty.Object(buildConfiguration), err)
+	}
+
 	buildSettings["PRODUCT_BUNDLE_IDENTIFIER"] = ""
+	log.Debugf(`Overwriting PRODUCT_BUNDLE_IDENTIFIER Build Setting: %s -> ""`, buildSettings["PRODUCT_BUNDLE_IDENTIFIER"])
 	// Call xcodeproj.XcodeProj.Save() to apply this change on the project
 
 	// Set Main target's bundle id in Info.plist
-	infoplist, format, err := p.XcProj.ReadTargetInfoplist(targetID, configurationName)
+	informationPropertyListPth, err := p.XcProj.TargetInfoplistPath(targetName, configurationName)
+	if err != nil {
+		return err
+	}
+
+	infoplist, format, err := p.XcProj.ReadTargetInfoplist(targetName, configurationName)
 	if err != nil {
 		return err
 	}
 
 	infoplist["CFBundleIdentifier"] = bundleID
 
-	if err := p.XcProj.WriteTargetInfoplist(infoplist, format, targetID, configurationName); err != nil {
+	log.Debugf(`Overwriting CFBundleIdentifier property in %s: %s -> %s`, informationPropertyListPth, infoplist["CFBundleIdentifier"], bundleID)
+
+	if err := p.XcProj.WriteTargetInfoplist(infoplist, format, targetName, configurationName); err != nil {
 		return err
 	}
 
