@@ -483,36 +483,42 @@ func main() {
 		failf("Failed to analyze project: %s", err)
 	}
 
-	log.Printf("configuration: %s", config)
+	log.Printf("Configuration: %s", config)
 
 	teamID, err := projHelper.ProjectTeamID(config)
 	if err != nil {
 		failf("Failed to read project team ID: %s", err)
 	}
 
-	log.Printf("project team ID: %s", teamID)
-
-	entitlementsByBundleID, err := projHelper.ArchivableTargetBundleIDToEntitlements()
-	if err != nil {
-		failf("Failed to read bundle ID entitlements: %s", err)
-	}
-
-	log.Printf("bundle IDs:")
-	for _, id := range keys(entitlementsByBundleID) {
-		log.Printf("- %s", id)
-	}
-
-	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(entitlementsByBundleID); !ok {
-		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
-		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
-	}
+	log.Printf("Project team ID: %s", teamID)
 
 	platform, err := projHelper.Platform(config)
 	if err != nil {
 		failf("Failed to read project platform: %s", err)
 	}
 
-	log.Printf("platform: %s", platform)
+	log.Printf("Platform: %s", platform)
+
+	entitlementsByBundleID, err := projHelper.ArchivableTargetBundleIDToEntitlements()
+	if err != nil {
+		failf("Failed to read bundle ID entitlements: %s", err)
+	}
+
+	log.Printf("Application and App Extension targets:")
+	for _, target := range projHelper.ArchivableTargets() {
+		log.Printf("- %s", target.Name)
+	}
+	if stepConf.SignUITestTargets {
+		log.Printf("UITest targets:")
+		for _, target := range projHelper.UITestTargets {
+			log.Printf("- %s", target.Name)
+		}
+	}
+
+	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(entitlementsByBundleID); !ok {
+		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
+		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
+	}
 
 	// Downloading certificates
 	fmt.Println()
