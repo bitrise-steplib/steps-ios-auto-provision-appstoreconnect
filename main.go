@@ -747,6 +747,7 @@ func main() {
 		}
 		teamID = codesignSettings.Certificate.TeamID
 
+		// Use the main target's codesign settings
 		mainTargetBundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
 		if err != nil {
 			failf(err.Error())
@@ -761,6 +762,7 @@ func main() {
 		log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
 		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
+		// Ensure UITest target's bundle id matches the main target's bundle id
 		if err := projHelper.ForceUITestTargetBundleID(mainTargetBundleID, uiTestTarget.ID, config); err != nil {
 			failf("Failed to force UITest target bundle id: %s", err)
 		}

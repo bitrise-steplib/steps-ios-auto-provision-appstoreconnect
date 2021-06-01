@@ -125,14 +125,6 @@ workflows:
         - keychain_path: $KEYCHAIN_PATH
         - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
         - verbose_log: "yes"
-    - path::./_scripts/assert_build_settings/:
-        inputs:
-        - project: "$ORIG_BITRISE_SOURCE_DIR/_tmp/sample-apps-fastlane-test.xcodeproj"
-        - configuration: Debug
-        - target: "sample-apps-fastlane-testUITests"
-        - development_team: "$BITRISE_DEVELOPER_TEAM"
-        - code_sign_identity: "$BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"
-        - provisioning_profile: "$BITRISE_DEVELOPMENT_PROFILE"
     - xcode-build-for-test@0:
         inputs:
         - scheme: $BITRISE_SCHEME

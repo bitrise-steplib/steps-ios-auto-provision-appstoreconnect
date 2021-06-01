@@ -224,50 +224,23 @@ func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Objec
 // ForceUITestTargetBundleID ...
 // Based on: https://github.com/appium/appium/issues/13086#issuecomment-588596234
 func (p *ProjectHelper) ForceUITestTargetBundleID(bundleID, targetID, configurationName string) error {
-	var target xcodeproj.Target
-	for _, t := range p.UITestTargets {
-		if t.ID == targetID {
-			target = t
-			break
-		}
-	}
-
-	var configuration xcodeproj.BuildConfiguration
-	for _, c := range target.BuildConfigurationList.BuildConfigurations {
-		if c.Name == configurationName {
-			configuration = c
-			break
-		}
-	}
 	// Clear PRODUCT_BUNDLE_IDENTIFIER Build Settings
-	configuration.BuildSettings["PRODUCT_BUNDLE_IDENTIFIER"] = ""
+	buildSettings, err := p.XcProj.TargetBuildSettings(targetID, configurationName)
+	if err != nil {
+		return err
+	}
+	buildSettings["PRODUCT_BUNDLE_IDENTIFIER"] = ""
+	// Call xcodeproj.XcodeProj.Save() to apply this change on the project
 
 	// Set Main target's bundle id in Info.plist
-	relInfoPlistPth, err := configuration.BuildSettings.String("INFOPLIST_FILE")
-	if err != nil {
-		return err
-	}
-	infoPlistPth := filepath.Join(filepath.Dir(p.XcProj.Path), relInfoPlistPth)
-
-	b, err := fileutil.ReadBytesFromFile(infoPlistPth)
+	infoplist, format, err := p.XcProj.ReadTargetInfoplist(targetID, configurationName)
 	if err != nil {
 		return err
 	}
 
-	var rawInfoPlist serialized.Object
-	format, err := plist.Unmarshal(b, &rawInfoPlist)
-	if err != nil {
-		return err
-	}
+	infoplist["CFBundleIdentifier"] = bundleID
 
-	rawInfoPlist["CFBundleIdentifier"] = bundleID
-
-	b, err = plist.MarshalIndent(rawInfoPlist, format, "\t")
-	if err != nil {
-		return err
-	}
-
-	if err := fileutil.WriteBytesToFile(infoPlistPth, b); err != nil {
+	if err := p.XcProj.WriteTargetInfoplist(infoplist, format, targetID, configurationName); err != nil {
 		return err
 	}
 
