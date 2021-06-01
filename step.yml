@@ -134,9 +134,10 @@ inputs:
     opts:
       title: Should the step manage UITest target's codesigning?
       description:
-        If set the step will manage the codesign settings of the UITest target of the main Application.
+        If set the step will manage the codesign settings of the UITest targets of the main Application.
 
-        The UITest target bundle id will be set to the main Application's bundle id, so that the same Signing can be used for both target.
+        The UITest targets' bundle id will be set to the main Application's bundle id,  
+        so that the same Signing can be used for both the main Application and related UITest targets.
       value_options:
         - "yes"
         - "no"
