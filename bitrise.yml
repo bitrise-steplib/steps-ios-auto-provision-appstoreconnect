@@ -89,7 +89,6 @@ workflows:
     - BRANCH: STEP-917-auto-provision
     - BITRISE_PROJECT_PATH: "$ORIG_BITRISE_SOURCE_DIR/_tmp/sample-apps-fastlane-test.xcodeproj"
     - BITRISE_SCHEME: sample-apps-fastlane-test
-    - BITRISE_CONFIGURATION: Debug
     - DISTRIBUTION_TYPE: development
     - CONNECTION: "off"
     - API_KEY_PATH: $BITRISEIO_ASC_API_KEY_URL
@@ -121,6 +120,7 @@ workflows:
         - distribution_type: $DISTRIBUTION_TYPE
         - project_path: $BITRISE_PROJECT_PATH
         - scheme: $BITRISE_SCHEME
+        - configuration: Release
         - configuration: $BITRISE_CONFIGURATION
         - keychain_path: $KEYCHAIN_PATH
         - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
@@ -130,6 +130,7 @@ workflows:
         inputs:
         - scheme: $BITRISE_SCHEME
         - project_path: $BITRISE_PROJECT_PATH
+        - configuration: Debug
 
   test_bundle_id:
     envs:
