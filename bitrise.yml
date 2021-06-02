@@ -86,7 +86,7 @@ workflows:
   test_uitest_target:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
-    - BRANCH: STEP-917-auto-provision
+    - BRANCH: master
     - BITRISE_PROJECT_PATH: "$ORIG_BITRISE_SOURCE_DIR/_tmp/sample-apps-fastlane-test.xcodeproj"
     - BITRISE_SCHEME: sample-apps-fastlane-test
     - DISTRIBUTION_TYPE: development

@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/bitrise-io/go-steputils v0.0.0-20210514150206-5b6261447e77
 	github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5
-	github.com/bitrise-io/go-xcode v0.0.0-20210602122222-a475be9b5492
+	github.com/bitrise-io/go-xcode v0.0.0-20210602133333-d2c17ac1ee9b
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/google/go-querystring v1.1.0
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
