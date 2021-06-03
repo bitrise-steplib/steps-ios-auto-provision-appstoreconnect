@@ -18,7 +18,6 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
@@ -484,36 +483,42 @@ func main() {
 		failf("Failed to analyze project: %s", err)
 	}
 
-	log.Printf("configuration: %s", config)
+	log.Printf("Configuration: %s", config)
 
 	teamID, err := projHelper.ProjectTeamID(config)
 	if err != nil {
 		failf("Failed to read project team ID: %s", err)
 	}
 
-	log.Printf("project team ID: %s", teamID)
-
-	entitlementsByBundleID, err := projHelper.ArchivableTargetBundleIDToEntitlements()
-	if err != nil {
-		failf("Failed to read bundle ID entitlements: %s", err)
-	}
-
-	log.Printf("bundle IDs:")
-	for _, id := range keys(entitlementsByBundleID) {
-		log.Printf("- %s", id)
-	}
-
-	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(entitlementsByBundleID); !ok {
-		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
-		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
-	}
+	log.Printf("Project team ID: %s", teamID)
 
 	platform, err := projHelper.Platform(config)
 	if err != nil {
 		failf("Failed to read project platform: %s", err)
 	}
 
-	log.Printf("platform: %s", platform)
+	log.Printf("Platform: %s", platform)
+
+	entitlementsByBundleID, err := projHelper.ArchivableTargetBundleIDToEntitlements()
+	if err != nil {
+		failf("Failed to read bundle ID entitlements: %s", err)
+	}
+
+	log.Printf("Application and App Extension targets:")
+	for _, target := range projHelper.ArchivableTargets() {
+		log.Printf("- %s", target.Name)
+	}
+	if stepConf.SignUITestTargets {
+		log.Printf("UITest targets:")
+		for _, target := range projHelper.UITestTargets {
+			log.Printf("- %s", target.Name)
+		}
+	}
+
+	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(entitlementsByBundleID); !ok {
+		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
+		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
+	}
 
 	// Downloading certificates
 	fmt.Println()
@@ -697,10 +702,8 @@ func main() {
 
 	// Force Codesign Settings
 	fmt.Println()
-	log.Infof("Apply Bitrise managed codesigning on the project")
-
-	targets := append([]xcodeproj.Target{projHelper.MainTarget}, projHelper.MainTarget.DependentExecutableProductTargets(false)...)
-	for _, target := range targets {
+	log.Infof("Apply Bitrise managed codesigning on the executable targets")
+	for _, target := range projHelper.ArchivableTargets() {
 		fmt.Println()
 		log.Infof("  Target: %s", target.Name)
 
@@ -731,11 +734,57 @@ func main() {
 		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
 			failf("Failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
+	}
 
-		if err := projHelper.XcProj.Save(); err != nil {
-			failf("Failed to save project: %s", err)
+	if stepConf.SignUITestTargets {
+		fmt.Println()
+		log.Infof("Apply Bitrise managed codesigning on the UITest targets")
+		for _, uiTestTarget := range projHelper.UITestTargets {
+			fmt.Println()
+			log.Infof("  Target: %s", uiTestTarget.Name)
+
+			forceCodesignDistribution := stepConf.DistributionType()
+			if _, isDevelopmentAvailable := codesignSettingsByDistributionType[autoprovision.Development]; isDevelopmentAvailable {
+				forceCodesignDistribution = autoprovision.Development
+			}
+
+			codesignSettings, ok := codesignSettingsByDistributionType[forceCodesignDistribution]
+			if !ok {
+				failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
+			}
+			teamID = codesignSettings.Certificate.TeamID
+
+			// Use the main target's codesign settings
+			mainTargetBundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+			if err != nil {
+				failf(err.Error())
+			}
+
+			profile, ok := codesignSettings.ProfilesByBundleID[mainTargetBundleID]
+			if !ok {
+				failf("No profile ensured for the main target bundleID %s", mainTargetBundleID)
+			}
+
+			log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
+			log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
+			log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
+
+			// Force Signing on all configuration
+			for _, c := range uiTestTarget.BuildConfigurationList.BuildConfigurations {
+				// Ensure UITest target's bundle id matches the main target's bundle id
+				if err := projHelper.ForceUITestTargetBundleID(mainTargetBundleID, uiTestTarget.Name, c.Name); err != nil {
+					failf("Failed to force UITest target bundle id: %s", err)
+				}
+
+				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
+					failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
+				}
+			}
 		}
+	}
 
+	if err := projHelper.XcProj.Save(); err != nil {
+		failf("Failed to save project: %s", err)
 	}
 
 	// Install certificates and profiles

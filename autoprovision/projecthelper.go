@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/pretty"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/schemeint"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
@@ -20,10 +21,11 @@ import (
 
 // ProjectHelper ...
 type ProjectHelper struct {
-	MainTarget    xcodeproj.Target
-	Targets       []xcodeproj.Target
-	XcProj        xcodeproj.XcodeProj
-	Configuration string
+	MainTarget       xcodeproj.Target
+	DependentTargets []xcodeproj.Target
+	UITestTargets    []xcodeproj.Target
+	XcProj           xcodeproj.XcodeProj
+	Configuration    string
 
 	buildSettingsCache map[string]map[string]serialized.Object // target/config/buildSettings(serialized.Object)
 }
@@ -52,6 +54,15 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 		return nil, "", fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
 
+	dependentTargets := mainTarget.DependentExecutableProductTargets()
+
+	var uiTestTargets []xcodeproj.Target
+	for _, target := range xcproj.Proj.Targets {
+		if target.IsUITestProduct() && target.DependesOn(mainTarget.ID) {
+			uiTestTargets = append(uiTestTargets, target)
+		}
+	}
+
 	conf, err := configuration(configurationName, scheme, xcproj)
 	if err != nil {
 		return nil, "", err
@@ -61,21 +72,25 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	}
 
 	return &ProjectHelper{
-			MainTarget:    mainTarget,
-			Targets:       xcproj.Proj.Targets,
-			XcProj:        xcproj,
-			Configuration: conf,
+			MainTarget:       mainTarget,
+			DependentTargets: dependentTargets,
+			UITestTargets:    uiTestTargets,
+			XcProj:           xcproj,
+			Configuration:    conf,
 		}, conf,
 		nil
 }
 
+// ArchivableTargets ...
+func (p *ProjectHelper) ArchivableTargets() []xcodeproj.Target {
+	return append([]xcodeproj.Target{p.MainTarget}, p.DependentTargets...)
+}
+
 // ArchivableTargetBundleIDToEntitlements ...
 func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]serialized.Object, error) {
-	targets := append([]xcodeproj.Target{p.MainTarget}, p.MainTarget.DependentExecutableProductTargets(false)...)
-
 	entitlementsByBundleID := map[string]serialized.Object{}
 
-	for _, target := range targets {
+	for _, target := range p.ArchivableTargets() {
 		bundleID, err := p.TargetBundleID(target.Name, p.Configuration)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
@@ -116,7 +131,7 @@ func (p *ProjectHelper) Platform(configurationName string) (Platform, error) {
 func (p *ProjectHelper) ProjectTeamID(config string) (string, error) {
 	var teamID string
 
-	for _, target := range p.Targets {
+	for _, target := range p.XcProj.Proj.Targets {
 		currentTeamID, err := p.targetTeamID(target.Name, config)
 		if err != nil {
 			log.Debugf("%", err)
@@ -205,6 +220,68 @@ func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Objec
 	p.buildSettingsCache[name] = targetCache
 
 	return settings, nil
+}
+
+// ForceUITestTargetBundleID ...
+// Based on: https://github.com/appium/appium/issues/13086#issuecomment-588596234
+func (p *ProjectHelper) ForceUITestTargetBundleID(bundleID, targetName, configurationName string) error {
+	// Clear PRODUCT_BUNDLE_IDENTIFIER Build Settings
+	target, ok := p.XcProj.Proj.TargetByName(targetName)
+	if !ok {
+		return fmt.Errorf("failed to find target with name: %s", targetName)
+	}
+
+	buildConfigurationList, err := p.XcProj.BuildConfigurationList(target.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get target's (%s) buildConfigurationList, error: %s", target.ID, err)
+	}
+
+	buildConfigurations, err := p.XcProj.BuildConfigurations(buildConfigurationList)
+	if err != nil {
+		return fmt.Errorf("failed to get buildConfigurations of buildConfigurationList (%s), error: %s", pretty.Object(buildConfigurationList), err)
+	}
+
+	var buildConfiguration serialized.Object
+	for _, b := range buildConfigurations {
+		if b["name"] == configurationName {
+			buildConfiguration = b
+			break
+		}
+	}
+
+	if buildConfiguration == nil {
+		return fmt.Errorf("failed to find buildConfiguration for configuration %s in the buildConfiguration list: %s", configurationName, pretty.Object(buildConfigurations))
+	}
+
+	buildSettings, err := buildConfiguration.Object("buildSettings")
+	if err != nil {
+		return fmt.Errorf("failed to get buildSettings of buildConfiguration (%s), error: %s", pretty.Object(buildConfiguration), err)
+	}
+
+	buildSettings["PRODUCT_BUNDLE_IDENTIFIER"] = ""
+	log.Debugf(`Overwriting PRODUCT_BUNDLE_IDENTIFIER Build Setting: %s -> ""`, buildSettings["PRODUCT_BUNDLE_IDENTIFIER"])
+	// Call xcodeproj.XcodeProj.Save() to apply this change on the project
+
+	// Set Main target's bundle id in Info.plist
+	informationPropertyListPth, err := p.XcProj.TargetInfoplistPath(targetName, configurationName)
+	if err != nil {
+		return err
+	}
+
+	infoplist, format, err := p.XcProj.ReadTargetInfoplist(targetName, configurationName)
+	if err != nil {
+		return err
+	}
+
+	infoplist["CFBundleIdentifier"] = bundleID
+
+	log.Debugf(`Overwriting CFBundleIdentifier property in %s: %s -> %s`, informationPropertyListPth, infoplist["CFBundleIdentifier"], bundleID)
+
+	if err := p.XcProj.WriteTargetInfoplist(infoplist, format, targetName, configurationName); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // TargetBundleID returns the target bundle ID

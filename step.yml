@@ -117,15 +117,30 @@ inputs:
   - scheme: $BITRISE_SCHEME
     opts:
       title: Scheme name
-      description: The Xcode Scheme to use.
+      summary: The scheme name you want to use to archive your project later.
+      description: |-
+        The scheme selects the main Application Target of the project.
+
+        The step will manage the codesign settings of the main Application and related executable (Application and App Extension) targets.
       is_required: true
   - configuration:
     opts:
       title: Configuration name
       description: |-
-        The Xcode Configuration to use.
-        By default your Scheme defines which Configuration (for example, Debug, Release) should be used,
-        but you can overwrite it with this option.
+        Configuration (for example, Debug, Release) selects the Build Settings describing the managed executable targets' Signing (Code Signing Style, Development Team, Code Signing Identity, Provisioning Profile).
+
+        If not set the step will use the provided Scheme's Archive Action's Build Configuration.
+  - sign_uitest_targets: "no"
+    opts:
+      title: Should the step manage UITest target's codesigning?
+      description:
+        If set the step will manage the codesign settings of the UITest targets of the main Application.
+
+        The UITest targets' bundle id will be set to the main Application's bundle id,  
+        so that the same Signing can be used for both the main Application and related UITest targets.
+      value_options:
+        - "yes"
+        - "no"
   - min_profile_days_valid: 0
     opts:
       title: The minimum days the Provisioning Profile should be valid
