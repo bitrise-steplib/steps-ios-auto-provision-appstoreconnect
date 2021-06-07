@@ -1,4 +1,4 @@
-format_version: 11
+format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
@@ -53,7 +53,7 @@ workflows:
     - BITRISE_PROJECT_PATH: sample-apps-fastlane-test.xcodeproj
     - BITRISE_SCHEME: sample-apps-fastlane-test
     - IPA_EXPORT_METHOD: development
-    - APPSTORECONNECT_API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH 
+    - APPSTORECONNECT_API_KEY_URL: $APPSTORECONNECT_API_KEY_URL 
     - APPSTORECONNECT_API_KEY_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
     - BITRISE_CERTIFICATE_URL: $BITRISE_CERTIFICATE_URL
     - BITRISE_CERTIFICATE_PASSPHRASE: $BITRISE_CERTIFICATE_PASSPHRASE
@@ -72,10 +72,10 @@ workflows:
           - branch: $TEST_APP_BRANCH
           - clone_into_dir: ./_tmp
     - path::./:
-        run_if: true
+        run_if: "true"
         inputs:
         - connection: "off"
-        - api_key_path: $APPSTORECONNECT_API_KEY_PATH
+        - api_key_path: $APPSTORECONNECT_API_KEY_URL
         - api_issuer: $APPSTORECONNECT_API_KEY_ISSUER
         - certificate_urls: $BITRISE_CERTIFICATE_URL
         - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE
