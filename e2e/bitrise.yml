@@ -3,7 +3,6 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
-    - ORIG_BITRISE_SOURCE_DIR: $BITRISE_SOURCE_DIR
     # Shared test configs
     - BITRISE_KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
     # Shared test secrets
@@ -18,8 +17,10 @@ workflows:
     envs:
     - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
     - TEST_APP_BRANCH: master
-    - BITRISE_PROJECT_PATH: "$ORIG_BITRISE_SOURCE_DIR/_tmp/sample-apps-fastlane-test.xcodeproj"
+    - BITRISE_PROJECT_PATH: "sample-apps-fastlane-test.xcodeproj"
     - BITRISE_SCHEME: sample-apps-fastlane-test
+    - BITRISE_CONFIGURATION: 
+    - INSTALL_PODS: "false"
     - DISTRIBUTION_TYPE: development
     - CONNECTION: "off"
     - API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH
@@ -36,6 +37,7 @@ workflows:
       - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
       - BITRISE_SCHEME: ios-simple-objc
       - BITRISE_CONFIGURATION: Release
+      - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: ad-hoc
       - CONNECTION: "off"
       - API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH
@@ -52,24 +54,9 @@ workflows:
       - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
       - BITRISE_SCHEME: code-sign-test
       - BITRISE_CONFIGURATION:
+      - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "api_key"
-      - API_KEY_PATH:
-      - API_ISSUER: 
-    after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
-
-  test_xcode_managed_generate_enabled:
-    envs:
-      - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-ios-multi-target.git
-      - TEST_APP_BRANCH: automatic
-      - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
-      - BITRISE_SCHEME: code-sign-test
-      - BITRISE_CONFIGURATION:
-      - DISTRIBUTION_TYPE: app-store
-      - CONNECTION: "automatic"
       - API_KEY_PATH:
       - API_ISSUER: 
     after_run:
@@ -84,6 +71,7 @@ workflows:
       - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
       - BITRISE_SCHEME: code-sign-test
       - BITRISE_CONFIGURATION:
+      - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "automatic"
       - API_KEY_PATH:
@@ -144,40 +132,6 @@ workflows:
     - _check_outputs
     - _check_xcode_archive
 
-  test_tvos_managed:
-    envs:
-      - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-tvos-swift.git
-      - TEST_APP_BRANCH: master
-      - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
-      - BITRISE_SCHEME: NPO Live
-      - BITRISE_CONFIGURATION:
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: app-store
-      - CONNECTION: "automatic"
-      - API_KEY_PATH:
-      - API_ISSUER: 
-    after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
-
-  test_tvos_development_managed:
-    envs:
-      - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-tvos-swift.git
-      - TEST_APP_BRANCH: master
-      - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
-      - BITRISE_SCHEME: NPO Live
-      - BITRISE_CONFIGURATION:
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: development
-      - CONNECTION: "automatic"
-      - API_KEY_PATH:
-      - API_ISSUER: 
-    after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
-
   test_new_certificates:
     title: Test new Apple Development and Distribution certificates
     description: |-
@@ -189,6 +143,7 @@ workflows:
       - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
       - BITRISE_SCHEME: ios-simple-objc
       - BITRISE_CONFIGURATION: Release
+      - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - BITRISE_CERTIFICATE_PASSPHRASE_LIST: |
       - BITRISE_CERTIFICATE_URL_LIST: $BITRISEIO_DEVELOPMENT_AND_DISTRIBUTION_CERTIFICATES_URL
@@ -224,12 +179,10 @@ workflows:
             - connection: $CONNECTION
             - api_key_path: $API_KEY_PATH
             - api_issuer: $API_ISSUER
-            - build_api_token: $BITRISE_BUILD_API_TOKEN
-            - build_url: $BITRISE_BUILD_URL
             - certificate_urls: $BITRISE_CERTIFICATE_URL_LIST
             - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE_LIST
             - distribution_type: $DISTRIBUTION_TYPE
-            - project_path: $BITRISE_PROJECT_PATH
+            - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
             - scheme: $BITRISE_SCHEME
             - configuration: $BITRISE_CONFIGURATION
             - keychain_path: $BITRISE_KEYCHAIN_PATH
