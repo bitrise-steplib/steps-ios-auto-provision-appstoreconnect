@@ -9,26 +9,27 @@ app:
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
     - BITRISE_CERTIFICATE_URL_LIST: $BITRISE_CERTIFICATE_URL_LIST
     - BITRISE_CERTIFICATE_PASSPHRASE_LIST: $BITRISE_CERTIFICATE_PASSPHRASE_LIST
-    - APPSTORECONNECT_API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH 
+    - APPSTORECONNECT_API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH
     - APPSTORECONNECT_API_KEY_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
 
 workflows:
   test_uitest_target:
     envs:
-    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
-    - TEST_APP_BRANCH: master
-    - BITRISE_PROJECT_PATH: "sample-apps-fastlane-test.xcodeproj"
-    - BITRISE_SCHEME: sample-apps-fastlane-test
-    - BITRISE_CONFIGURATION: 
-    - INSTALL_PODS: "false"
-    - DISTRIBUTION_TYPE: development
-    - CONNECTION: "off"
-    - API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH
-    - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+      - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
+      - TEST_APP_BRANCH: master
+      - BITRISE_PROJECT_PATH: "sample-apps-fastlane-test.xcodeproj"
+      - BITRISE_SCHEME: sample-apps-fastlane-test
+      - BITRISE_CONFIGURATION:
+      - SIGN_UITEST_TARGET: "yes"
+      - INSTALL_PODS: "false"
+      - DISTRIBUTION_TYPE: development
+      - CONNECTION: "off"
+      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH
+      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_build_for_test
+      - _run
+      - _check_outputs
+      - _check_xcode_build_for_test
 
   test_bundle_id:
     envs:
@@ -37,15 +38,16 @@ workflows:
       - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
       - BITRISE_SCHEME: ios-simple-objc
       - BITRISE_CONFIGURATION: Release
+      - SIGN_UITEST_TARGET: "no"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: ad-hoc
       - CONNECTION: "off"
       - API_KEY_PATH: $APPSTORECONNECT_API_KEY_PATH
       - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
+      - _run
+      - _check_outputs
+      - _check_xcode_archive
 
   test_xcode_managed:
     envs:
@@ -54,15 +56,16 @@ workflows:
       - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
       - BITRISE_SCHEME: code-sign-test
       - BITRISE_CONFIGURATION:
+      - SIGN_UITEST_TARGET: "no"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "api_key"
       - API_KEY_PATH:
-      - API_ISSUER: 
+      - API_ISSUER:
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
+      - _run
+      - _check_outputs
+      - _check_xcode_archive
 
   test_entitlements:
     envs:
@@ -71,15 +74,16 @@ workflows:
       - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
       - BITRISE_SCHEME: code-sign-test
       - BITRISE_CONFIGURATION:
+      - SIGN_UITEST_TARGET: "no"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "automatic"
       - API_KEY_PATH:
-      - API_ISSUER: 
+      - API_ISSUER:
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
+      - _run
+      - _check_outputs
+      - _check_xcode_archive
 
   test_workspace:
     envs:
@@ -88,15 +92,16 @@ workflows:
       - BITRISE_PROJECT_PATH: iOSMinimalCocoaPodsSample/iOSMinimalCocoaPodsSample.xcworkspace
       - BITRISE_SCHEME: iOSMinimalCocoaPodsSample
       - BITRISE_CONFIGURATION:
+      - SIGN_UITEST_TARGET: "no"
       - INSTALL_PODS: "true"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "automatic"
       - API_KEY_PATH:
-      - API_ISSUER: 
+      - API_ISSUER:
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
+      - _run
+      - _check_outputs
+      - _check_xcode_archive
 
   test_tvos:
     envs:
@@ -105,15 +110,16 @@ workflows:
       - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
       - BITRISE_SCHEME: NPO Live
       - BITRISE_CONFIGURATION:
+      - SIGN_UITEST_TARGET: "no"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "automatic"
       - API_KEY_PATH:
-      - API_ISSUER: 
+      - API_ISSUER:
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
+      - _run
+      - _check_outputs
+      - _check_xcode_archive
 
   test_tvos_development:
     envs:
@@ -122,15 +128,16 @@ workflows:
       - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
       - BITRISE_SCHEME: NPO Live
       - BITRISE_CONFIGURATION:
+      - SIGN_UITEST_TARGET: "no"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
       - CONNECTION: "automatic"
       - API_KEY_PATH:
-      - API_ISSUER: 
+      - API_ISSUER:
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
+      - _run
+      - _check_outputs
+      - _check_xcode_archive
 
   test_new_certificates:
     title: Test new Apple Development and Distribution certificates
@@ -143,51 +150,53 @@ workflows:
       - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
       - BITRISE_SCHEME: ios-simple-objc
       - BITRISE_CONFIGURATION: Release
+      - SIGN_UITEST_TARGET: "no"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - BITRISE_CERTIFICATE_PASSPHRASE_LIST: |
       - BITRISE_CERTIFICATE_URL_LIST: $BITRISEIO_DEVELOPMENT_AND_DISTRIBUTION_CERTIFICATES_URL
       - CONNECTION: "automatic"
       - API_KEY_PATH:
-      - API_ISSUER: 
+      - API_ISSUER:
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
+      - _run
+      - _check_outputs
+      - _check_xcode_archive
 
   _run:
     steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-            rm -rf "./_tmp"
-            mkdir -p "./_tmp"
-    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
-         inputs:
-           - repository_url: $TEST_APP_URL
-           - branch: $TEST_APP_BRANCH
-           - clone_into_dir: "./_tmp"
-    - cocoapods-install:
-        run_if: '{{enveq "INSTALL_PODS" "true"}}'
-        title: CocoaPods install
-    - path::./:
-        title: Step Test
-        run_if: "true"
-        inputs:
-          - connection: $CONNECTION
-          - api_key_path: $API_KEY_PATH
-          - api_issuer: $API_ISSUER
-          - certificate_urls: $BITRISE_CERTIFICATE_URL_LIST
-          - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE_LIST
-          - distribution_type: $DISTRIBUTION_TYPE
-          - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
-          - scheme: $BITRISE_SCHEME
-          - configuration: $BITRISE_CONFIGURATION
-          - keychain_path: $BITRISE_KEYCHAIN_PATH
-          - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
-          - verbose_log: "yes"
+      - script:
+          inputs:
+            - content: |-
+                #!/bin/bash
+                set -ex
+                rm -rf "./_tmp"
+                mkdir -p "./_tmp"
+      - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
+          inputs:
+            - repository_url: $TEST_APP_URL
+            - branch: $TEST_APP_BRANCH
+            - clone_into_dir: "./_tmp"
+      - cocoapods-install:
+          run_if: '{{enveq "INSTALL_PODS" "true"}}'
+          title: CocoaPods install
+      - path::./:
+          title: Step Test
+          run_if: "true"
+          inputs:
+            - connection: $CONNECTION
+            - api_key_path: $API_KEY_PATH
+            - api_issuer: $API_ISSUER
+            - certificate_urls: $BITRISE_CERTIFICATE_URL_LIST
+            - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE_LIST
+            - distribution_type: $DISTRIBUTION_TYPE
+            - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
+            - scheme: $BITRISE_SCHEME
+            - configuration: $BITRISE_CONFIGURATION
+            - sign_uitest_targets: $SIGN_UITEST_TARGET
+            - keychain_path: $BITRISE_KEYCHAIN_PATH
+            - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
+            - verbose_log: "yes"
 
   _check_outputs:
     steps:
@@ -211,10 +220,10 @@ workflows:
       - xcode-archive:
           title: Xcode archive
           inputs:
-            - export_method: $DISTRIBUTION_TYPE
-            - project_path: $BITRISE_PROJECT_PATH
+            - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
             - scheme: $BITRISE_SCHEME
             - configuration: $BITRISE_CONFIGURATION
+            - export_method: $DISTRIBUTION_TYPE
             - output_tool: xcodebuild
       - deploy-to-bitrise-io:
           inputs:
@@ -222,11 +231,12 @@ workflows:
 
   _check_xcode_build_for_test:
     steps:
-    - xcode-build-for-test@0:
-        inputs:
-        - scheme: $BITRISE_SCHEME
-        - project_path: $BITRISE_PROJECT_PATH
-        - configuration: Debug
-    - deploy-to-bitrise-io:
-        inputs:
-          - notify_user_groups: none
+      - xcode-build-for-test@0:
+          inputs:
+            - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
+            - scheme: $BITRISE_SCHEME
+            - configuration: Debug
+            - output_tool: xcodebuild
+      - deploy-to-bitrise-io:
+          inputs:
+            - notify_user_groups: none
