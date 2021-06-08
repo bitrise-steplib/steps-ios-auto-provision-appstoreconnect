@@ -5,9 +5,9 @@ workflows:
   ci:
      after_run:
      - check
-     - e2e_tests
+     - e2e
 
-  e2e_tests:
+  e2e:
     steps:
     - bitrise-run:
         inputs:
