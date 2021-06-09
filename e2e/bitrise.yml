@@ -7,8 +7,8 @@ app:
     - BITRISE_KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
     # Shared test secrets
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
-    - APPLE_CERTIFICATE_URL_LIST: $APPLE_CERTIFICATE_URL_LIST
-    - APPLE_CERTIFICATE_PASSHRASE: $APPLE_CERTIFICATE_PASSHRASE
+    - IOS_APPLE_CERTIFICATE_URL_LIST: $IOS_APPLE_CERTIFICATE_URL_LIST
+    - IOS_APPLE_CERTIFICATE_PASSHRASE: $IOS_APPLE_CERTIFICATE_PASSHRASE
     - APPSTORECONNECT_API_KEY_URL: $APPSTORECONNECT_API_KEY_URL
     - APPSTORECONNECT_API_KEY_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
 
@@ -203,8 +203,8 @@ workflows:
             - connection: $CONNECTION
             - api_key_path: $API_KEY_PATH
             - api_issuer: $API_ISSUER
-            - certificate_urls: $APPLE_CERTIFICATE_URL_LIST
-            - passphrases: $APPLE_CERTIFICATE_PASSHRASE
+            - certificate_urls: $IOS_APPLE_CERTIFICATE_URL_LIST
+            - passphrases: $IOS_APPLE_CERTIFICATE_PASSHRASE
             - distribution_type: $DISTRIBUTION_TYPE
             - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
             - scheme: $BITRISE_SCHEME
