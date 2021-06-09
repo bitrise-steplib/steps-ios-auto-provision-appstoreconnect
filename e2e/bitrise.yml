@@ -7,13 +7,21 @@ app:
     - BITRISE_KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
     # Shared test secrets
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
-    - BITRISE_CERTIFICATE_URL_LIST: $BITRISE_CERTIFICATE_URL_LIST
-    - BITRISE_CERTIFICATE_PASSPHRASE_LIST: $BITRISE_CERTIFICATE_PASSPHRASE_LIST
+    - APPLE_CERTIFICATE_URL_LIST: $APPLE_CERTIFICATE_URL_LIST
+    - APPLE_CERTIFICATE_PASSHRASE: $APPLE_CERTIFICATE_PASSHRASE
     - APPSTORECONNECT_API_KEY_URL: $APPSTORECONNECT_API_KEY_URL
     - APPSTORECONNECT_API_KEY_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
 
 workflows:
   test_uitest_target:
+    steps:
+    - bitrise-run:
+        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-vs4mac-stable"}}'
+        inputs:
+        - workflow_id: utility_test_uitest_target
+        - bitrise_config_path: ./e2e/bitrise.yml
+
+  utility_test_uitest_target:
     envs:
       - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
       - TEST_APP_BRANCH: master
@@ -187,8 +195,8 @@ workflows:
             - connection: $CONNECTION
             - api_key_path: $API_KEY_PATH
             - api_issuer: $API_ISSUER
-            - certificate_urls: $BITRISE_CERTIFICATE_URL_LIST
-            - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE_LIST
+            - certificate_urls: $APPLE_CERTIFICATE_URL_LIST
+            - passphrases: $APPLE_CERTIFICATE_PASSHRASE
             - distribution_type: $DISTRIBUTION_TYPE
             - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
             - scheme: $BITRISE_SCHEME
