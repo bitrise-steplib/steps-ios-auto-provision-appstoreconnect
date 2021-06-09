@@ -16,7 +16,7 @@ workflows:
   test_uitest_target:
     steps:
     - bitrise-run:
-        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-11.7.x"}}'
+        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-10.3.x"}}'
         inputs:
         - workflow_id: utility_test_uitest_target
         - bitrise_config_path: ./e2e/bitrise.yml
@@ -94,6 +94,14 @@ workflows:
       - _check_xcode_archive
 
   test_workspace:
+    steps:
+    - bitrise-run:
+        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-10.3.x"}}'
+        inputs:
+        - workflow_id: utility_test_workspace
+        - bitrise_config_path: ./e2e/bitrise.yml
+
+  utility_test_workspace:
     envs:
       - TEST_APP_URL: https://github.com/bitrise-samples/ios-cocoapods-minimal-sample.git
       - TEST_APP_BRANCH: master
