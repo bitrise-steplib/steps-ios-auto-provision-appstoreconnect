@@ -68,8 +68,8 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "api_key"
-      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+      - API_KEY_PATH:
+      - API_ISSUER:
     after_run:
       - _run
       - _check_outputs
@@ -86,8 +86,8 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "automatic"
-      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+      - API_KEY_PATH:
+      - API_ISSUER:
     after_run:
       - _run
       - _check_outputs
@@ -112,8 +112,8 @@ workflows:
       - INSTALL_PODS: "true"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "automatic"
-      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+      - API_KEY_PATH:
+      - API_ISSUER:
     after_run:
       - _run
       - _check_outputs
@@ -130,8 +130,8 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: app-store
       - CONNECTION: "automatic"
-      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+      - API_KEY_PATH:
+      - API_ISSUER:
     after_run:
       - _run
       - _check_outputs
@@ -148,8 +148,8 @@ workflows:
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
       - CONNECTION: "automatic"
-      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+      - API_KEY_PATH:
+      - API_ISSUER:
     after_run:
       - _run
       - _check_outputs
@@ -172,8 +172,8 @@ workflows:
       # - BITRISE_CERTIFICATE_PASSPHRASE_LIST: |
       # - BITRISE_CERTIFICATE_URL_LIST: $BITRISEIO_DEVELOPMENT_AND_DISTRIBUTION_CERTIFICATES_URL
       - CONNECTION: "automatic"
-      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+      - API_KEY_PATH:
+      - API_ISSUER:
     after_run:
       - _run
       - _check_outputs
