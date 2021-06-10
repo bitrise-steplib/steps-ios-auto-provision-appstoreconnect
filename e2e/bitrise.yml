@@ -13,13 +13,13 @@ app:
     - APPSTORECONNECT_API_KEY_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
 
 workflows:
-  test_uitest_target:
-    steps:
-    - bitrise-run:
-        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-10.3.x"}}'
-        inputs:
-        - workflow_id: utility_test_uitest_target
-        - bitrise_config_path: ./e2e/bitrise.yml
+  # test_uitest_target:
+  #   steps:
+  #   - bitrise-run:
+  #       run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-10.3.x"}}'
+  #       inputs:
+  #       - workflow_id: utility_test_uitest_target
+  #       - bitrise_config_path: ./e2e/bitrise.yml
 
   utility_test_uitest_target:
     envs:
