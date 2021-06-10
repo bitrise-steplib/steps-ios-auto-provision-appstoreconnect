@@ -9,6 +9,16 @@ workflows:
 
   e2e:
     steps:
+    - script@1.1.5:
+        inputs:
+        - content: |-
+            set -e
+            set -x
+
+            DEV_DATA_PATH=apple_developer_portal_data.json
+            curl -s -X GET -H "BUILD_API_TOKEN: $BITRISE_BUILD_API_TOKEN" $BITRISE_BUILD_URL/apple_developer_portal_data.json > $DEV_DATA_PATH
+            cp $DEV_DATA_PATH $BITRISE_DEPLOY_DIR
+    - deploy-to-bitrise-io@1: {}
     - git::https://github.com/bitrise-steplib/steps-check.git:
         inputs:
         - workflow: e2e
