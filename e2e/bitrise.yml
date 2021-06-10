@@ -121,6 +121,14 @@ workflows:
       - _check_xcode_archive
 
   test_tvos:
+    steps:
+    - bitrise-run:
+        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-13.0.x"}}'
+        inputs:
+        - workflow_id: utility_test_tvos
+        - bitrise_config_path: ./e2e/bitrise.yml
+
+  utility_test_tvos:
     envs:
       - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-tvos-swift.git
       - TEST_APP_BRANCH: master
