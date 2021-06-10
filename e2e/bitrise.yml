@@ -74,6 +74,7 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - curl_appstoreconnent
 
   test_entitlements:
     envs:
@@ -92,6 +93,7 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - curl_appstoreconnent
 
   # test_workspace:
   #   steps:
@@ -118,6 +120,7 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - curl_appstoreconnent
 
   test_tvos:
     envs:
@@ -136,6 +139,7 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - curl_appstoreconnent
 
   test_tvos_development:
     envs:
@@ -154,6 +158,7 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - curl_appstoreconnent
 
   test_new_certificates:
     title: Test new Apple Development and Distribution certificates
@@ -178,6 +183,7 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - curl_appstoreconnent
 
   _run:
     steps:
@@ -256,3 +262,16 @@ workflows:
       - deploy-to-bitrise-io:
           inputs:
             - notify_user_groups: none
+
+  curl_appstoreconnent:
+    steps:
+    - script@1.1.5:
+        inputs:
+        - content: |-
+            set -e
+            set -x
+
+            DEV_DATA_PATH=apple_developer_portal_data.json
+            curl -s -X GET -H "BUILD_API_TOKEN: $BITRISE_BUILD_API_TOKEN" $BITRISE_BUILD_URL/apple_developer_portal_data.json > $DEV_DATA_PATH
+            cp $DEV_DATA_PATH $BITRISE_DEPLOY_DIR
+    - deploy-to-bitrise-io@1: {}
