@@ -668,8 +668,8 @@ func main() {
 					log.Debugf("dropping device %s, since device type: %s, required device type: APPLE_TV", d.ID, d.Attributes.DeviceClass)
 					continue
 				} else if strings.HasPrefix(string(profileType), "IOS") &&
-					string(d.Attributes.DeviceClass) != "IPHONE" && string(d.Attributes.DeviceClass) != "IPAD" && string(d.Attributes.DeviceClass) != "IPOD" {
-					log.Debugf("dropping device %s, since device type: %s, required device type: IPHONE, IPAD or IPOD", d.ID, d.Attributes.DeviceClass)
+					string(d.Attributes.DeviceClass) != "IPHONE" && string(d.Attributes.DeviceClass) != "IPAD" && string(d.Attributes.DeviceClass) != "IPOD" && string(d.Attributes.DeviceClass) != "APPLE_WATCH" {
+					log.Debugf("dropping device %s, since device type: %s, required device type: IPHONE, IPAD, IPOD or APPLE_WATCH", d.ID, d.Attributes.DeviceClass)
 					continue
 				}
 				deviceIDs = append(deviceIDs, d.ID)
