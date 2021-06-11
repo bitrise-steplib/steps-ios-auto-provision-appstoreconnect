@@ -223,8 +223,6 @@ outputs:
   - BITRISE_PRODUCTION_CODESIGN_IDENTITY:
     opts:
       title: "The production codesign identity's name"
-    opts:
-      title: "The production codesign identity's name"
       description: |-
         The production codesign identity's name, for example, `iPhone Distribution: Bitrise Bot (VV2J4SV8V4.
   - BITRISE_DEVELOPMENT_PROFILE:
