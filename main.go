@@ -126,13 +126,6 @@ func needToRegisterDevices(distrTypes []autoprovision.DistributionType) bool {
 	return false
 }
 
-func keys(obj map[string]serialized.Object) (s []string) {
-	for key := range obj {
-		s = append(s, key)
-	}
-	return
-}
-
 func failf(format string, args ...interface{}) {
 	log.Errorf(format, args...)
 	os.Exit(1)
