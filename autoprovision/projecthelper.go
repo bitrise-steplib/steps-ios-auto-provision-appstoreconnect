@@ -86,11 +86,10 @@ func (p *ProjectHelper) ArchivableTargets() []xcodeproj.Target {
 	return append([]xcodeproj.Target{p.MainTarget}, p.DependentTargets...)
 }
 
-// ArchivableTargetBundleIDToEntitlements ...
-func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]serialized.Object, error) {
+func (p *ProjectHelper) targetBundleIDToEntitlements(targets []xcodeproj.Target) (map[string]serialized.Object, error) {
 	entitlementsByBundleID := map[string]serialized.Object{}
 
-	for _, target := range p.ArchivableTargets() {
+	for _, target := range targets {
 		bundleID, err := p.TargetBundleID(target.Name, p.Configuration)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
@@ -105,6 +104,16 @@ func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]ser
 	}
 
 	return entitlementsByBundleID, nil
+}
+
+// ArchivableTargetBundleIDToEntitlements ...
+func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]serialized.Object, error) {
+	return p.targetBundleIDToEntitlements(p.ArchivableTargets())
+}
+
+// UITestTargetBundleIDToEntitlements ...
+func (p *ProjectHelper) UITestTargetBundleIDToEntitlements() (map[string]serialized.Object, error) {
+	return p.targetBundleIDToEntitlements(p.UITestTargets)
 }
 
 // Platform get the platform (PLATFORM_DISPLAY_NAME) - iOS, tvOS, macOS
