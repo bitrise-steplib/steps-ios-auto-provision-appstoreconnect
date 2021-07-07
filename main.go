@@ -408,6 +408,15 @@ func handleSessionDataError(err error) {
 	log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 }
 
+func createWildcardBundleID(bundleID string) (string, error) {
+	idx := strings.LastIndex(bundleID, ".")
+	if idx == -1 {
+		return "", fmt.Errorf("invalid bundle id (%s): does not contain *", bundleID)
+	}
+
+	return bundleID[:idx] + ".*", nil
+}
+
 func main() {
 	var stepConf Config
 	if err := stepconf.Parse(&stepConf); err != nil {
@@ -692,12 +701,13 @@ func main() {
 		}
 
 		if stepConf.SignUITestTargets && distrType == autoprovision.Development {
+			// Capabilities are not supported for UITest targets.
+			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
 			for _, bundleIDIdentifier := range uiTestTargetBundleIDs {
-				idx := strings.LastIndex(bundleIDIdentifier, ".")
-				if idx == -1 {
-					failf("Could not create wildcard bundle id from: %s", bundleIDIdentifier)
+				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
+				if err != nil {
+					failf("Could not create wildcard bundle id: %s", err)
 				}
-				wildcardBundleID := bundleIDIdentifier[:idx] + ".*"
 
 				// Capabilities are not supported for UITest targets.
 				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
