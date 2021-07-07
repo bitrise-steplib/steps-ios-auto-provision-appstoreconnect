@@ -549,7 +549,7 @@ func main() {
 		distrTypes = append(distrTypes, autoprovision.Development)
 
 		if stepConf.SignUITestTargets {
-			log.Warnf("UITest target requires development code signing in addition to the specified %s codes signing", stepConf.DistributionType())
+			log.Warnf("UITest target requires development code signing in addition to the specified %s code signing", stepConf.DistributionType())
 			requiredCertTypes[appstoreconnect.IOSDevelopment] = true
 		} else {
 			requiredCertTypes[appstoreconnect.IOSDevelopment] = false
