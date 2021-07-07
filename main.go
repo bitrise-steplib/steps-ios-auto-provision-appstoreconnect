@@ -513,14 +513,9 @@ func main() {
 		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
 	}
 
-	uiTestTargetBundleIDToEntitlements, err := projHelper.UITestTargetBundleIDToEntitlements()
+	uiTestTargetBundleIDs, err := projHelper.UITestTargetBundleIDs()
 	if err != nil {
 		failf("Failed to read UITest targets' entitlements: %s", err)
-	}
-
-	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(uiTestTargetBundleIDToEntitlements); !ok {
-		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
-		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
 	}
 
 	// Downloading certificates
@@ -697,14 +692,15 @@ func main() {
 		}
 
 		if stepConf.SignUITestTargets && distrType == autoprovision.Development {
-			for bundleIDIdentifier, entitlements := range uiTestTargetBundleIDToEntitlements {
+			for _, bundleIDIdentifier := range uiTestTargetBundleIDs {
 				idx := strings.LastIndex(bundleIDIdentifier, ".")
 				if idx == -1 {
 					failf("Could not create wildcard bundle id from: %s", bundleIDIdentifier)
 				}
 				wildcardBundleID := bundleIDIdentifier[:idx] + ".*"
 
-				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, entitlements, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
+				// Capabilities are not supported for UITest targets.
+				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
 				if err != nil {
 					failf(err.Error())
 				}
