@@ -698,8 +698,13 @@ func main() {
 
 		if stepConf.SignUITestTargets && distrType == autoprovision.Development {
 			for bundleIDIdentifier, entitlements := range uiTestTargetBundleIDToEntitlements {
-				xctRunnerBundleIDIdentifier := bundleIDIdentifier + ".xctrunner"
-				profile, err := profileManager.EnsureProfile(profileType, xctRunnerBundleIDIdentifier, entitlements, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
+				idx := strings.LastIndex(bundleIDIdentifier, ".")
+				if idx == -1 {
+					failf("Could not create wildcard bundle id from: %s", bundleIDIdentifier)
+				}
+				wildcardBundleID := bundleIDIdentifier[:idx] + ".*"
+
+				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, entitlements, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
 				if err != nil {
 					failf(err.Error())
 				}

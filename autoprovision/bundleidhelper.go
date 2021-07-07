@@ -125,8 +125,12 @@ func SyncBundleID(client *appstoreconnect.Client, bundleIDID string, entitlement
 }
 
 func appIDName(bundleID string) string {
-	r := strings.NewReplacer(".", " ", "_", " ", "-", " ")
-	return "Bitrise " + r.Replace(bundleID)
+	prefix := ""
+	if strings.HasSuffix(bundleID, ".*") {
+		prefix = "Wildcard "
+	}
+	r := strings.NewReplacer(".", " ", "_", " ", "-", " ", "*", " ")
+	return prefix + "Bitrise " + r.Replace(bundleID)
 }
 
 // CreateBundleID ...

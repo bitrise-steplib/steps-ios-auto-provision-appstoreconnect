@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -36,7 +37,14 @@ func ProfileName(profileType appstoreconnect.ProfileType, bundleID string) (stri
 		return "", fmt.Errorf("unknown profile type: %s", profileType)
 	}
 
-	return fmt.Sprintf("Bitrise %s %s - (%s)", platform, distribution, bundleID), nil
+	prefix := ""
+	if strings.HasSuffix(bundleID, ".*") {
+		// `*` char is not allowed in Profile name.
+		bundleID = strings.TrimSuffix(bundleID, ".*")
+		prefix = "Wildcard "
+	}
+
+	return fmt.Sprintf("%sBitrise %s %s - (%s)", prefix, platform, distribution, bundleID), nil
 }
 
 // FindProfile ...
