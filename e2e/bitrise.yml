@@ -28,7 +28,7 @@ workflows:
       - TEST_APP_BRANCH: master
       - BITRISE_PROJECT_PATH: "sample-apps-fastlane-test.xcodeproj"
       - BITRISE_SCHEME: sample-apps-fastlane-test
-      - BITRISE_CONFIGURATION:
+      - BITRISE_CONFIGURATION: Debug
       - SIGN_UITEST_TARGET: "yes"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
@@ -218,14 +218,6 @@ workflows:
       - cocoapods-install:
           run_if: '{{enveq "INSTALL_PODS" "true"}}'
           title: CocoaPods install
-      - certificate-and-profile-installer:
-          inputs:
-            - certificate_url: $IOS_APPLE_CERTIFICATE_URL_LIST
-            - certificate_passphrase: $IOS_APPLE_CERTIFICATE_PASSHRASE
-            - provisioning_profile_url: $APPLE_PROVISIONING_PROFILE_URL_LIST
-            - install_defaults: "no"
-            - keychain_path: $BITRISE_KEYCHAIN_PATH
-            - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
       - path::./:
           title: Step Test
           run_if: "true"
