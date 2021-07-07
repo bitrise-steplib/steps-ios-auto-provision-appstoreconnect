@@ -14,15 +14,40 @@ app:
     - APPSTORECONNECT_API_KEY_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
 
 workflows:
-  test_uitest_target:
+  test_xcode13_uitest_signing:
+    steps:
+      - bitrise-run:
+          inputs:
+            - workflow_id: utility_test_xcode13_uitest_signing
+            - bitrise_config_path: ./e2e/bitrise.yml
+
+  utility_test_xcode13_uitest_signing:
+    envs:
+      - TEST_APP_URL: https://github.com/bitrise-io/sample-xcode-13-empty.git
+      - TEST_APP_BRANCH: main
+      - BITRISE_PROJECT_PATH: "sample-xcode-13-empty.xcodeproj"
+      - BITRISE_SCHEME: sample-xcode-13-empty
+      - BITRISE_CONFIGURATION: Debug
+      - SIGN_UITEST_TARGET: "yes"
+      - INSTALL_PODS: "false"
+      - DISTRIBUTION_TYPE: development
+      - CONNECTION: "off"
+      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
+      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+    after_run:
+      - _run
+      - _check_outputs
+      - _check_xcode_build_for_test
+
+  test_uitest_signing:
     steps:
     - bitrise-run:
         run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-10.3.x"}}'
         inputs:
-        - workflow_id: utility_test_uitest_target
+        - workflow_id: utility_test_uitest_signing
         - bitrise_config_path: ./e2e/bitrise.yml
 
-  utility_test_uitest_target:
+  utility_test_uitest_signing:
     envs:
       - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
       - TEST_APP_BRANCH: master
