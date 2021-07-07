@@ -40,7 +40,7 @@ func ProfileName(profileType appstoreconnect.ProfileType, bundleID string) (stri
 }
 
 // FindProfile ...
-func FindProfile(client *appstoreconnect.Client, name string, profileType appstoreconnect.ProfileType, bundleIDIdentifier string) (*appstoreconnect.Profile, error) {
+func FindProfile(client *appstoreconnect.Client, name string, profileType appstoreconnect.ProfileType) (*appstoreconnect.Profile, error) {
 	opt := &appstoreconnect.ListProfilesOptions{
 		PagingOptions: appstoreconnect.PagingOptions{
 			Limit: 1,

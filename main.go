@@ -276,7 +276,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 		return nil, fmt.Errorf("failed to create profile name: %s", err)
 	}
 
-	profile, err := autoprovision.FindProfile(m.client, name, profileType, bundleIDIdentifier)
+	profile, err := autoprovision.FindProfile(m.client, name, profileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find profile: %s", err)
 	}
