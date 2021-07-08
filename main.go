@@ -126,13 +126,6 @@ func needToRegisterDevices(distrTypes []autoprovision.DistributionType) bool {
 	return false
 }
 
-func keys(obj map[string]serialized.Object) (s []string) {
-	for key := range obj {
-		s = append(s, key)
-	}
-	return
-}
-
 func failf(format string, args ...interface{}) {
 	log.Errorf(format, args...)
 	os.Exit(1)
@@ -283,7 +276,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 		return nil, fmt.Errorf("failed to create profile name: %s", err)
 	}
 
-	profile, err := autoprovision.FindProfile(m.client, name, profileType, bundleIDIdentifier)
+	profile, err := autoprovision.FindProfile(m.client, name, profileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find profile: %s", err)
 	}
@@ -415,6 +408,15 @@ func handleSessionDataError(err error) {
 	log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 }
 
+func createWildcardBundleID(bundleID string) (string, error) {
+	idx := strings.LastIndex(bundleID, ".")
+	if idx == -1 {
+		return "", fmt.Errorf("invalid bundle id (%s): does not contain *", bundleID)
+	}
+
+	return bundleID[:idx] + ".*", nil
+}
+
 func main() {
 	var stepConf Config
 	if err := stepconf.Parse(&stepConf); err != nil {
@@ -499,11 +501,6 @@ func main() {
 
 	log.Printf("Platform: %s", platform)
 
-	entitlementsByBundleID, err := projHelper.ArchivableTargetBundleIDToEntitlements()
-	if err != nil {
-		failf("Failed to read bundle ID entitlements: %s", err)
-	}
-
 	log.Printf("Application and App Extension targets:")
 	for _, target := range projHelper.ArchivableTargets() {
 		log.Printf("- %s", target.Name)
@@ -515,9 +512,19 @@ func main() {
 		}
 	}
 
-	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(entitlementsByBundleID); !ok {
+	archivableTargetBundleIDToEntitlements, err := projHelper.ArchivableTargetBundleIDToEntitlements()
+	if err != nil {
+		failf("Failed to read archivable targets' entitlements: %s", err)
+	}
+
+	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(archivableTargetBundleIDToEntitlements); !ok {
 		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
 		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
+	}
+
+	uiTestTargetBundleIDs, err := projHelper.UITestTargetBundleIDs()
+	if err != nil {
+		failf("Failed to read UITest targets' entitlements: %s", err)
 	}
 
 	// Downloading certificates
@@ -549,7 +556,13 @@ func main() {
 	requiredCertTypes := map[appstoreconnect.CertificateType]bool{certType: true}
 	if stepConf.DistributionType() != autoprovision.Development {
 		distrTypes = append(distrTypes, autoprovision.Development)
-		requiredCertTypes[appstoreconnect.IOSDevelopment] = false
+
+		if stepConf.SignUITestTargets {
+			log.Warnf("UITest target requires development code signing in addition to the specified %s code signing", stepConf.DistributionType())
+			requiredCertTypes[appstoreconnect.IOSDevelopment] = true
+		} else {
+			requiredCertTypes[appstoreconnect.IOSDevelopment] = false
+		}
 	}
 
 	certClient := autoprovision.APIClient(client)
@@ -611,8 +624,9 @@ func main() {
 
 	// Ensure Profiles
 	type CodesignSettings struct {
-		ProfilesByBundleID map[string]appstoreconnect.Profile
-		Certificate        certificateutil.CertificateInfoModel
+		ArchivableTargetProfilesByBundleID map[string]appstoreconnect.Profile
+		UITestTargetProfilesByBundleID     map[string]appstoreconnect.Profile
+		Certificate                        certificateutil.CertificateInfoModel
 	}
 
 	codesignSettingsByDistributionType := map[autoprovision.DistributionType]CodesignSettings{}
@@ -629,7 +643,7 @@ func main() {
 
 	for _, distrType := range distrTypes {
 		fmt.Println()
-		log.Infof("Checking %s provisioning profiles for %d bundle id(s)", distrType, len(entitlementsByBundleID))
+		log.Infof("Checking %s provisioning profiles", distrType)
 		certType := autoprovision.CertificateTypeByDistribution[distrType]
 		certs := certsByType[certType]
 
@@ -645,8 +659,9 @@ func main() {
 		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
 		codesignSettings := CodesignSettings{
-			ProfilesByBundleID: map[string]appstoreconnect.Profile{},
-			Certificate:        certs[0].Certificate,
+			ArchivableTargetProfilesByBundleID: map[string]appstoreconnect.Profile{},
+			UITestTargetProfilesByBundleID:     map[string]appstoreconnect.Profile{},
+			Certificate:                        certs[0].Certificate,
 		}
 
 		var certIDs []string
@@ -676,14 +691,34 @@ func main() {
 			}
 		}
 
-		for bundleIDIdentifier, entitlements := range entitlementsByBundleID {
+		for bundleIDIdentifier, entitlements := range archivableTargetBundleIDToEntitlements {
 			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
 			if err != nil {
 				failf(err.Error())
 			}
-			codesignSettings.ProfilesByBundleID[bundleIDIdentifier] = *profile
-			codesignSettingsByDistributionType[distrType] = codesignSettings
+			codesignSettings.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+
 		}
+
+		if stepConf.SignUITestTargets && distrType == autoprovision.Development {
+			// Capabilities are not supported for UITest targets.
+			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
+			for _, bundleIDIdentifier := range uiTestTargetBundleIDs {
+				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
+				if err != nil {
+					failf("Could not create wildcard bundle id: %s", err)
+				}
+
+				// Capabilities are not supported for UITest targets.
+				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
+				if err != nil {
+					failf(err.Error())
+				}
+				codesignSettings.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+			}
+		}
+
+		codesignSettingsByDistributionType[distrType] = codesignSettings
 	}
 
 	if len(containersByBundleID) > 0 {
@@ -722,7 +757,7 @@ func main() {
 		if err != nil {
 			failf(err.Error())
 		}
-		profile, ok := codesignSettings.ProfilesByBundleID[targetBundleID]
+		profile, ok := codesignSettings.ArchivableTargetProfilesByBundleID[targetBundleID]
 		if !ok {
 			failf("No profile ensured for the bundleID %s", targetBundleID)
 		}
@@ -743,10 +778,7 @@ func main() {
 			fmt.Println()
 			log.Infof("  Target: %s", uiTestTarget.Name)
 
-			forceCodesignDistribution := stepConf.DistributionType()
-			if _, isDevelopmentAvailable := codesignSettingsByDistributionType[autoprovision.Development]; isDevelopmentAvailable {
-				forceCodesignDistribution = autoprovision.Development
-			}
+			forceCodesignDistribution := autoprovision.Development
 
 			codesignSettings, ok := codesignSettingsByDistributionType[forceCodesignDistribution]
 			if !ok {
@@ -754,28 +786,20 @@ func main() {
 			}
 			teamID = codesignSettings.Certificate.TeamID
 
-			// Use the main target's codesign settings
-			mainTargetBundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+			targetBundleID, err := projHelper.TargetBundleID(uiTestTarget.Name, config)
 			if err != nil {
 				failf(err.Error())
 			}
-
-			profile, ok := codesignSettings.ProfilesByBundleID[mainTargetBundleID]
+			profile, ok := codesignSettings.UITestTargetProfilesByBundleID[targetBundleID]
 			if !ok {
-				failf("No profile ensured for the main target bundleID %s", mainTargetBundleID)
+				failf("No profile ensured for the bundleID %s", targetBundleID)
 			}
 
 			log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
 			log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
 			log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
-			// Force Signing on all configuration
 			for _, c := range uiTestTarget.BuildConfigurationList.BuildConfigurations {
-				// Ensure UITest target's bundle id matches the main target's bundle id
-				if err := projHelper.ForceUITestTargetBundleID(mainTargetBundleID, uiTestTarget.Name, c.Name); err != nil {
-					failf("Failed to force UITest target bundle id: %s", err)
-				}
-
 				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
 					failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
 				}
@@ -805,7 +829,15 @@ func main() {
 		}
 
 		log.Printf("profiles:")
-		for _, profile := range codesignSettings.ProfilesByBundleID {
+		for _, profile := range codesignSettings.ArchivableTargetProfilesByBundleID {
+			log.Printf("- %s", profile.Attributes.Name)
+
+			if err := autoprovision.WriteProfile(profile); err != nil {
+				failf("Failed to write profile to file: %s", err)
+			}
+		}
+
+		for _, profile := range codesignSettings.UITestTargetProfilesByBundleID {
 			log.Printf("- %s", profile.Attributes.Name)
 
 			if err := autoprovision.WriteProfile(profile); err != nil {
@@ -836,7 +868,7 @@ func main() {
 		if err != nil {
 			failf("Failed to read bundle ID for the main target: %s", err)
 		}
-		profile, ok := settings.ProfilesByBundleID[bundleID]
+		profile, ok := settings.ArchivableTargetProfilesByBundleID[bundleID]
 		if !ok {
 			failf("No provisioning profile ensured for the main target")
 		}
@@ -856,7 +888,7 @@ func main() {
 		if err != nil {
 			failf(err.Error())
 		}
-		profile, ok := settings.ProfilesByBundleID[bundleID]
+		profile, ok := settings.ArchivableTargetProfilesByBundleID[bundleID]
 		if !ok {
 			failf("No provisioning profile ensured for the main target")
 		}
