@@ -9,26 +9,75 @@ app:
     - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
     - IOS_APPLE_CERTIFICATE_URL_LIST: $IOS_APPLE_CERTIFICATE_URL_LIST
     - IOS_APPLE_CERTIFICATE_PASSHRASE: $IOS_APPLE_CERTIFICATE_PASSHRASE
-    - APPLE_PROVISIONING_PROFILE_URL_LIST: $APPLE_PROVISIONING_PROFILE_URL_LIST
     - APPSTORECONNECT_API_KEY_URL: $APPSTORECONNECT_API_KEY_URL
     - APPSTORECONNECT_API_KEY_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
 
 workflows:
-  test_uitest_target:
+  test_xcode13_uitest_signing:
+    before_run:
+      - _expose_xcode_version
     steps:
-    - bitrise-run:
-        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-10.3.x"}}'
+    - script:
         inputs:
-        - workflow_id: utility_test_uitest_target
+          - content: |-
+              #!/bin/env bash
+              set -e
+              if [[ ${XCODE_MAJOR_VERSION} -lt 11 ]]; then
+                echo "This test case requires Xcode >= 11, skipping..."
+                exit 0
+              fi
+              envman add --key XCODE_MAJOR_VERSION_AT_LEAST_11 --value "true"
+    - bitrise-run:
+        run_if: '{{enveq "XCODE_MAJOR_VERSION_AT_LEAST_11" "true"}}'
+        inputs:
+          - workflow_id: utility_test_xcode13_uitest_signing
+          - bitrise_config_path: ./e2e/bitrise.yml
+
+  utility_test_xcode13_uitest_signing:
+    envs:
+      - TEST_APP_URL: https://github.com/bitrise-io/sample-xcode-13-empty.git
+      - TEST_APP_BRANCH: main
+      - BITRISE_PROJECT_PATH: "sample-xcode-13-empty.xcodeproj"
+      - BITRISE_SCHEME: sample-xcode-13-empty
+      - BITRISE_CONFIGURATION: Debug
+      - SIGN_UITEST_TARGET: "yes"
+      - INSTALL_PODS: "false"
+      - DISTRIBUTION_TYPE: development
+      - CONNECTION: "off"
+      - API_KEY_PATH: $APPSTORECONNECT_API_KEY_URL
+      - API_ISSUER: $APPSTORECONNECT_API_KEY_ISSUER
+    after_run:
+      - _run
+      - _check_outputs
+      - _check_xcode_build_for_test
+
+  test_uitest_signing:
+    before_run:
+      - _expose_xcode_version
+    steps:
+    - script:
+        inputs:
+          - content: |-
+              #!/bin/env bash
+              set -e
+              if [[ ${XCODE_MAJOR_VERSION} -lt 11 ]]; then
+                echo "This test case requires Xcode >= 11, skipping..."
+                exit 0
+              fi
+              envman add --key XCODE_MAJOR_VERSION_AT_LEAST_11 --value "true"
+    - bitrise-run:
+        run_if: '{{enveq "XCODE_MAJOR_VERSION_AT_LEAST_11" "true"}}'
+        inputs:
+        - workflow_id: utility_test_uitest_signing
         - bitrise_config_path: ./e2e/bitrise.yml
 
-  utility_test_uitest_target:
+  utility_test_uitest_signing:
     envs:
       - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
       - TEST_APP_BRANCH: master
       - BITRISE_PROJECT_PATH: "sample-apps-fastlane-test.xcodeproj"
       - BITRISE_SCHEME: sample-apps-fastlane-test
-      - BITRISE_CONFIGURATION:
+      - BITRISE_CONFIGURATION: Debug
       - SIGN_UITEST_TARGET: "yes"
       - INSTALL_PODS: "false"
       - DISTRIBUTION_TYPE: development
@@ -218,14 +267,6 @@ workflows:
       - cocoapods-install:
           run_if: '{{enveq "INSTALL_PODS" "true"}}'
           title: CocoaPods install
-      - certificate-and-profile-installer:
-          inputs:
-            - certificate_url: $IOS_APPLE_CERTIFICATE_URL_LIST
-            - certificate_passphrase: $IOS_APPLE_CERTIFICATE_PASSHRASE
-            - provisioning_profile_url: $APPLE_PROVISIONING_PROFILE_URL_LIST
-            - install_defaults: "no"
-            - keychain_path: $BITRISE_KEYCHAIN_PATH
-            - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
       - path::./:
           title: Step Test
           run_if: "true"
@@ -286,3 +327,25 @@ workflows:
       - deploy-to-bitrise-io:
           inputs:
             - notify_user_groups: none
+
+  _expose_xcode_version:
+    steps:
+      - script:
+          title: Expose Xcode major version
+          inputs:
+            - content: |-
+                #!/bin/env bash
+                set -e
+                if [[ ! -z "$XCODE_MAJOR_VERSION" ]]; then
+                  echo "Xcode major version already exposed: $XCODE_MAJOR_VERSION"
+                  exit 0
+                fi
+                version=`xcodebuild -version`
+                regex="Xcode ([0-9]*)."
+                if [[ ! $version =~ $regex ]]; then
+                  echo "Failed to determine Xcode major version"
+                  exit 1
+                fi
+                xcode_major_version=${BASH_REMATCH[1]}
+                echo "Xcode major version: $xcode_major_version"
+                envman add --key XCODE_MAJOR_VERSION --value $xcode_major_version
