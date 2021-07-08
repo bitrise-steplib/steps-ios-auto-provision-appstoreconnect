@@ -2,3 +2,4 @@
 .vscode
 _tmp/
 apple_developer_portal_data*.json
+.idea
