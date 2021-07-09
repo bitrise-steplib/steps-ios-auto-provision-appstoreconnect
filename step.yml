@@ -20,17 +20,11 @@ description: |-
   To configure the Step:
 
   1. Add the **iOS Auto Provision with App Store Connect API** after any dependency installer Step in your Workflow, such as **Run CocoaPods install** or **Carthage**.
-
   2. Click the Step to edit its input fields. You can see that the **Build API token**, **Build URL**, and the **Xcode Project (or Workspace) path** inputs are automatically filled out for you.
-
-  - **Build API token**: Every running build has a temporary API token on a Bitrise virtual machine. This token is only available while the build is running. The Step downloads the connected API key with the help of this API token and Bitrise saves it in a JSON file.
-
-  - **Build URL**: URL of the current build or local path URL to your `apple_developer_portal_data.json`.
-
-  - **Xcode Project path**: The path where the `.xcodeproj` / `.xcworkspace` is located.
-
+      - **Build API token**: Every running build has a temporary API token on a Bitrise virtual machine. This token is only available while the build is running. The Step downloads the connected API key with the help of this API token and Bitrise saves it in a JSON file.
+      - **Build URL**: URL of the current build or local path URL to your `apple_developer_portal_data.json`.
+      - **Xcode Project path**: The path where the `.xcodeproj` / `.xcworkspace` is located.
   3. **Distribution type** input's value has to match with the value of the **Select method for export** input in the **Xcode Archive & Export for iOS** Step.
-
   4. With the **Scheme name** input you can restrict which targets to process.
 
   ### Troubleshooting
