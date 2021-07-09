@@ -35,7 +35,7 @@ func signToken(token *jwt.Token, privateKeyContent []byte) (string, error) {
 func createToken(keyID string, issuerID string) *jwt.Token {
 	payload := claims{
 		IssuerID:   issuerID,
-		Expiration: time.Now().Add(time.Minute * 20).Unix(),
+		Expiration: time.Now().Add(time.Minute * 18).Unix(),
 		Audience:   "appstoreconnect-v1",
 	}
 

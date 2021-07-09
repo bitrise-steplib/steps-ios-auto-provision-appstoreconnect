@@ -84,11 +84,11 @@ func (c *Client) ensureSignedToken() (string, error) {
 		// To get better performance from the App Store Connect API,
 		// reuse the same signed token for up to 20 minutes.
 		//  https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
-		if expiration.After(time.Now().Add(20 * time.Minute)) {
+		if expiration.After(time.Now().Add(6 * time.Minute)) {
 			return c.signedToken, nil
 		}
 
-		log.Infof("Authentication token is expiring soon (expiration: %s), regenerating.", expiration)
+		log.Printf("Authentication token is expiring soon (expiration: %s), regenerating.", expiration)
 	}
 
 	c.token = createToken(c.keyID, c.issuerID)
