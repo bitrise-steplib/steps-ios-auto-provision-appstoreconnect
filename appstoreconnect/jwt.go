@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bitrise-io/go-utils/log"
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
@@ -37,6 +38,8 @@ func createToken(keyID string, issuerID string) *jwt.Token {
 		Expiration: time.Now().Add(time.Minute * 20).Unix(),
 		Audience:   "appstoreconnect-v1",
 	}
+
+	log.Debugf("Creating new JWT token: %s", payload)
 
 	// registers headers: alg = ES256 and typ = JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, payload)

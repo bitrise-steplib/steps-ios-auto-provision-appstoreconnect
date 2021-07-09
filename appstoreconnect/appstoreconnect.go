@@ -87,6 +87,8 @@ func (c *Client) ensureSignedToken() (string, error) {
 		if expiration.After(time.Now().Add(20 * time.Minute)) {
 			return c.signedToken, nil
 		}
+
+		log.Infof("Authentication token is expiring soon (expiration: %s), regenerating.", expiration)
 	}
 
 	c.token = createToken(c.keyID, c.issuerID)
