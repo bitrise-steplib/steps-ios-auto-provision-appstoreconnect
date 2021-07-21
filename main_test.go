@@ -280,7 +280,7 @@ func Test_registerMissingDevices_alreadyRegistered(t *testing.T) {
 	}
 	want := []appstoreconnect.Device{}
 
-	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
+	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices, "")
 
 	require.NoError(t, err, "registerMissingDevices() error")
 	require.Equal(t, want, got, "registerMissingDevices()")
@@ -318,7 +318,7 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 		ID:         "12",
 	}}
 
-	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
+	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices, "")
 
 	require.NoError(t, err, "registerMissingDevices()")
 	require.Equal(t, want, got, "registerMissingDevices()")
@@ -360,7 +360,7 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 	}
 	want := []appstoreconnect.Device{}
 
-	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
+	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices, "")
 	require.NoError(t, err, "registerMissingDevices()")
 	require.Equal(t, want, got, "registerMissingDevices()")
 	mockClient.AssertExpectations(t)

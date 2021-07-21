@@ -131,12 +131,12 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
+func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device, platform autoprovision.Platform) ([]appstoreconnect.Device, error) {
 	if client == nil {
 		return []appstoreconnect.Device{}, fmt.Errorf("App Store Connect client not provided")
 	}
 
-	newDevices := []appstoreconnect.Device{}
+	var newDevices []appstoreconnect.Device
 	for _, testDevice := range bitriseDevices {
 		log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
 
@@ -181,7 +181,23 @@ func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []dev
 			return []appstoreconnect.Device{}, fmt.Errorf("%v", err)
 		}
 		if registeredDevice != nil {
-			newDevices = append(newDevices, registeredDevice.Data)
+			deviceClass := registeredDevice.Data.Attributes.DeviceClass
+
+			switch platform {
+			case autoprovision.IOS:
+				isIosOrWatchosDevice := deviceClass == appstoreconnect.AppleWatch ||
+					deviceClass == appstoreconnect.Ipad ||
+					deviceClass == appstoreconnect.Iphone ||
+					deviceClass == appstoreconnect.Ipod
+
+				if isIosOrWatchosDevice {
+					newDevices = append(newDevices, registeredDevice.Data)
+				}
+			case autoprovision.TVOS:
+				if deviceClass == appstoreconnect.AppleTV {
+					newDevices = append(newDevices, registeredDevice.Data)
+				}
+			}
 		}
 	}
 
@@ -445,7 +461,7 @@ func main() {
 
 	var devportalConnectionProvider *devportalservice.BitriseClient
 	if stepConf.BuildURL != "" && stepConf.BuildAPIToken != "" {
-		devportalConnectionProvider = devportalservice.NewBitriseClient(http.DefaultClient, stepConf.BuildURL, string(stepConf.BuildAPIToken))
+		devportalConnectionProvider = devportalservice.NewBitriseClient(http.DefaultClient, stepConf.BuildURL, stepConf.BuildAPIToken)
 	} else {
 		fmt.Println()
 		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
@@ -614,7 +630,7 @@ func main() {
 				}
 			}
 
-			registeredDevices, err := registerMissingDevices(client, conn.TestDevices, devices)
+			registeredDevices, err := registerMissingDevices(client, conn.TestDevices, devices, platform)
 			if err != nil {
 				failf("Failed to add devices registered on Bitrise to Developer Portal: %s", err)
 			}
