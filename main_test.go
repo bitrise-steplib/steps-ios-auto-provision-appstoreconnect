@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -325,6 +327,52 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+func Test_registerMissingDevices_filtersDevicesForPlatform(t *testing.T) {
+	tests := []struct {
+		platform      autoprovision.Platform
+		deviceClass   appstoreconnect.DeviceClass
+		devicesLength int
+	}{
+		{platform: autoprovision.IOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 1},
+		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Ipad, devicesLength: 1},
+		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Iphone, devicesLength: 1},
+		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Ipod, devicesLength: 1},
+		{platform: autoprovision.IOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
+		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+
+		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
+		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
+		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
+		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
+		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 1},
+		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+
+		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
+		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
+		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
+		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
+		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
+		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Given platform is %s and device is %s when missing devices are registered then valid devices length should be %d", tt.platform, tt.deviceClass, tt.devicesLength), func(t *testing.T) {
+			testDevices := []devportalservice.TestDevice{
+				{
+					DeviceID:   "udid",
+					DeviceType: "ios",
+				},
+			}
+
+			client := givenPostDeviceReturnsDeviceWithClass(t, tt.deviceClass)
+
+			got, err := registerMissingDevices(client, testDevices, nil, tt.platform)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.devicesLength, len(got))
+		})
+	}
+}
+
 func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 	mockClient := &MockClientRegisterDevice{}
 	mockClient.
@@ -368,34 +416,34 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 
 func Test_createWildcardBundleID(t *testing.T) {
 	tests := []struct {
-		name    string
+		name     string
 		bundleID string
-		want    string
-		wantErr bool
+		want     string
+		wantErr  bool
 	}{
 		{
-			name: "Invalid bundle id: empty",
+			name:     "Invalid bundle id: empty",
 			bundleID: "",
-			want: "",
-			wantErr: true,
+			want:     "",
+			wantErr:  true,
 		},
 		{
-			name: "Invalid bundle id: does not contain *",
+			name:     "Invalid bundle id: does not contain *",
 			bundleID: "my_app",
-			want: "",
-			wantErr: true,
+			want:     "",
+			wantErr:  true,
 		},
 		{
-			name: "2 component bundle id",
+			name:     "2 component bundle id",
 			bundleID: "com.my_app",
-			want: "com.*",
-			wantErr: false,
+			want:     "com.*",
+			wantErr:  false,
 		},
 		{
-			name: "multi component bundle id",
+			name:     "multi component bundle id",
 			bundleID: "com.bitrise.my_app.uitest",
-			want: "com.bitrise.my_app.*",
-			wantErr: false,
+			want:     "com.bitrise.my_app.*",
+			wantErr:  false,
 		},
 	}
 	for _, tt := range tests {
@@ -410,4 +458,20 @@ func Test_createWildcardBundleID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func givenPostDeviceReturnsDeviceWithClass(t *testing.T, testDeviceClass appstoreconnect.DeviceClass) *appstoreconnect.Client {
+	mockClient := &MockClientRegisterDevice{}
+	mockClient.
+		On("PostDevice", mock.AnythingOfType("*http.Request")).
+		Return(newResponse(t, http.StatusOK, map[string]interface{}{
+			"data": map[string]interface{}{
+				"id": "1",
+				"attributes": map[string]interface{}{
+					"deviceClass": testDeviceClass,
+				},
+			},
+		},
+		), nil)
+	return appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 }
