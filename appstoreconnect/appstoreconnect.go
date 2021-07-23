@@ -2,6 +2,7 @@ package appstoreconnect
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/bitrise-io/go-utils/httputil"
 	"github.com/bitrise-io/go-utils/log"
@@ -53,6 +55,40 @@ type Client struct {
 
 	common       service // Reuse a single struct instead of allocating one for each service on the heap.
 	Provisioning *ProvisioningService
+}
+
+// RetryableHTTPClient wraps a retryablehttp.Client and implements HTTPClient interface.
+type RetryableHTTPClient struct {
+	client *retryablehttp.Client
+}
+
+// Do ...
+func (c *RetryableHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	r, err := retryablehttp.FromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.client.Do(r)
+}
+
+// NewRetryableHTTPClient create a new http client with retry settings.
+func NewRetryableHTTPClient() *RetryableHTTPClient {
+	client := retryablehttp.NewClient()
+	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
+			log.Debugf("Retry network error: 401")
+			return true, nil
+		}
+
+		shouldRetry, err := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+		if shouldRetry && resp != nil {
+			log.Debugf("Retry network error: %d", resp.StatusCode)
+		}
+
+		return shouldRetry, err
+	}
+	return &RetryableHTTPClient{client: client}
 }
 
 // NewClient creates a new client
@@ -135,7 +171,7 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if _, ok := c.client.(*http.Client); ok {
+	if _, ok := c.client.(*RetryableHTTPClient); ok {
 		signedToken, err := c.ensureSignedToken()
 		if err != nil {
 			return nil, fmt.Errorf("ensuring JWT token failed: %v", err)

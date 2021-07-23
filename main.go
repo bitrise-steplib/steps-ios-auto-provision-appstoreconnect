@@ -469,7 +469,8 @@ func main() {
 		failf("Could not configure Apple Service authentication: %v", err)
 	}
 
-	client := appstoreconnect.NewClient(http.DefaultClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
+	httpClient := appstoreconnect.NewRetryableHTTPClient()
+	client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
 
 	// Turn off client debug logs includeing HTTP call debug logs
 	client.EnableDebugLogs = false
