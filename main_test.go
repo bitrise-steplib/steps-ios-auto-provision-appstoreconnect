@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -280,7 +281,7 @@ func Test_registerMissingDevices_alreadyRegistered(t *testing.T) {
 			ID: "12",
 		}},
 	}
-	want := []appstoreconnect.Device{}
+	want := []appstoreconnect.Device(nil)
 
 	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices, "")
 
@@ -298,6 +299,9 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 			map[string]interface{}{
 				"data": map[string]interface{}{
 					"id": "12",
+					"attributes": map[string]interface{}{
+						"deviceClass": "IPHONE",
+					},
 				},
 			},
 		), nil)
@@ -316,11 +320,13 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 		devportalDevices: []appstoreconnect.Device{},
 	}
 	want := []appstoreconnect.Device{{
-		Attributes: appstoreconnect.DeviceAttributes{},
-		ID:         "12",
+		Attributes: appstoreconnect.DeviceAttributes{
+			DeviceClass: appstoreconnect.Iphone,
+		},
+		ID: "12",
 	}}
 
-	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices, "")
+	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices, autoprovision.IOS)
 
 	require.NoError(t, err, "registerMissingDevices()")
 	require.Equal(t, want, got, "registerMissingDevices()")
@@ -406,7 +412,7 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 			ID: "12",
 		}},
 	}
-	want := []appstoreconnect.Device{}
+	want := []appstoreconnect.Device(nil)
 
 	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices, "")
 	require.NoError(t, err, "registerMissingDevices()")
