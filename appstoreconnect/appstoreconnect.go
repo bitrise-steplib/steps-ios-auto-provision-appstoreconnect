@@ -11,15 +11,21 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+
 	"github.com/bitrise-io/go-utils/httputil"
 	"github.com/bitrise-io/go-utils/log"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/go-querystring/query"
 )
 
 const (
 	baseURL    = "https://api.appstoreconnect.apple.com/"
 	apiVersion = "v1"
+)
+
+var (
+	jwtDuration    = 20 * time.Minute
+	jwtReserveTime = 2 * time.Minute
 )
 
 // HTTPClient ...
@@ -80,13 +86,18 @@ func (c *Client) ensureSignedToken() (string, error) {
 		}
 		expiration := time.Unix(int64(claim.Expiration), 0)
 
-		// You do not need to generate a new token for every API request.
-		// To get better performance from the App Store Connect API,
-		// reuse the same signed token for up to 20 minutes.
-		//  https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
-		if expiration.After(time.Now().Add(20 * time.Minute)) {
+		// A given token can be reused for up to 20 minutes:
+		// https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
+		//
+		// The step generates a new token 2 minutes before the expiry.
+		expireIn := expiration.Sub(time.Now())
+		if expireIn > jwtReserveTime {
 			return c.signedToken, nil
 		}
+
+		log.Debugf("JWT token expired, regenerating")
+	} else {
+		log.Debugf("Generating JWT token")
 	}
 
 	c.token = createToken(c.keyID, c.issuerID)
