@@ -26,7 +26,11 @@ const (
 )
 
 var (
-	jwtDuration    = 20 * time.Minute
+	// A given token can be reused for up to 20 minutes:
+	// https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
+	//
+	// Using 19 minutes to make sure time inaccuracies at token validation does not cause issues.
+	jwtDuration    = 19 * time.Minute
 	jwtReserveTime = 2 * time.Minute
 )
 
