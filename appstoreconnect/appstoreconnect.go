@@ -81,7 +81,7 @@ func NewRetryableHTTPClient() *RetryableHTTPClient {
 	client := retryablehttp.NewClient()
 	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
-			log.Debugf("Retry network error: 401")
+			log.Debugf("Received HTTP 401 (Unauthorized), retrying request...")
 			return true, nil
 		}
 
