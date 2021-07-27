@@ -587,7 +587,7 @@ func main() {
 	// Ensure devices
 	var devices []appstoreconnect.Device
 
-	if needToRegisterDevices(distrTypes) {
+	if stepConf.RegisterTestDevices && needToRegisterDevices(distrTypes) {
 		fmt.Println()
 		log.Infof("Fetching test devices")
 
@@ -678,7 +678,7 @@ func main() {
 		profileType := platformProfileTypes[distrType]
 
 		var deviceIDs []string
-		if needToRegisterDevices([]autoprovision.DistributionType{distrType}) {
+		if stepConf.RegisterTestDevices && needToRegisterDevices([]autoprovision.DistributionType{distrType}) {
 			for _, d := range devices {
 				if strings.HasPrefix(string(profileType), "TVOS") && d.Attributes.DeviceClass != "APPLE_TV" {
 					log.Debugf("dropping device %s, since device type: %s, required device type: APPLE_TV", d.ID, d.Attributes.DeviceClass)

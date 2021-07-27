@@ -52,3 +52,4 @@ workflows:
         - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
         - verbose_log: "yes"
         - sign_uitest_targets: "yes"
+        - register_test_devices: "no"
