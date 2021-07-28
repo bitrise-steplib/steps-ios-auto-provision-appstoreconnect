@@ -2,6 +2,7 @@ package appstoreconnect
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,15 +12,26 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/bitrise-io/go-utils/httputil"
 	"github.com/bitrise-io/go-utils/log"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/go-querystring/query"
 )
 
 const (
 	baseURL    = "https://api.appstoreconnect.apple.com/"
 	apiVersion = "v1"
+)
+
+var (
+	// A given token can be reused for up to 20 minutes:
+	// https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
+	//
+	// Using 19 minutes to make sure time inaccuracies at token validation does not cause issues.
+	jwtDuration    = 19 * time.Minute
+	jwtReserveTime = 2 * time.Minute
 )
 
 // HTTPClient ...
@@ -47,6 +59,40 @@ type Client struct {
 
 	common       service // Reuse a single struct instead of allocating one for each service on the heap.
 	Provisioning *ProvisioningService
+}
+
+// RetryableHTTPClient wraps a retryablehttp.Client and implements HTTPClient interface.
+type RetryableHTTPClient struct {
+	client *retryablehttp.Client
+}
+
+// Do ...
+func (c *RetryableHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	r, err := retryablehttp.FromRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.client.Do(r)
+}
+
+// NewRetryableHTTPClient create a new http client with retry settings.
+func NewRetryableHTTPClient() *RetryableHTTPClient {
+	client := retryablehttp.NewClient()
+	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
+			log.Debugf("Received HTTP 401 (Unauthorized), retrying request...")
+			return true, nil
+		}
+
+		shouldRetry, err := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+		if shouldRetry && resp != nil {
+			log.Debugf("Retry network error: %d", resp.StatusCode)
+		}
+
+		return shouldRetry, err
+	}
+	return &RetryableHTTPClient{client: client}
 }
 
 // NewClient creates a new client
@@ -80,13 +126,18 @@ func (c *Client) ensureSignedToken() (string, error) {
 		}
 		expiration := time.Unix(int64(claim.Expiration), 0)
 
-		// You do not need to generate a new token for every API request.
-		// To get better performance from the App Store Connect API,
-		// reuse the same signed token for up to 20 minutes.
-		//  https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
-		if expiration.After(time.Now().Add(20 * time.Minute)) {
+		// A given token can be reused for up to 20 minutes:
+		// https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
+		//
+		// The step generates a new token 2 minutes before the expiry.
+		expireIn := expiration.Sub(time.Now())
+		if expireIn > jwtReserveTime {
 			return c.signedToken, nil
 		}
+
+		log.Debugf("JWT token expired, regenerating")
+	} else {
+		log.Debugf("Generating JWT token")
 	}
 
 	c.token = createToken(c.keyID, c.issuerID)
@@ -124,7 +175,7 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if _, ok := c.client.(*http.Client); ok {
+	if _, ok := c.client.(*RetryableHTTPClient); ok {
 		signedToken, err := c.ensureSignedToken()
 		if err != nil {
 			return nil, fmt.Errorf("ensuring JWT token failed: %v", err)
