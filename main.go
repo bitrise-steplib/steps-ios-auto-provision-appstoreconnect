@@ -117,7 +117,7 @@ func downloadFile(httpClient *http.Client, src string) ([]byte, error) {
 	return contents, nil
 }
 
-func needToRegisterDevices(distrTypes []autoprovision.DistributionType) bool {
+func distributionTypeRequiresDeviceList(distrTypes []autoprovision.DistributionType) bool {
 	for _, distrType := range distrTypes {
 		if distrType == autoprovision.Development || distrType == autoprovision.AdHoc {
 			return true
@@ -587,7 +587,7 @@ func main() {
 	// Ensure devices
 	var devices []appstoreconnect.Device
 
-	if stepConf.RegisterTestDevices && needToRegisterDevices(distrTypes) {
+	if distributionTypeRequiresDeviceList(distrTypes) {
 		fmt.Println()
 		log.Infof("Fetching test devices")
 
@@ -602,7 +602,7 @@ func main() {
 			log.Debugf("- %s, %s, UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
 		}
 
-		if conn != nil && len(conn.TestDevices) != 0 {
+		if stepConf.RegisterTestDevices && conn != nil && len(conn.TestDevices) != 0 {
 			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
 			for _, d := range conn.TestDevices {
 				log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
@@ -678,7 +678,7 @@ func main() {
 		profileType := platformProfileTypes[distrType]
 
 		var deviceIDs []string
-		if stepConf.RegisterTestDevices && needToRegisterDevices([]autoprovision.DistributionType{distrType}) {
+		if distributionTypeRequiresDeviceList([]autoprovision.DistributionType{distrType}) {
 			for _, d := range devices {
 				if strings.HasPrefix(string(profileType), "TVOS") && d.Attributes.DeviceClass != "APPLE_TV" {
 					log.Debugf("dropping device %s, since device type: %s, required device type: APPLE_TV", d.ID, d.Attributes.DeviceClass)
