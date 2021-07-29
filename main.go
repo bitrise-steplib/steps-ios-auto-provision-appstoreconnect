@@ -117,91 +117,9 @@ func downloadFile(httpClient *http.Client, src string) ([]byte, error) {
 	return contents, nil
 }
 
-func needToRegisterDevices(distrTypes []autoprovision.DistributionType) bool {
-	for _, distrType := range distrTypes {
-		if distrType == autoprovision.Development || distrType == autoprovision.AdHoc {
-			return true
-		}
-	}
-	return false
-}
-
 func failf(format string, args ...interface{}) {
 	log.Errorf(format, args...)
 	os.Exit(1)
-}
-
-func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device, platform autoprovision.Platform) ([]appstoreconnect.Device, error) {
-	if client == nil {
-		return []appstoreconnect.Device{}, fmt.Errorf("App Store Connect client not provided")
-	}
-
-	var newDevices []appstoreconnect.Device
-	for _, testDevice := range bitriseDevices {
-		log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
-
-		found := false
-		for _, device := range devportalDevices {
-			if devportalservice.IsEqualUDID(device.Attributes.UDID, testDevice.DeviceID) {
-				found = true
-				break
-			}
-		}
-
-		if found {
-			log.Printf("device already registered")
-
-			continue
-		}
-
-		// The API seems to recognize existing devices even with different casing and '-' separator removed.
-		// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
-		// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged.
-		log.Printf("registering device")
-		req := appstoreconnect.DeviceCreateRequest{
-			Data: appstoreconnect.DeviceCreateRequestData{
-				Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
-					Name:     "Bitrise test device",
-					Platform: appstoreconnect.IOS,
-					UDID:     testDevice.DeviceID,
-				},
-				Type: "devices",
-			},
-		}
-
-		registeredDevice, err := client.Provisioning.RegisterNewDevice(req)
-		if err != nil {
-			rerr, ok := err.(*appstoreconnect.ErrorResponse)
-			if ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
-				log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", err)
-
-				continue
-			}
-
-			return []appstoreconnect.Device{}, fmt.Errorf("%v", err)
-		}
-		if registeredDevice != nil {
-			deviceClass := registeredDevice.Data.Attributes.DeviceClass
-
-			switch platform {
-			case autoprovision.IOS:
-				isIosOrWatchosDevice := deviceClass == appstoreconnect.AppleWatch ||
-					deviceClass == appstoreconnect.Ipad ||
-					deviceClass == appstoreconnect.Iphone ||
-					deviceClass == appstoreconnect.Ipod
-
-				if isIosOrWatchosDevice {
-					newDevices = append(newDevices, registeredDevice.Data)
-				}
-			case autoprovision.TVOS:
-				if deviceClass == appstoreconnect.AppleTV {
-					newDevices = append(newDevices, registeredDevice.Data)
-				}
-			}
-		}
-	}
-
-	return newDevices, nil
 }
 
 // ProfileManager ...
@@ -601,22 +519,10 @@ func main() {
 	log.Printf("ensuring codesigning files for distribution types: %s", distrTypes)
 
 	// Ensure devices
-	var devices []appstoreconnect.Device
+	var deviceIDs []string
 
 	if needToRegisterDevices(distrTypes) {
-		fmt.Println()
-		log.Infof("Fetching test devices")
-
-		var err error
-		devices, err = autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
-		if err != nil {
-			failf("Failed to list devices: %s", err)
-		}
-
-		log.Printf("%d devices are registered on Developer Portal", len(devices))
-		for _, d := range devices {
-			log.Debugf("- %s, %s, UDID (%s), ID (%s)", d.Attributes.Name, d.Attributes.DeviceClass, d.Attributes.UDID, d.ID)
-		}
+		var testDevices []devportalservice.TestDevice
 
 		if conn != nil && len(conn.TestDevices) != 0 {
 			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
@@ -631,11 +537,16 @@ func main() {
 				}
 			}
 
-			registeredDevices, err := registerMissingDevices(client, conn.TestDevices, devices, platform)
-			if err != nil {
-				failf("Failed to add devices registered on Bitrise to Developer Portal: %s", err)
-			}
-			devices = append(devices, registeredDevices...)
+			testDevices = conn.TestDevices
+		}
+
+		devices, err := listRelevantDevPortalDevices(client, testDevices, platform)
+		if err != nil {
+			failf(err.Error())
+		}
+
+		for _, device := range devices {
+			deviceIDs = append(deviceIDs, device.ID)
 		}
 	}
 
@@ -692,21 +603,6 @@ func main() {
 		}
 
 		profileType := platformProfileTypes[distrType]
-
-		var deviceIDs []string
-		if needToRegisterDevices([]autoprovision.DistributionType{distrType}) {
-			for _, d := range devices {
-				if strings.HasPrefix(string(profileType), "TVOS") && d.Attributes.DeviceClass != "APPLE_TV" {
-					log.Debugf("dropping device %s, since device type: %s, required device type: APPLE_TV", d.ID, d.Attributes.DeviceClass)
-					continue
-				} else if strings.HasPrefix(string(profileType), "IOS") &&
-					string(d.Attributes.DeviceClass) != "IPHONE" && string(d.Attributes.DeviceClass) != "IPAD" && string(d.Attributes.DeviceClass) != "IPOD" {
-					log.Debugf("dropping device %s, since device type: %s, required device type: IPHONE, IPAD or IPOD", d.ID, d.Attributes.DeviceClass)
-					continue
-				}
-				deviceIDs = append(deviceIDs, d.ID)
-			}
-		}
 
 		for bundleIDIdentifier, entitlements := range archivableTargetBundleIDToEntitlements {
 			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
