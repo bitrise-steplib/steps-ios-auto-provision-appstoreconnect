@@ -10,7 +10,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
-func needToRegisterDevices(distrTypes []autoprovision.DistributionType) bool {
+func distributionTypeRequiresDeviceList(distrTypes []autoprovision.DistributionType) bool {
 	for _, distrType := range distrTypes {
 		if distrType == autoprovision.Development || distrType == autoprovision.AdHoc {
 			return true

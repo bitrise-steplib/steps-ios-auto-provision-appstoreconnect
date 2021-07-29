@@ -122,63 +122,6 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func registerMissingDevices(client *appstoreconnect.Client, bitriseDevices []devportalservice.TestDevice, devportalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
-	if client == nil {
-		return []appstoreconnect.Device{}, fmt.Errorf("App Store Connect client not provided")
-	}
-
-	newDevices := []appstoreconnect.Device{}
-	for _, testDevice := range bitriseDevices {
-		log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
-
-		found := false
-		for _, device := range devportalDevices {
-			if devportalservice.IsEqualUDID(device.Attributes.UDID, testDevice.DeviceID) {
-				found = true
-				break
-			}
-		}
-
-		if found {
-			log.Printf("device already registered")
-
-			continue
-		}
-
-		// The API seems to recognize existing devices even with different casing and '-' separator removed.
-		// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
-		// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged.
-		log.Printf("registering device")
-		req := appstoreconnect.DeviceCreateRequest{
-			Data: appstoreconnect.DeviceCreateRequestData{
-				Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
-					Name:     "Bitrise test device",
-					Platform: appstoreconnect.IOS,
-					UDID:     testDevice.DeviceID,
-				},
-				Type: "devices",
-			},
-		}
-
-		registeredDevice, err := client.Provisioning.RegisterNewDevice(req)
-		if err != nil {
-			rerr, ok := err.(*appstoreconnect.ErrorResponse)
-			if ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
-				log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", err)
-
-				continue
-			}
-
-			return []appstoreconnect.Device{}, fmt.Errorf("%v", err)
-		}
-		if registeredDevice != nil {
-			newDevices = append(newDevices, registeredDevice.Data)
-		}
-	}
-
-	return newDevices, nil
-}
-
 // ProfileManager ...
 type ProfileManager struct {
 	client                      *appstoreconnect.Client
@@ -675,7 +618,7 @@ func main() {
 
 		for bundleIDIdentifier, entitlements := range archivableTargetBundleIDToEntitlements {
 			var profileDeviceIDs []string
-			if needToRegisterDevices([]autoprovision.DistributionType{distrType}) {
+			if distributionTypeRequiresDeviceList([]autoprovision.DistributionType{distrType}) {
 				profileDeviceIDs = devPortalDeviceIDs
 			}
 
