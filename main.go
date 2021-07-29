@@ -519,7 +519,7 @@ func main() {
 	log.Printf("ensuring codesigning files for distribution types: %s", distrTypes)
 
 	// Ensure devices
-	var deviceIDs []string
+	var devPortalDeviceIDs []string
 
 	if needToRegisterDevices(distrTypes) {
 		var testDevices []devportalservice.TestDevice
@@ -540,13 +540,13 @@ func main() {
 			testDevices = conn.TestDevices
 		}
 
-		devices, err := listRelevantDevPortalDevices(client, testDevices, platform)
+		devPortalDevices, err := listRelevantDevPortalDevices(client, testDevices, platform)
 		if err != nil {
 			failf(err.Error())
 		}
 
-		for _, device := range devices {
-			deviceIDs = append(deviceIDs, device.ID)
+		for _, devPortalDevice := range devPortalDevices {
+			devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
 		}
 	}
 
@@ -605,7 +605,12 @@ func main() {
 		profileType := platformProfileTypes[distrType]
 
 		for bundleIDIdentifier, entitlements := range archivableTargetBundleIDToEntitlements {
-			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
+			var profileDeviceIDs []string
+			if needToRegisterDevices([]autoprovision.DistributionType{distrType}) {
+				profileDeviceIDs = devPortalDeviceIDs
+			}
+
+			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, stepConf.MinProfileDaysValid)
 			if err != nil {
 				failf(err.Error())
 			}
@@ -623,7 +628,7 @@ func main() {
 				}
 
 				// Capabilities are not supported for UITest targets.
-				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, deviceIDs, stepConf.MinProfileDaysValid)
+				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, stepConf.MinProfileDaysValid)
 				if err != nil {
 					failf(err.Error())
 				}
