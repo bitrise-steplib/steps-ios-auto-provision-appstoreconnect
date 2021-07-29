@@ -523,6 +523,7 @@ func main() {
 
 	if needToRegisterDevices(distrTypes) {
 		log.Infof("Fetching Apple Developer Portal devices")
+		// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
 		devPortalDevices, err := autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
 		if err != nil {
 			failf("Failed to fetch devices: %s", err)
@@ -551,9 +552,10 @@ func main() {
 			if err != nil {
 				failf("Failed to register Bitrise Test device on Apple Developer Portal: %s", err)
 			}
-			newDevPortalDevices = filterDevPortalDevices(newDevPortalDevices, platform)
 			devPortalDevices = append(devPortalDevices, newDevPortalDevices...)
 		}
+
+		devPortalDevices = filterDevPortalDevices(devPortalDevices, platform)
 
 		for _, devPortalDevice := range devPortalDevices {
 			devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
