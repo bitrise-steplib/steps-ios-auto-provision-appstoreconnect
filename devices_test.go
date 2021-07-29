@@ -156,11 +156,15 @@ func Test_listRelevantDevPortalDevices_filtersDevicesForPlatform(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("Given platform is %s and device is %s when missing devices are registered then valid devices length should be %d", tt.platform, tt.deviceClass, tt.devicesLength), func(t *testing.T) {
-			client := givenGetDevicesReturnsDeviceWithClass(t, tt.deviceClass)
-
-			got, err := listRelevantDevPortalDevices(client, nil, tt.platform)
-			assert.NoError(t, err)
+		t.Run(fmt.Sprintf("Given platform is %s when device is %s then valid devices length should be %d", tt.platform, tt.deviceClass, tt.devicesLength), func(t *testing.T) {
+			devices := []appstoreconnect.Device{
+				{
+					Attributes: appstoreconnect.DeviceAttributes{
+						DeviceClass: tt.deviceClass,
+					},
+				},
+			}
+			got := filterDevPortalDevices(devices, tt.platform)
 			assert.Equal(t, tt.devicesLength, len(got))
 		})
 	}
@@ -176,8 +180,6 @@ func (c *MockClientRegisterDevice) Do(req *http.Request) (*http.Response, error)
 	switch {
 	case req.URL.Path == "/v1/devices" && req.Method == "POST":
 		return c.PostDevice(req)
-	case req.URL.Path == "/v1/devices" && req.Method == "GET":
-		return c.GetDevices(req)
 	}
 
 	return nil, fmt.Errorf("invalid endpoint called: %s, method: %s", req.URL.Path, req.Method)
@@ -186,27 +188,4 @@ func (c *MockClientRegisterDevice) Do(req *http.Request) (*http.Response, error)
 func (c *MockClientRegisterDevice) PostDevice(req *http.Request) (*http.Response, error) {
 	args := c.Called(req)
 	return args.Get(0).(*http.Response), args.Error(1)
-}
-
-func (c *MockClientRegisterDevice) GetDevices(req *http.Request) (*http.Response, error) {
-	args := c.Called(req)
-	return args.Get(0).(*http.Response), args.Error(1)
-}
-
-func givenGetDevicesReturnsDeviceWithClass(t *testing.T, testDeviceClass appstoreconnect.DeviceClass) *appstoreconnect.Client {
-	mockClient := &MockClientRegisterDevice{}
-	mockClient.
-		On("GetDevices", mock.AnythingOfType("*http.Request")).
-		Return(newResponse(t, http.StatusOK, map[string]interface{}{
-			"data": []map[string]interface{}{
-				{
-					"id": "1",
-					"attributes": map[string]interface{}{
-						"deviceClass": testDeviceClass,
-					},
-				},
-			},
-		},
-		), nil)
-	return appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 }

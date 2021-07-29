@@ -32,7 +32,6 @@ func registerTestDeviceOnDevPortal(client *appstoreconnect.Client, testDevice de
 	// The API seems to recognize existing devices even with different casing and '-' separator removed.
 	// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
 	// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged.
-	log.Printf("registering device")
 	req := appstoreconnect.DeviceCreateRequest{
 		Data: appstoreconnect.DeviceCreateRequestData{
 			Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
@@ -66,12 +65,15 @@ func registerMissingTestDevices(client *appstoreconnect.Client, testDevices []de
 	var newDevPortalDevices []appstoreconnect.Device
 
 	for _, testDevice := range testDevices {
+		log.Printf("checking if the device (%s) is registered", testDevice.DeviceID)
+
 		devPortalDevice := findDevPortalDevice(testDevice, devPortalDevices)
 		if devPortalDevice != nil {
 			log.Printf("device already registered")
 			continue
 		}
 
+		log.Printf("registering device")
 		newDevPortalDevice, err := registerTestDeviceOnDevPortal(client, testDevice)
 		if err != nil {
 			return nil, err
@@ -109,34 +111,4 @@ func filterDevPortalDevices(devPortalDevices []appstoreconnect.Device, platform 
 	}
 
 	return filteredDevices
-}
-
-func listRelevantDevPortalDevices(client *appstoreconnect.Client, testDevices []devportalservice.TestDevice, platform autoprovision.Platform) ([]appstoreconnect.Device, error) {
-	fmt.Println()
-	log.Infof("Fetching Apple Developer Portal devices")
-
-	devPortalDevices, err := autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch devices: %s", err)
-	}
-
-	log.Printf("%d devices are registered on the Apple Developer Portal", len(devPortalDevices))
-	for _, devPortalDevice := range devPortalDevices {
-		log.Debugf("- %s, %s, UDID (%s), ID (%s)", devPortalDevice.Attributes.Name, devPortalDevice.Attributes.DeviceClass, devPortalDevice.Attributes.UDID, devPortalDevice.ID)
-	}
-
-	if len(testDevices) != 0 {
-		log.Infof("Checking if %d Bitrise test device(s) are registered on Apple Developer Portal", len(testDevices))
-		for _, testDevice := range testDevices {
-			log.Debugf("- %s, %s, UDID (%s), added at %s", testDevice.Title, testDevice.DeviceType, testDevice.DeviceID, testDevice.UpdatedAt)
-		}
-
-		devPortalDevice, err := registerMissingTestDevices(client, testDevices, devPortalDevices)
-		if err != nil {
-			return nil, fmt.Errorf("failed to register Bitrise Test device on Apple Developer Portal: %s", err)
-		}
-		devPortalDevices = append(devPortalDevices, devPortalDevice...)
-	}
-
-	return filterDevPortalDevices(devPortalDevices, platform), nil
 }

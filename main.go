@@ -522,9 +522,19 @@ func main() {
 	var devPortalDeviceIDs []string
 
 	if needToRegisterDevices(distrTypes) {
-		var testDevices []devportalservice.TestDevice
+		log.Infof("Fetching Apple Developer Portal devices")
+		devPortalDevices, err := autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
+		if err != nil {
+			failf("Failed to fetch devices: %s", err)
+		}
+
+		log.Printf("%d devices are registered on the Apple Developer Portal", len(devPortalDevices))
+		for _, devPortalDevice := range devPortalDevices {
+			log.Debugf("- %s, %s, UDID (%s), ID (%s)", devPortalDevice.Attributes.Name, devPortalDevice.Attributes.DeviceClass, devPortalDevice.Attributes.UDID, devPortalDevice.ID)
+		}
 
 		if conn != nil && len(conn.TestDevices) != 0 {
+			fmt.Println()
 			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
 			for _, d := range conn.TestDevices {
 				log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
@@ -537,12 +547,12 @@ func main() {
 				}
 			}
 
-			testDevices = conn.TestDevices
-		}
-
-		devPortalDevices, err := listRelevantDevPortalDevices(client, testDevices, platform)
-		if err != nil {
-			failf(err.Error())
+			newDevPortalDevices, err := registerMissingTestDevices(client, conn.TestDevices, devPortalDevices)
+			if err != nil {
+				failf("Failed to register Bitrise Test device on Apple Developer Portal: %s", err)
+			}
+			newDevPortalDevices = filterDevPortalDevices(newDevPortalDevices, platform)
+			devPortalDevices = append(devPortalDevices, newDevPortalDevices...)
 		}
 
 		for _, devPortalDevice := range devPortalDevices {
