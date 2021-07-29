@@ -141,7 +141,7 @@ func (p *ProjectHelper) Platform(configurationName string) (Platform, error) {
 }
 
 // ProjectTeamID returns the development team's ID
-// If there is mutlitple development team in the project (different team for targets) it will return an error
+// If there is multiple development team in the project (different team for targets) it will return an error
 // It returns the development team's ID
 func (p *ProjectHelper) ProjectTeamID(config string) (string, error) {
 	var teamID string
