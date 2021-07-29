@@ -34,9 +34,8 @@ type DevicePlatform string
 
 // DevicePlatforms ...
 const (
-	IOSDevice       DevicePlatform = "IOS"
-	MacOSDevice     DevicePlatform = "MAC_OS"
-	UniversalDevice DevicePlatform = "UNIVERSAL"
+	IOSDevice   DevicePlatform = "IOS"
+	MacOSDevice DevicePlatform = "MAC_OS"
 )
 
 // Status ...

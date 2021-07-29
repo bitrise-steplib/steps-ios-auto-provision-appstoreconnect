@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/stretchr/testify/mock"
@@ -237,165 +236,36 @@ func TestDownloadLocalCertificates(t *testing.T) {
 	}
 }
 
-type MockClientRegisterDevice struct {
-	mock.Mock
-}
-
-func (c *MockClientRegisterDevice) Do(req *http.Request) (*http.Response, error) {
-	fmt.Printf("do called: %#v - %#v\n", req.Method, req.URL.Path)
-
-	switch {
-	case req.URL.Path == "/v1/devices" && req.Method == "POST":
-		return c.PostDevice(req)
-	}
-
-	return nil, fmt.Errorf("invalid endpoint called: %s, method: %s", req.URL.Path, req.Method)
-}
-
-func (c *MockClientRegisterDevice) PostDevice(req *http.Request) (*http.Response, error) {
-	args := c.Called(req)
-	return args.Get(0).(*http.Response), args.Error(1)
-}
-
-func Test_registerMissingDevices_alreadyRegistered(t *testing.T) {
-	mockClient := &MockClientRegisterDevice{}
-	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
-
-	args := struct {
-		client           *appstoreconnect.Client
-		bitriseDevices   []devportalservice.TestDevice
-		devportalDevices []appstoreconnect.Device
-	}{
-		client: successClient,
-		bitriseDevices: []devportalservice.TestDevice{{
-			DeviceID:   "71153a920968f2842d360",
-			DeviceType: "ios",
-		}},
-		devportalDevices: []appstoreconnect.Device{{
-			Attributes: appstoreconnect.DeviceAttributes{
-				UDID: "71153a920968f2842d360",
-			},
-			ID: "12",
-		}},
-	}
-	want := []appstoreconnect.Device{}
-
-	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
-
-	require.NoError(t, err, "registerMissingDevices() error")
-	require.Equal(t, want, got, "registerMissingDevices()")
-	mockClient.AssertNotCalled(t, "PostDevice")
-	mockClient.AssertExpectations(t)
-}
-
-func Test_registerMissingDevices_newDevice(t *testing.T) {
-	mockClient := &MockClientRegisterDevice{}
-	mockClient.
-		On("PostDevice", mock.AnythingOfType("*http.Request")).
-		Return(newResponse(t, http.StatusOK,
-			map[string]interface{}{
-				"data": map[string]interface{}{
-					"id": "12",
-				},
-			},
-		), nil)
-	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
-
-	args := struct {
-		client           *appstoreconnect.Client
-		bitriseDevices   []devportalservice.TestDevice
-		devportalDevices []appstoreconnect.Device
-	}{
-		client: successClient,
-		bitriseDevices: []devportalservice.TestDevice{{
-			DeviceID:   "71153a920968f2842d360",
-			DeviceType: "ios",
-		}},
-		devportalDevices: []appstoreconnect.Device{},
-	}
-	want := []appstoreconnect.Device{{
-		Attributes: appstoreconnect.DeviceAttributes{},
-		ID:         "12",
-	}}
-
-	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
-
-	require.NoError(t, err, "registerMissingDevices()")
-	require.Equal(t, want, got, "registerMissingDevices()")
-	mockClient.AssertExpectations(t)
-}
-
-func Test_registerMissingDevices_invalidUDID(t *testing.T) {
-	mockClient := &MockClientRegisterDevice{}
-	mockClient.
-		On("PostDevice", mock.AnythingOfType("*http.Request")).
-		Return(newResponse(t, http.StatusConflict,
-			map[string]interface{}{
-				"errors": []interface{}{map[string]interface{}{"detail": "ENTITY_ERROR.ATTRIBUTE.INVALID: An attribute in the provided entity has invalid value: An invalid value 'xxx' was provided for the parameter 'udid'."}},
-			}), nil)
-	failureClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
-
-	args := struct {
-		client           *appstoreconnect.Client
-		bitriseDevices   []devportalservice.TestDevice
-		devportalDevices []appstoreconnect.Device
-	}{
-		client: failureClient,
-		bitriseDevices: []devportalservice.TestDevice{
-			{
-				DeviceID:   "invalid-udid",
-				DeviceType: "ios",
-			},
-			{
-				DeviceID:   "71153a920968f2842d360",
-				DeviceType: "ios",
-			},
-		},
-		devportalDevices: []appstoreconnect.Device{{
-			Attributes: appstoreconnect.DeviceAttributes{
-				UDID: "71153a920968f2842d360",
-			},
-			ID: "12",
-		}},
-	}
-	want := []appstoreconnect.Device{}
-
-	got, err := registerMissingDevices(args.client, args.bitriseDevices, args.devportalDevices)
-	require.NoError(t, err, "registerMissingDevices()")
-	require.Equal(t, want, got, "registerMissingDevices()")
-	mockClient.AssertExpectations(t)
-}
-
 func Test_createWildcardBundleID(t *testing.T) {
 	tests := []struct {
-		name    string
+		name     string
 		bundleID string
-		want    string
-		wantErr bool
+		want     string
+		wantErr  bool
 	}{
 		{
-			name: "Invalid bundle id: empty",
+			name:     "Invalid bundle id: empty",
 			bundleID: "",
-			want: "",
-			wantErr: true,
+			want:     "",
+			wantErr:  true,
 		},
 		{
-			name: "Invalid bundle id: does not contain *",
+			name:     "Invalid bundle id: does not contain *",
 			bundleID: "my_app",
-			want: "",
-			wantErr: true,
+			want:     "",
+			wantErr:  true,
 		},
 		{
-			name: "2 component bundle id",
+			name:     "2 component bundle id",
 			bundleID: "com.my_app",
-			want: "com.*",
-			wantErr: false,
+			want:     "com.*",
+			wantErr:  false,
 		},
 		{
-			name: "multi component bundle id",
+			name:     "multi component bundle id",
 			bundleID: "com.bitrise.my_app.uitest",
-			want: "com.bitrise.my_app.*",
-			wantErr: false,
+			want:     "com.bitrise.my_app.*",
+			wantErr:  false,
 		},
 	}
 	for _, tt := range tests {
