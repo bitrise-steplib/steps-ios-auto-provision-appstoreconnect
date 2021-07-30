@@ -25,6 +25,7 @@ type Config struct {
 	Scheme            string `env:"scheme,required"`
 	Configuration     string `env:"configuration"`
 	SignUITestTargets bool   `env:"sign_uitest_targets,opt[yes,no]"`
+	RegisterTestDevices bool `env:"register_test_devices,opt[yes,no]"`
 
 	Distribution        string `env:"distribution_type,opt[development,app-store,ad-hoc,enterprise]"`
 	MinProfileDaysValid int    `env:"min_profile_days_valid"`

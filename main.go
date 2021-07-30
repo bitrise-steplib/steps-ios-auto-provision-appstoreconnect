@@ -521,7 +521,7 @@ func main() {
 	// Ensure devices
 	var devPortalDeviceIDs []string
 
-	if needToRegisterDevices(distrTypes) {
+	if distributionTypeRequiresDeviceList(distrTypes) {
 		log.Infof("Fetching Apple Developer Portal devices")
 		// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
 		devPortalDevices, err := autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
@@ -534,7 +534,7 @@ func main() {
 			log.Debugf("- %s, %s, UDID (%s), ID (%s)", devPortalDevice.Attributes.Name, devPortalDevice.Attributes.DeviceClass, devPortalDevice.Attributes.UDID, devPortalDevice.ID)
 		}
 
-		if conn != nil && len(conn.TestDevices) != 0 {
+		if stepConf.RegisterTestDevices && conn != nil && len(conn.TestDevices) != 0 {
 			fmt.Println()
 			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
 			for _, d := range conn.TestDevices {
@@ -618,7 +618,7 @@ func main() {
 
 		for bundleIDIdentifier, entitlements := range archivableTargetBundleIDToEntitlements {
 			var profileDeviceIDs []string
-			if needToRegisterDevices([]autoprovision.DistributionType{distrType}) {
+			if distributionTypeRequiresDeviceList([]autoprovision.DistributionType{distrType}) {
 				profileDeviceIDs = devPortalDeviceIDs
 			}
 
