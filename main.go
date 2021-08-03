@@ -21,6 +21,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 // downloadCertificates downloads and parses a list of p12 files
@@ -379,7 +380,7 @@ func main() {
 
 	var devportalConnectionProvider *devportalservice.BitriseClient
 	if stepConf.BuildURL != "" && stepConf.BuildAPIToken != "" {
-		devportalConnectionProvider = devportalservice.NewBitriseClient(http.DefaultClient, stepConf.BuildURL, stepConf.BuildAPIToken)
+		devportalConnectionProvider = devportalservice.NewBitriseClient(retryablehttp.NewClient().StandardClient(), stepConf.BuildURL, stepConf.BuildAPIToken)
 	} else {
 		fmt.Println()
 		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
