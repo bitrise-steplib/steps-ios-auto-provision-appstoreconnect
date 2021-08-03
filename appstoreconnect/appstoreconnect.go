@@ -17,6 +17,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/httputil"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/google/go-querystring/query"
 )
 
@@ -78,7 +79,7 @@ func (c *RetryableHTTPClient) Do(req *http.Request) (*http.Response, error) {
 
 // NewRetryableHTTPClient create a new http client with retry settings.
 func NewRetryableHTTPClient() *RetryableHTTPClient {
-	client := retryablehttp.NewClient()
+	client := retry.NewHTTPClient()
 	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
 			log.Debugf("Received HTTP 401 (Unauthorized), retrying request...")
