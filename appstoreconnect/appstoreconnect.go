@@ -17,6 +17,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/httputil"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/google/go-querystring/query"
 )
 
@@ -61,24 +62,9 @@ type Client struct {
 	Provisioning *ProvisioningService
 }
 
-// RetryableHTTPClient wraps a retryablehttp.Client and implements HTTPClient interface.
-type RetryableHTTPClient struct {
-	client *retryablehttp.Client
-}
-
-// Do ...
-func (c *RetryableHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	r, err := retryablehttp.FromRequest(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.client.Do(r)
-}
-
 // NewRetryableHTTPClient create a new http client with retry settings.
-func NewRetryableHTTPClient() *RetryableHTTPClient {
-	client := retryablehttp.NewClient()
+func NewRetryableHTTPClient() *http.Client {
+	client := retry.NewHTTPClient()
 	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
 			log.Debugf("Received HTTP 401 (Unauthorized), retrying request...")
@@ -92,7 +78,7 @@ func NewRetryableHTTPClient() *RetryableHTTPClient {
 
 		return shouldRetry, err
 	}
-	return &RetryableHTTPClient{client: client}
+	return client.StandardClient()
 }
 
 // NewClient creates a new client
@@ -175,7 +161,7 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if _, ok := c.client.(*RetryableHTTPClient); ok {
+	if _, ok := c.client.(*http.Client); ok {
 		signedToken, err := c.ensureSignedToken()
 		if err != nil {
 			return nil, fmt.Errorf("ensuring JWT token failed: %v", err)
