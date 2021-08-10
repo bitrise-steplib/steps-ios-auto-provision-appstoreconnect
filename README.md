@@ -1,10 +1,8 @@
 # iOS Auto Provision with App Store Connect API
 
+[![Step changelog](https://shields.io/github/v/release/bitrise-steplib/steps-ios-auto-provision-appstoreconnect?include_prereleases&label=changelog&color=blueviolet)](https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/releases)
+
 Automatically manages your iOS Provisioning Profiles for your Xcode project.
-
-Links:
-
-- [Changelog](https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/releases)
 
 <details>
 <summary>Description</summary>
@@ -52,7 +50,7 @@ Make sure that you do NOT modify your Xcode project between the **iOS Auto Provi
 
 Add this step directly to your workflow in the [Bitrise Workflow Editor](https://devcenter.bitrise.io/steps-and-workflows/steps-and-workflows-index/).
 
-You can also run this step directly with [bitrise CLI](https://github.com/bitrise-io/bitrise).
+You can also run this step directly with [Bitrise CLI](https://github.com/bitrise-io/bitrise).
 
 ## ⚙️ Configuration
 
@@ -91,10 +89,13 @@ You can also run this step directly with [bitrise CLI](https://github.com/bitris
 | `BITRISE_PRODUCTION_CODESIGN_IDENTITY` | The production codesign identity's name, for example, `iPhone Distribution: Bitrise Bot (VV2J4SV8V4. |
 | `BITRISE_DEVELOPMENT_PROFILE` | The development provisioning profile's UUID which belongs to the main target, for example, `c5be4123-1234-4f9d-9843-0d9be985a068`. |
 | `BITRISE_PRODUCTION_PROFILE` | The production provisioning profile's UUID which belongs to the main target, for example, `c5be4123-1234-4f9d-9843-0d9be985a068`. |
-
 </details>
 
-## 🙋 How to contribute
+## 🙋 Contributing
+
+We welcome [pull requests](https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/pulls) and [issues](https://github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/issues) against this repository.
+
+For pull requests, work on your changes in a forked repository and use the Bitrise CLI to [run step tests locally](https://devcenter.bitrise.io/bitrise-cli/run-your-first-build/).
 
 Links:
 
