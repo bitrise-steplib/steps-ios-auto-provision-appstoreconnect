@@ -12,6 +12,12 @@ workflows:
         inputs:
         - workflow: e2e
 
+  generate-readme:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main:
+        inputs:
+        - contrib_section: docs/contribution.md
+
   sample:
     envs:
     - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git

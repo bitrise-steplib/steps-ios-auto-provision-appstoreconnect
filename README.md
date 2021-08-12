@@ -57,7 +57,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 <details>
 <summary>Inputs</summary>
 
-| Parameter | Description | Flags | Default |
+| Key | Description | Flags | Default |
 | --- | --- | --- | --- |
 | `connection` | The input determines the method used for Apple Service authentication. By default, the Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.  You can either use the established Bitrise Apple Developer connection or you can tell the Step to only use the Step inputs for authentication. - `automatic`: Use the Apple Developer connection based on API key. Step inputs are only used as a fallback. - `api_key`: Use the Apple Developer connection based on API key authentication. Authentication-related Step inputs are ignored. - `off`: Do not use any already configured Apple Developer Connection. Only authentication-related Step inputs are considered. | required | `automatic` |
 | `api_key_path` | Specify the path in an URL format where your API key is stored.  For example: `https://URL/TO/AuthKey_[KEY_ID].p8` or `file:///PATH/TO/AuthKey_[KEY_ID].p8`. **NOTE:** The Step will only recognize the API key if the filename includes the  `KEY_ID` value as shown on the examples above.  You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the Environment Variable for the file here.  For example: `$BITRISEIO_MYKEY_URL` | sensitive |  |
@@ -97,7 +97,9 @@ We welcome [pull requests](https://github.com/bitrise-steplib/steps-ios-auto-pro
 
 For pull requests, work on your changes in a forked repository and use the Bitrise CLI to [run step tests locally](https://devcenter.bitrise.io/bitrise-cli/run-your-first-build/).
 
-Links:
+**Note:** this step's end-to-end tests (defined in `e2e/bitrise.yml`) are working with secrets which are intentionally not stored in this repo. External contributors won't be able to run those tests. Don't worry, if you open a PR with your contribution, we will help with running tests and make sure that they pass.
+
+Learn more about developing steps:
 
 - [Create your own step](https://devcenter.bitrise.io/contributors/create-your-own-step/)
 - [Testing your Step](https://devcenter.bitrise.io/contributors/testing-and-versioning-your-steps/)
