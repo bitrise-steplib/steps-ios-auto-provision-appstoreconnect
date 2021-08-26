@@ -64,7 +64,7 @@ func (c *CertificateSource) queryAllCertificates() (map[appstoreconnect.Certific
 func queryAllIOSCertificates(client *appstoreconnect.Client) (map[appstoreconnect.CertificateType][]APICertificate, error) {
 	typeToCertificates := map[appstoreconnect.CertificateType][]APICertificate{}
 
-	for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.IOSDevelopment, appstoreconnect.IOSDistribution} {
+	for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.Development, appstoreconnect.IOSDevelopment, appstoreconnect.Distribution, appstoreconnect.IOSDistribution} {
 		certs, err := queryCertificatesByType(client, certType)
 		if err != nil {
 			return map[appstoreconnect.CertificateType][]APICertificate{}, err

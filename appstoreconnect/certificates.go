@@ -21,6 +21,8 @@ type CertificateType string
 
 // CertificateTypes ...
 const (
+	Development              CertificateType = "DEVELOPMENT"
+	Distribution             CertificateType = "DISTRIBUTION"
 	IOSDevelopment           CertificateType = "IOS_DEVELOPMENT"
 	IOSDistribution          CertificateType = "IOS_DISTRIBUTION"
 	MacDistribution          CertificateType = "MAC_APP_DISTRIBUTION"
