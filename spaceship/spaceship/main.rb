@@ -24,6 +24,11 @@ begin
     certificates = client.list_dev_certs
     result = { data: certificates }
     puts result.to_json.to_s
+  when 'list_dist_certs'
+    client = CertificateHelper.new
+    certificates = client.list_dist_certs
+    result = { data: certificates }
+    puts result.to_json.to_s
   when 'create_profile'
     create_profile(options[:bundle_id], options[:certificate], options[:profile_name])
   end
