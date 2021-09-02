@@ -15,6 +15,27 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
+type ProfileClient interface {
+	FindProfile(name string, profileType appstoreconnect.ProfileType) (*appstoreconnect.Profile, error)
+	DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error
+	CheckProfile(prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error
+	DeleteProfile(id string) error
+	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (*appstoreconnect.Profile, error)
+	// Bundle ID
+	FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
+	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
+	SyncBundleID(bundleIDID string, entitlements Entitlement) error
+	CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
+}
+
+type APIProfileClient struct {
+	client *appstoreconnect.Client
+}
+
+func NewAPIProfileClient(client *appstoreconnect.Client) ProfileClient {
+	return &APIProfileClient{client: client}
+}
+
 // NonmatchingProfileError is returned when a profile/bundle ID does not match project requirements
 // It is not a fatal error, as the profile can be regenerated
 type NonmatchingProfileError struct {
@@ -48,7 +69,7 @@ func ProfileName(profileType appstoreconnect.ProfileType, bundleID string) (stri
 }
 
 // FindProfile ...
-func FindProfile(client *appstoreconnect.Client, name string, profileType appstoreconnect.ProfileType) (*appstoreconnect.Profile, error) {
+func (c *APIProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (*appstoreconnect.Profile, error) {
 	opt := &appstoreconnect.ListProfilesOptions{
 		PagingOptions: appstoreconnect.PagingOptions{
 			Limit: 1,
@@ -57,7 +78,7 @@ func FindProfile(client *appstoreconnect.Client, name string, profileType appsto
 		FilterName:        name,
 	}
 
-	r, err := client.Provisioning.ListProfiles(opt)
+	r, err := c.client.Provisioning.ListProfiles(opt)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +87,40 @@ func FindProfile(client *appstoreconnect.Client, name string, profileType appsto
 	}
 
 	return &r.Data[0], nil
+}
+
+// DeleteExpiredProfile ...
+func (c *APIProfileClient) DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
+	var nextPageURL string
+	var profile *appstoreconnect.Profile
+
+	for {
+		response, err := c.client.Provisioning.Profiles(bundleID.Relationships.Profiles.Links.Related, &appstoreconnect.PagingOptions{
+			Limit: 20,
+			Next:  nextPageURL,
+		})
+		if err != nil {
+			return err
+		}
+
+		for _, d := range response.Data {
+			if d.Attributes.Name == profileName {
+				profile = &d
+				break
+			}
+		}
+
+		nextPageURL = response.Links.Next
+		if nextPageURL == "" {
+			break
+		}
+	}
+
+	if profile == nil {
+		return fmt.Errorf("failed to find profile: %s", profileName)
+	}
+
+	return c.DeleteProfile(profile.ID)
 }
 
 func wrapInProfileError(err error) error {
@@ -80,7 +135,7 @@ func wrapInProfileError(err error) error {
 	return err
 }
 
-func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconnect.Profile, projectEntitlements Entitlement) error {
+func (c *APIProfileClient) checkProfileEntitlements(prof appstoreconnect.Profile, projectEntitlements Entitlement) error {
 	profileEnts, err := parseRawProfileEntitlements(prof)
 	if err != nil {
 		return err
@@ -98,12 +153,12 @@ func checkProfileEntitlements(client *appstoreconnect.Client, prof appstoreconne
 		}
 	}
 
-	bundleIDresp, err := client.Provisioning.BundleID(prof.Relationships.BundleID.Links.Related)
+	bundleIDresp, err := c.client.Provisioning.BundleID(prof.Relationships.BundleID.Links.Related)
 	if err != nil {
 		return err
 	}
 
-	return CheckBundleIDEntitlements(client, bundleIDresp.Data, projectEntitlements)
+	return c.CheckBundleIDEntitlements(bundleIDresp.Data, projectEntitlements)
 }
 
 func parseRawProfileEntitlements(prof appstoreconnect.Profile) (serialized.Object, error) {
@@ -239,27 +294,27 @@ func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) boo
 }
 
 // CheckProfile ...
-func CheckProfile(client *appstoreconnect.Client, prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+func (c *APIProfileClient) CheckProfile(prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
 	if isProfileExpired(prof, minProfileDaysValid) {
 		return NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
 		}
 	}
 
-	if err := checkProfileEntitlements(client, prof, entitlements); err != nil {
+	if err := c.checkProfileEntitlements(prof, entitlements); err != nil {
 		return err
 	}
 
-	if err := checkProfileCertificates(client, prof, certificateIDs); err != nil {
+	if err := checkProfileCertificates(c.client, prof, certificateIDs); err != nil {
 		return err
 	}
 
-	return checkProfileDevices(client, prof, deviceIDs)
+	return checkProfileDevices(c.client, prof, deviceIDs)
 }
 
 // DeleteProfile ...
-func DeleteProfile(client *appstoreconnect.Client, id string) error {
-	if err := client.Provisioning.DeleteProfile(id); err != nil {
+func (c *APIProfileClient) DeleteProfile(id string) error {
+	if err := c.client.Provisioning.DeleteProfile(id); err != nil {
 		if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
 			if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
 				return nil
@@ -273,9 +328,9 @@ func DeleteProfile(client *appstoreconnect.Client, id string) error {
 }
 
 // CreateProfile ...
-func CreateProfile(client *appstoreconnect.Client, name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (*appstoreconnect.Profile, error) {
+func (c *APIProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (*appstoreconnect.Profile, error) {
 	// Create new Bitrise profile on App Store Connect
-	r, err := client.Provisioning.CreateProfile(
+	r, err := c.client.Provisioning.CreateProfile(
 		appstoreconnect.NewProfileCreateRequest(
 			profileType,
 			name,

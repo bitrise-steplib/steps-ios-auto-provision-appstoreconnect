@@ -125,7 +125,7 @@ func failf(format string, args ...interface{}) {
 
 // ProfileManager ...
 type ProfileManager struct {
-	client                      *appstoreconnect.Client
+	client                      autoprovision.ProfileClient
 	bundleIDByBundleIDIdentifer map[string]*appstoreconnect.BundleID
 	containersByBundleID        map[string][]string
 }
@@ -138,7 +138,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 	bundleID, ok := m.bundleIDByBundleIDIdentifer[bundleIDIdentifier]
 	if !ok {
 		var err error
-		bundleID, err = autoprovision.FindBundleID(m.client, bundleIDIdentifier)
+		bundleID, err = m.client.FindBundleID(bundleIDIdentifier)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find bundle ID: %s", err)
 		}
@@ -150,12 +150,12 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
 
 		// Check if BundleID is sync with the project
-		err := autoprovision.CheckBundleIDEntitlements(m.client, *bundleID, autoprovision.Entitlement(entitlements))
+		err := m.client.CheckBundleIDEntitlements(*bundleID, autoprovision.Entitlement(entitlements))
 		if err != nil {
 			if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
-				if err := autoprovision.SyncBundleID(m.client, bundleID.ID, autoprovision.Entitlement(entitlements)); err != nil {
+				if err := m.client.SyncBundleID(bundleID.ID, autoprovision.Entitlement(entitlements)); err != nil {
 					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
 				}
 
@@ -175,7 +175,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 
 	capabilities := autoprovision.Entitlement(entitlements)
 
-	bundleID, err := autoprovision.CreateBundleID(m.client, bundleIDIdentifier)
+	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
 	}
@@ -190,7 +190,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 		log.Errorf("  app ID created but couldn't add iCloud containers: %v", containers)
 	}
 
-	if err := autoprovision.SyncBundleID(m.client, bundleID.ID, capabilities); err != nil {
+	if err := m.client.SyncBundleID(bundleID.ID, capabilities); err != nil {
 		return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
 	}
 
@@ -211,7 +211,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 		return nil, fmt.Errorf("failed to create profile name: %s", err)
 	}
 
-	profile, err := autoprovision.FindProfile(m.client, name, profileType)
+	profile, err := m.client.FindProfile(name, profileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find profile: %s", err)
 	}
@@ -223,7 +223,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes.ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			err := autoprovision.CheckProfile(m.client, *profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
+			err := m.client.CheckProfile(*profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
 				if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
@@ -241,7 +241,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 			log.Warnf("  the profile state is invalid, regenerating ...")
 		}
 
-		if err := autoprovision.DeleteProfile(m.client, profile.ID); err != nil {
+		if err := m.client.DeleteProfile(profile.ID); err != nil {
 			return nil, fmt.Errorf("failed to delete profile: %s", err)
 		}
 	}
@@ -256,18 +256,18 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 	fmt.Println()
 	log.Infof("  Creating profile for bundle id: %s", bundleID.Attributes.Name)
 
-	profile, err = autoprovision.CreateProfile(m.client, name, profileType, *bundleID, certIDs, deviceIDs)
+	profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
 	if err != nil {
 		// Expired profiles are not listed via profiles endpoint,
 		// so we can not catch if the profile already exist but expired, before we attempt to create one with the managed profile name.
 		// As a workaround we use the BundleID profiles relationship url to find and delete the expired profile.
 		if isMultipleProfileErr(err) {
 			log.Warnf("  Profile already exists, but expired, cleaning up...")
-			if err := m.deleteExpiredProfile(bundleID, name); err != nil {
+			if err := m.client.DeleteExpiredProfile(bundleID, name); err != nil {
 				return nil, fmt.Errorf("expired profile cleanup failed: %s", err)
 			}
 
-			profile, err = autoprovision.CreateProfile(m.client, name, profileType, *bundleID, certIDs, deviceIDs)
+			profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create profile: %s", err)
 			}
@@ -283,39 +283,6 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 	log.Donef("  profile created: %s", profile.Attributes.Name)
 
 	return profile, nil
-}
-
-func (m ProfileManager) deleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
-	var nextPageURL string
-	var profile *appstoreconnect.Profile
-
-	for {
-		response, err := m.client.Provisioning.Profiles(bundleID.Relationships.Profiles.Links.Related, &appstoreconnect.PagingOptions{
-			Limit: 20,
-			Next:  nextPageURL,
-		})
-		if err != nil {
-			return err
-		}
-
-		for _, d := range response.Data {
-			if d.Attributes.Name == profileName {
-				profile = &d
-				break
-			}
-		}
-
-		nextPageURL = response.Links.Next
-		if nextPageURL == "" {
-			break
-		}
-	}
-
-	if profile == nil {
-		return fmt.Errorf("failed to find profile: %s", profileName)
-	}
-
-	return m.client.Provisioning.DeleteProfile(profile.ID)
 }
 
 func isMultipleProfileErr(err error) bool {
@@ -590,7 +557,7 @@ func main() {
 	containersByBundleID := map[string][]string{}
 
 	profileManager := ProfileManager{
-		client:                      client,
+		client:                      devportalClient.ProfileClient,
 		bundleIDByBundleIDIdentifer: bundleIDByBundleIDIdentifer,
 		containersByBundleID:        containersByBundleID,
 	}
