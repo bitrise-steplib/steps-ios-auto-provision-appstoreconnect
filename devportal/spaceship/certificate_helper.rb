@@ -116,7 +116,7 @@ class CertificateHelper
     end
   end
 
-  def identify_certificate_infos()
+  def list_dev_certs()
     Log.info('Identify Certificates on Developer Portal')
 
     certificates_contents = []
@@ -128,13 +128,13 @@ class CertificateHelper
       Log.debug("- #{cert.name}: #{certificate_name_and_serial(downloaded_portal_cert)} expire: #{downloaded_portal_cert.not_after}")
     end
 
-    portal_production_certificates = Portal::CertificateClient.download_production_certificates
-    Log.debug('Production certificates on Apple Developer Portal:')
-    portal_production_certificates.each do |cert|
-      downloaded_portal_cert = download(cert)
-      certificates_contents.append(Base64.encode64(downloaded_portal_cert.to_pem))
-      Log.debug("- #{cert.name}: #{certificate_name_and_serial(downloaded_portal_cert)} expire: #{downloaded_portal_cert.not_after}")
-    end
+    # portal_production_certificates = Portal::CertificateClient.download_production_certificates
+    # Log.debug('Production certificates on Apple Developer Portal:')
+    # portal_production_certificates.each do |cert|
+    #   downloaded_portal_cert = download(cert)
+    #   certificates_contents.append(Base64.encode64(downloaded_portal_cert.to_pem))
+    #   Log.debug("- #{cert.name}: #{certificate_name_and_serial(downloaded_portal_cert)} expire: #{downloaded_portal_cert.not_after}")
+    # end
 
     certificates_contents
   end

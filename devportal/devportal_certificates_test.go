@@ -21,7 +21,7 @@ func Test_getAllCertificates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetAllCertificates()
+			got, err := NewSpaceshipCertificateSource()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getAllCertificates() error = %v, wantErr %v", err, tt.wantErr)
 				return

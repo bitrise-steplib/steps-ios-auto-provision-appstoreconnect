@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"math/big"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,28 +16,69 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 //go:embed spaceship
 var spaceship embed.FS
+
+type SpaceshipCertificateSource struct {
+	certificates map[appstoreconnect.CertificateType][]autoprovision.APICertificate
+}
+
+func (s *SpaceshipCertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovision.APICertificate, error) {
+	for _, cert := range s.certificates[appstoreconnect.IOSDevelopment] {
+		if serial == cert.Certificate.Certificate.SerialNumber {
+			return cert, nil
+		}
+	}
+
+	return autoprovision.APICertificate{}, fmt.Errorf("can not find certificate with serial")
+}
+
+func (s *SpaceshipCertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autoprovision.APICertificate, error) {
+	return s.certificates, nil
+}
+
+func NewSpaceshipCertificateSource() (autoprovision.CertificateSource, error) {
+	spaceshipDir, err := getSpaceshipDirectory()
+	if err != nil {
+		return nil, err
+	}
+
+	devCertsCmd, err := getSpaceshipCommand(spaceshipDir, "list_dev_certs")
+	if err != nil {
+		return nil, err
+	}
+
+	// distCertsCommand, err := getSpaceshipCommand(spaceshipDir, "list_dist_certs")
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	devCerts, err := parseCertificates(devCertsCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	// distCers, err := parseCertificates(distCertsCommand)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	return &SpaceshipCertificateSource{certificates: map[appstoreconnect.CertificateType][]autoprovision.APICertificate{
+		appstoreconnect.IOSDevelopment: devCerts,
+	}}, nil
+}
 
 type certificates struct {
 	Error string   `json:"error"`
 	Data  []string `josn:"data"`
 }
 
-func GetAllCertificates() ([]certificateutil.CertificateInfoModel, error) {
-	spaceshipDir, err := getSpaceshipDirectory()
-	if err != nil {
-		return nil, err
-	}
-
-	cmd, err := getSpaceshipCommand(spaceshipDir, "certificates")
-	if err != nil {
-		return nil, err
-	}
-
-	output, err := runSpaceshipCommand(cmd)
+func parseCertificates(spaceshipCommand *command.Model) ([]autoprovision.APICertificate, error) {
+	output, err := runSpaceshipCommand(spaceshipCommand)
 	if err != nil {
 		return nil, err
 	}
@@ -50,23 +92,22 @@ func GetAllCertificates() ([]certificateutil.CertificateInfoModel, error) {
 		return nil, fmt.Errorf("could not query devportal: %v", err)
 	}
 
-	var certs []certificateutil.CertificateInfoModel
+	var certInfos []autoprovision.APICertificate
 	for _, encodedCert := range certsResponse.Data {
 		pemContent, err := base64.StdEncoding.DecodeString(encodedCert)
 		if err != nil {
 			return nil, err
 		}
 
-		certInfo, err := certificateutil.CeritifcateFromPemContent(pemContent)
+		cert, err := certificateutil.CeritifcateFromPemContent(pemContent)
 		if err != nil {
 			return nil, err
 		}
 
-		log.Infof("cert: %v", certInfo)
-		// certs = append(certs, certInfo)
+		certInfos = append(certInfos, autoprovision.APICertificate{Certificate: certificateutil.NewCertificateInfo(*cert, nil)})
 	}
 
-	return certs, nil
+	return certInfos, nil
 }
 
 func getSpaceshipDirectory() (string, error) {
@@ -134,7 +175,7 @@ func getSpaceshipDirectory() (string, error) {
 }
 
 func getSpaceshipCommand(targetDir, subCommand string) (*command.Model, error) {
-	spaceshipCmd, err := rubycommand.NewFromSlice([]string{"bundle", "exec", "ruby", "main.rb", subCommand})
+	spaceshipCmd, err := rubycommand.NewFromSlice([]string{"bundle", "exec", "ruby", "main.rb", "--subcommand", subCommand})
 	if err != nil {
 		return nil, err
 	}

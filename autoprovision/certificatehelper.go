@@ -80,9 +80,6 @@ func NewAPICertificateSource(client *appstoreconnect.Client) CertificateSource {
 	}
 }
 
-type SpaceshipCertificateSource struct {
-}
-
 func queryCertificatesByType(client *appstoreconnect.Client, certificateType appstoreconnect.CertificateType) ([]APICertificate, error) {
 	nextPageURL := ""
 	var certificates []appstoreconnect.Certificate
