@@ -9,12 +9,11 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/bitrise-io/go-steputils/command/gems"
-	"github.com/bitrise-io/go-steputils/command/rubycommand"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
@@ -24,13 +23,15 @@ import (
 var spaceship embed.FS
 
 type SpaceshipCertificateSource struct {
-	workDir      string
+	client       *Client
 	certificates map[appstoreconnect.CertificateType][]autoprovision.APICertificate
 }
 
 func (s *SpaceshipCertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovision.APICertificate, error) {
 	if s.certificates == nil {
-		s.downloadAll()
+		if err := s.downloadAll(); err != nil {
+			return autoprovision.APICertificate{}, err
+		}
 	}
 
 	for _, cert := range s.certificates[appstoreconnect.IOSDevelopment] {
@@ -44,25 +45,27 @@ func (s *SpaceshipCertificateSource) QueryCertificateBySerial(serial *big.Int) (
 
 func (s *SpaceshipCertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autoprovision.APICertificate, error) {
 	if s.certificates == nil {
-		s.downloadAll()
+		if err := s.downloadAll(); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.certificates, nil
 }
 
-func NewSpaceshipCertificateSource(client Client) autoprovision.CertificateSource {
+func NewSpaceshipCertificateSource(client *Client) autoprovision.CertificateSource {
 	return &SpaceshipCertificateSource{
-		workDir: client.workDir,
+		client: client,
 	}
 }
 
 func (s *SpaceshipCertificateSource) downloadAll() error {
-	devCertsCmd, err := getSpaceshipCommand(s.workDir, "list_dev_certs")
+	devCertsCmd, err := s.client.createRequestCommand("list_dev_certs")
 	if err != nil {
 		return err
 	}
 
-	distCertsCommand, err := getSpaceshipCommand(s.workDir, "list_dist_certs")
+	distCertsCommand, err := s.client.createRequestCommand("list_dist_certs")
 	if err != nil {
 		return err
 	}
@@ -85,9 +88,8 @@ func (s *SpaceshipCertificateSource) downloadAll() error {
 	return nil
 }
 
-type certificates struct {
-	Error string `json:"error"`
-	Data  []struct {
+type certificatesResponse struct {
+	Data []struct {
 		Content string `json:"content"`
 		ID      string `json:"id"`
 	} `json:"data"`
@@ -99,17 +101,13 @@ func parseCertificates(spaceshipCommand *command.Model) ([]autoprovision.APICert
 		return nil, err
 	}
 
-	var certsResponse certificates
-	if err := json.Unmarshal([]byte(output), &certsResponse); err != nil {
+	var certificates certificatesResponse
+	if err := json.Unmarshal([]byte(output), &certificates); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	if certsResponse.Error != "" {
-		return nil, fmt.Errorf("could not query devportal: %v", err)
-	}
-
 	var certInfos []autoprovision.APICertificate
-	for _, certInfo := range certsResponse.Data {
+	for _, certInfo := range certificates.Data {
 		pemContent, err := base64.StdEncoding.DecodeString(certInfo.Content)
 		if err != nil {
 			return nil, err
@@ -193,37 +191,8 @@ func getSpaceshipDirectory() (string, error) {
 	return targetDir, nil
 }
 
-func getSpaceshipCommand(targetDir, subCommand string, opts ...string) (*command.Model, error) {
-	s := []string{"bundle", "exec", "ruby", "main.rb", "--subcommand", subCommand}
-	s = append(s, opts...)
-	spaceshipCmd, err := rubycommand.NewFromSlice(s)
-	if err != nil {
-		return nil, err
-	}
-	spaceshipCmd.SetDir(targetDir)
-
-	return spaceshipCmd, nil
-}
-
-func runSpaceshipCommand(cmd *command.Model) (string, error) {
-	fmt.Println()
-	log.Donef("$ %s", cmd.PrintableCommandArgs())
-	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("spaceship command failed: %s, error: %s", output, err)
-	}
-
-	jsonRegexp := regexp.MustCompile(`\n\{.*\}$`)
-	match := jsonRegexp.FindString(output)
-	if match == "" {
-		return "", fmt.Errorf("output does not contain response: %s", output)
-	}
-
-	return match, nil
-}
-
 func createProfile() error {
-	client, err := NewClient()
+	client, err := NewClient(&appleauth.AppleID{})
 	if err != nil {
 		return fmt.Errorf("failed to initialize Spaceship client: %v", err)
 	}
@@ -237,12 +206,7 @@ func createProfile() error {
 	devCerts := certs[appstoreconnect.IOSDevelopment]
 	cert := devCerts[0]
 
-	spaceshipDir, err := getSpaceshipDirectory()
-	if err != nil {
-		return err
-	}
-
-	cmd, err := getSpaceshipCommand(spaceshipDir, "create_profile",
+	cmd, err := client.createRequestCommand("create_profile",
 		"--bundle_id", "io.bitrise.ios.Fennec",
 		"--certificate", cert.ID,
 		"--profile_name", "lib_test",

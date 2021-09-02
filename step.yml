@@ -73,6 +73,7 @@ inputs:
       value_options:
       - "automatic"
       - "api_key"
+      - "apple_id"
       - "off"
   - api_key_path: ""
     opts:
@@ -93,15 +94,47 @@ inputs:
       title: "API Key Issuer ID"
       description: |-
         Issuer ID. Required if **API Key URL** (`api_key_path`) is specified.
+  - apple_id: ""
+    opts:
+      category: Apple ID authentication
+      title: "Apple ID: Email"
+      summary: Email for Apple ID login.
+      description: Email for Apple ID login.
+      is_sensitive: true
+  - password: ""
+    opts:
+      category: Apple ID authentication
+      title: "Apple ID: Password"
+      description: Password for the specified Apple ID.
+      is_sensitive: true
+  - app_password: ""
+    opts:
+      category: Apple ID authentication
+      title: "Apple ID: Application-specific password"
+      summary: Optional if using two-factor enabled Apple ID.
+      description: |-
+        Use this input if TFA is enabled on the Apple ID but no app-specific password has been added to the used Bitrise Apple ID connection.
+        
+        **NOTE:** Application-specific passwords can be created on the
+        [AppleID Website](https://appleid.apple.com). It can be used to
+        bypass two-factor authentication.
+      is_sensitive: true
+  - in_house: "no"
+    opts:
+      category: Apple ID authentication
+      title: Is the account (Apple ID only) part of Apple Developer Enterprise Program?
+      value_options:
+      - "no"
+      - "yes"
   - distribution_type: development
     opts:
       title: Distribution type
       description: Describes how Xcode should sign your project.
       value_options:
-        - "development"
-        - "app-store"
-        - "ad-hoc"
-        - "enterprise"
+      - "development"
+      - "app-store"
+      - "ad-hoc"
+      - "enterprise"
       is_required: true
   - project_path: $BITRISE_PROJECT_PATH
     opts:

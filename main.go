@@ -368,6 +368,10 @@ func main() {
 	authInputs := appleauth.Inputs{
 		APIIssuer:  stepConf.APIIssuer,
 		APIKeyPath: string(stepConf.APIKeyPath),
+		// Apple ID
+		Username:            stepConf.AppleID,
+		Password:            string(stepConf.Password),
+		AppSpecificPassword: string(stepConf.AppSpecificPassword),
 	}
 	if err := authInputs.Validate(); err != nil {
 		failf("Issue with authentication related inputs: %v", err)
@@ -378,17 +382,17 @@ func main() {
 		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", stepConf.BitriseConnection)
 	}
 
-	var devportalConnectionProvider *devportalservice.BitriseClient
+	var connectionProvider *devportalservice.BitriseClient
 	if stepConf.BuildURL != "" && stepConf.BuildAPIToken != "" {
-		devportalConnectionProvider = devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), stepConf.BuildURL, stepConf.BuildAPIToken)
+		connectionProvider = devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), stepConf.BuildURL, stepConf.BuildAPIToken)
 	} else {
 		fmt.Println()
 		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
 	}
 	var conn *devportalservice.AppleDeveloperConnection
-	if stepConf.BitriseConnection != "off" && devportalConnectionProvider != nil {
+	if stepConf.BitriseConnection != "off" && connectionProvider != nil {
 		var err error
-		conn, err = devportalConnectionProvider.GetAppleDeveloperConnection()
+		conn, err = connectionProvider.GetAppleDeveloperConnection()
 		if err != nil {
 			handleSessionDataError(err)
 		}
@@ -404,18 +408,18 @@ func main() {
 		failf("Could not configure Apple Service authentication: %v", err)
 	}
 
-	isAPI := false
-	httpClient := appstoreconnect.NewRetryableHTTPClient()
-	client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
+	// Remove
+	var client *appstoreconnect.Client
 
 	var devportalClient autoprovision.DevportalClient
-	if isAPI {
-		// Turn off client debug logs including HTTP call debug logs
-		client.EnableDebugLogs = false
+	if authConfig.APIKey != nil {
+		httpClient := appstoreconnect.NewRetryableHTTPClient()
+		client = appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
+		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
 		log.Donef("the client created for %s", client.BaseURL)
 		devportalClient = autoprovision.NewAPIDevportalClient(client)
 	} else {
-		client, err := spaceship.NewClient()
+		client, err := spaceship.NewClient(authConfig.AppleID)
 		if err != nil {
 			failf("failed to initialize Spaceship client: %v")
 		}

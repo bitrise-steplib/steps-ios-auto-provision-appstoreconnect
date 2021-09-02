@@ -7,6 +7,8 @@ require 'optparse'
 begin
   options = {}
   OptionParser.new do |opt|
+    opt.on('--username USERNAME') { |o| options[:username] = o }
+    opt.on('--password PASSWORD') { |o| options[:password] = o }
     opt.on('--subcommand SUBCOMMAND') { |o| options[:subcommand] = o }
     opt.on('--bundle_id BUNDLE_ID') { |o| options[:bundle_id] = o }
     opt.on('--certificate CERTIFICATE') { |o| options[:certificate] = o }
@@ -15,7 +17,7 @@ begin
 
   Log.verbose = true
 
-  Portal::AuthClient.login(apple_id, password)
+  Portal::AuthClient.login(options[:username], options[:password])
   Log.info('logged in')
 
   case options[:subcommand]
@@ -33,8 +35,6 @@ begin
     create_profile(options[:bundle_id], options[:certificate], options[:profile_name])
   end
 rescue => e
-  result = { error: "Error: #{e} Stacktrace: #{e.backtrace.join("\n")}" }
+  result = { error: "#{e}, stacktrace: #{e.backtrace.join("\n")}" }
   puts result.to_json.to_s
-
-  exit 1
 end
