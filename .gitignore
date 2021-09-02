@@ -3,3 +3,4 @@
 _tmp/
 apple_developer_portal_data*.json
 .idea
+.bundle
