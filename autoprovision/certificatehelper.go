@@ -30,18 +30,6 @@ var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.Certifi
 	Enterprise:  appstoreconnect.IOSDistribution,
 }
 
-// APICertificate is certificate present on Apple App Store Connect API, could match a local certificate
-type APICertificate struct {
-	Certificate certificateutil.CertificateInfoModel
-	ID          string
-}
-
-// CertificateSource ...
-type CertificateSource interface {
-	QueryCertificateBySerial(*big.Int) (APICertificate, error)
-	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]APICertificate, error)
-}
-
 type APICertificateSource struct {
 	client *appstoreconnect.Client
 }

@@ -1,4 +1,4 @@
-package devportal
+package spaceship
 
 import (
 	_ "embed"

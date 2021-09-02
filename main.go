@@ -21,6 +21,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/spaceship"
 )
 
 // downloadCertificates downloads and parses a list of p12 files
@@ -403,13 +404,23 @@ func main() {
 		failf("Could not configure Apple Service authentication: %v", err)
 	}
 
+	isAPI := false
 	httpClient := appstoreconnect.NewRetryableHTTPClient()
 	client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
 
-	// Turn off client debug logs including HTTP call debug logs
-	client.EnableDebugLogs = false
-
-	log.Donef("the client created for %s", client.BaseURL)
+	var devportalClient autoprovision.DevportalClient
+	if isAPI {
+		// Turn off client debug logs including HTTP call debug logs
+		client.EnableDebugLogs = false
+		log.Donef("the client created for %s", client.BaseURL)
+		devportalClient = autoprovision.NewAPIDevportalClient(client)
+	} else {
+		client, err := spaceship.NewClient()
+		if err != nil {
+			failf("failed to initialize Spaceship client: %v")
+		}
+		devportalClient = spaceship.NewSpaceshipDevportalClient(client)
+	}
 
 	// Analyzing project
 	fmt.Println()
@@ -500,8 +511,7 @@ func main() {
 		}
 	}
 
-	certClient := autoprovision.NewAPICertificateSource(client)
-	certsByType, err := autoprovision.GetValidCertificates(certs, certClient, requiredCertTypes, teamID, stepConf.VerboseLog)
+	certsByType, err := autoprovision.GetValidCertificates(certs, devportalClient.CertificateSource, requiredCertTypes, teamID, stepConf.VerboseLog)
 	if err != nil {
 		if missingCertErr, ok := err.(autoprovision.MissingCertificateError); ok {
 			log.Errorf(err.Error())
@@ -524,7 +534,7 @@ func main() {
 	if distributionTypeRequiresDeviceList(distrTypes) {
 		log.Infof("Fetching Apple Developer Portal devices")
 		// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
-		devPortalDevices, err := autoprovision.ListDevices(client, "", appstoreconnect.IOSDevice)
+		devPortalDevices, err := devportalClient.DeviceLister.ListDevices("", appstoreconnect.IOSDevice)
 		if err != nil {
 			failf("Failed to fetch devices: %s", err)
 		}

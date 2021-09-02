@@ -1,4 +1,4 @@
-package devportal
+package spaceship
 
 import (
 	"embed"
@@ -24,12 +24,17 @@ import (
 var spaceship embed.FS
 
 type SpaceshipCertificateSource struct {
+	workDir      string
 	certificates map[appstoreconnect.CertificateType][]autoprovision.APICertificate
 }
 
 func (s *SpaceshipCertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovision.APICertificate, error) {
+	if s.certificates == nil {
+		s.downloadAll()
+	}
+
 	for _, cert := range s.certificates[appstoreconnect.IOSDevelopment] {
-		if serial == cert.Certificate.Certificate.SerialNumber {
+		if serial.Cmp(cert.Certificate.Certificate.SerialNumber) == 0 {
 			return cert, nil
 		}
 	}
@@ -38,18 +43,23 @@ func (s *SpaceshipCertificateSource) QueryCertificateBySerial(serial *big.Int) (
 }
 
 func (s *SpaceshipCertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autoprovision.APICertificate, error) {
+	if s.certificates == nil {
+		s.downloadAll()
+	}
+
 	return s.certificates, nil
 }
 
-func NewSpaceshipCertificateSource() (autoprovision.CertificateSource, error) {
-	spaceshipDir, err := getSpaceshipDirectory()
-	if err != nil {
-		return nil, err
+func NewSpaceshipCertificateSource(client Client) autoprovision.CertificateSource {
+	return &SpaceshipCertificateSource{
+		workDir: client.workDir,
 	}
+}
 
-	devCertsCmd, err := getSpaceshipCommand(spaceshipDir, "list_dev_certs")
+func (s *SpaceshipCertificateSource) downloadAll() error {
+	devCertsCmd, err := getSpaceshipCommand(s.workDir, "list_dev_certs")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// distCertsCommand, err := getSpaceshipCommand(spaceshipDir, "list_dist_certs")
@@ -59,7 +69,7 @@ func NewSpaceshipCertificateSource() (autoprovision.CertificateSource, error) {
 
 	devCerts, err := parseCertificates(devCertsCmd)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// distCers, err := parseCertificates(distCertsCommand)
@@ -67,9 +77,11 @@ func NewSpaceshipCertificateSource() (autoprovision.CertificateSource, error) {
 	// 	return nil, err
 	// }
 
-	return &SpaceshipCertificateSource{certificates: map[appstoreconnect.CertificateType][]autoprovision.APICertificate{
+	s.certificates = map[appstoreconnect.CertificateType][]autoprovision.APICertificate{
 		appstoreconnect.IOSDevelopment: devCerts,
-	}}, nil
+	}
+
+	return nil
 }
 
 type certificates struct {
@@ -210,10 +222,12 @@ func runSpaceshipCommand(cmd *command.Model) (string, error) {
 }
 
 func createProfile() error {
-	s, err := NewSpaceshipCertificateSource()
+	client, err := NewClient()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize Spaceship client: %v")
 	}
+
+	s := NewSpaceshipCertificateSource(client)
 
 	certs, err := s.QueryAllIOSCertificates()
 	if err != nil {
