@@ -119,12 +119,24 @@ class CertificateHelper
   def list_dev_certs()
     Log.info('Identify Certificates on Developer Portal')
 
-    certificates_contents = []
+#     certificates_contents = []
+    cert_infos = []
+
     portal_development_certificates = Portal::CertificateClient.download_development_certificates
     Log.debug('Development certificates on Apple Developer Portal:')
     portal_development_certificates.each do |cert|
       downloaded_portal_cert = download(cert)
-      certificates_contents.append(Base64.encode64(downloaded_portal_cert.to_pem))
+
+      base64_pem = Base64.encode64(downloaded_portal_cert.to_pem)
+
+      cert_info = {
+        content: base64_pem,
+        id: cert.id
+      }
+
+      cert_infos.append(cert_info)
+
+#       certificates_contents.append(Base64.encode64(downloaded_portal_cert.to_pem))
       Log.debug("- #{cert.name}: #{certificate_name_and_serial(downloaded_portal_cert)} expire: #{downloaded_portal_cert.not_after}")
     end
 
@@ -136,7 +148,8 @@ class CertificateHelper
     #   Log.debug("- #{cert.name}: #{certificate_name_and_serial(downloaded_portal_cert)} expire: #{downloaded_portal_cert.not_after}")
     # end
 
-    certificates_contents
+#     certificates_contents
+    cert_infos
   end
 
   def download(portal_certificate)

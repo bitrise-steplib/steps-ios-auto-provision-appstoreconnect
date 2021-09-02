@@ -73,8 +73,11 @@ func NewSpaceshipCertificateSource() (autoprovision.CertificateSource, error) {
 }
 
 type certificates struct {
-	Error string   `json:"error"`
-	Data  []string `josn:"data"`
+	Error string `json:"error"`
+	Data  []struct {
+		Content string `json:"content"`
+		ID      string `json:"id"`
+	} `json:"data"`
 }
 
 func parseCertificates(spaceshipCommand *command.Model) ([]autoprovision.APICertificate, error) {
@@ -93,8 +96,8 @@ func parseCertificates(spaceshipCommand *command.Model) ([]autoprovision.APICert
 	}
 
 	var certInfos []autoprovision.APICertificate
-	for _, encodedCert := range certsResponse.Data {
-		pemContent, err := base64.StdEncoding.DecodeString(encodedCert)
+	for _, certInfo := range certsResponse.Data {
+		pemContent, err := base64.StdEncoding.DecodeString(certInfo.Content)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +107,10 @@ func parseCertificates(spaceshipCommand *command.Model) ([]autoprovision.APICert
 			return nil, err
 		}
 
-		certInfos = append(certInfos, autoprovision.APICertificate{Certificate: certificateutil.NewCertificateInfo(*cert, nil)})
+		certInfos = append(certInfos, autoprovision.APICertificate{
+			Certificate: certificateutil.NewCertificateInfo(*cert, nil),
+			ID:          certInfo.ID,
+		})
 	}
 
 	return certInfos, nil
@@ -174,8 +180,10 @@ func getSpaceshipDirectory() (string, error) {
 	return targetDir, nil
 }
 
-func getSpaceshipCommand(targetDir, subCommand string) (*command.Model, error) {
-	spaceshipCmd, err := rubycommand.NewFromSlice([]string{"bundle", "exec", "ruby", "main.rb", "--subcommand", subCommand})
+func getSpaceshipCommand(targetDir, subCommand string, opts ...string) (*command.Model, error) {
+	s := []string{"bundle", "exec", "ruby", "main.rb", "--subcommand", subCommand}
+	s = append(s, opts...)
+	spaceshipCmd, err := rubycommand.NewFromSlice(s)
 	if err != nil {
 		return nil, err
 	}
@@ -187,9 +195,9 @@ func getSpaceshipCommand(targetDir, subCommand string) (*command.Model, error) {
 func runSpaceshipCommand(cmd *command.Model) (string, error) {
 	fmt.Println()
 	log.Donef("$ %s", cmd.PrintableCommandArgs())
-	output, err := cmd.RunAndReturnTrimmedOutput()
+	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("spaceship command failed: %s", output)
+		return "", fmt.Errorf("spaceship command failed: %s, error: %s", output, err)
 	}
 
 	jsonRegexp := regexp.MustCompile(`\n\{.*\}$`)
@@ -199,4 +207,36 @@ func runSpaceshipCommand(cmd *command.Model) (string, error) {
 	}
 
 	return match, nil
+}
+
+func createProfile() error {
+	s, err := NewSpaceshipCertificateSource()
+	if err != nil {
+		return err
+	}
+
+	certs, err := s.QueryAllIOSCertificates()
+	if err != nil {
+		return err
+	}
+	devCerts := certs[appstoreconnect.IOSDevelopment]
+	cert := devCerts[0]
+
+	spaceshipDir, err := getSpaceshipDirectory()
+	if err != nil {
+		return err
+	}
+
+	cmd, err := getSpaceshipCommand(spaceshipDir, "create_profile",
+		"--bundle_id", "io.bitrise.ios.Fennec",
+		"--certificate", cert.ID,
+		"--profile_name", "lib_test",
+	)
+	if err != nil {
+		return err
+	}
+
+	output, err := runSpaceshipCommand(cmd)
+	fmt.Println(output)
+	return err
 }
