@@ -500,7 +500,7 @@ func main() {
 		}
 	}
 
-	certClient := autoprovision.APIClient(client)
+	certClient := autoprovision.NewAPICertificateSource(client)
 	certsByType, err := autoprovision.GetValidCertificates(certs, certClient, requiredCertTypes, teamID, stepConf.VerboseLog)
 	if err != nil {
 		if missingCertErr, ok := err.(autoprovision.MissingCertificateError); ok {

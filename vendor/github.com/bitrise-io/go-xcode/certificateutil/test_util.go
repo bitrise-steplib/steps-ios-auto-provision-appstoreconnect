@@ -61,10 +61,10 @@ func GenerateTestCertificate(serial int64, teamID, teamName, commonName string, 
 	}
 
 	// generate private key
-	privatekey, err = rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, nil, err
-	}
+	// privatekey, err = rsa.GenerateKey(rand.Reader, 2048)
+	// if err != nil {
+	// 	return nil, nil, err
+	// }
 
 	certData, err := x509.CreateCertificate(rand.Reader, template, CAcert, &privatekey.PublicKey, privatekey)
 	if err != nil {
