@@ -49,6 +49,8 @@ workflows:
         - connection: "off"
         - api_key_path: $APPSTORECONNECT_API_KEY_URL
         - api_issuer: $APPSTORECONNECT_API_KEY_ISSUER
+        # - apple_id: $APPLE_ID
+        # - password: $APPLE_PASSWORD
         - certificate_urls: $BITRISE_CERTIFICATE_URL
         - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE
         - distribution_type: $IPA_EXPORT_METHOD
