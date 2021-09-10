@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
@@ -83,19 +84,53 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 		Attributes: appstoreconnect.ProfileAttributes{
 			Name:           match.Name,
 			UUID:           match.UUID,
+			ProfileState:   appstoreconnect.ProfileState(match.Status),
 			ProfileContent: profileContent,
+			Platform:       match.Platform,
+			SpaceshipAttributes: appstoreconnect.SpaceshipAttributes{
+				BundleID:       match.BundleID,
+				DeviceIDs:      match.Devices,
+				CertificateIDs: match.Certificates,
+			},
 		},
 	}, nil
 }
 
 // DeleteExpiredProfile ...
 func (c *ProfileClient) DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
-	panic("implement")
+	return c.DeleteProfile(bundleID.ID)
 }
 
 // CheckProfile ...
 func (c *ProfileClient) CheckProfile(prof appstoreconnect.Profile, entitlements autoprovision.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
-	panic("implement")
+	for _, id := range deviceIDs {
+		if !sliceutil.IsStringInSlice(id, prof.Attributes.SpaceshipAttributes.DeviceIDs) {
+			return autoprovision.NonmatchingProfileError{
+				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
+			}
+		}
+	}
+
+	for _, id := range certificateIDs {
+		if !sliceutil.IsStringInSlice(id, prof.Attributes.SpaceshipAttributes.CertificateIDs) {
+			return autoprovision.NonmatchingProfileError{
+				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
+			}
+		}
+	}
+
+	bundleID := appstoreconnect.BundleID{
+		Attributes: appstoreconnect.BundleIDAttributes{
+			Identifier: prof.Attributes.SpaceshipAttributes.BundleID,
+		},
+	}
+	if err := c.CheckBundleIDEntitlements(bundleID, entitlements); err != nil {
+		return autoprovision.NonmatchingProfileError{
+			Reason: "entitlements are missing",
+		}
+	}
+
+	return nil
 }
 
 // DeleteProfile ...
@@ -177,6 +212,22 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 
 // CheckBundleIDEntitlements ...
 func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements autoprovision.Entitlement) error {
+	entitlementsBytes, err := json.Marshal(projectEntitlements)
+	if err != nil {
+		return err
+	}
+	entitlementsBase64 := base64.StdEncoding.EncodeToString(entitlementsBytes)
+
+	cmd, err := c.client.createRequestCommand("check_bundleid", "--bundle_id", bundleID.Attributes.Identifier, "--entitlements", entitlementsBase64)
+	if err != nil {
+		return err
+	}
+
+	_, err = runSpaceshipCommand(cmd)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

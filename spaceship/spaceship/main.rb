@@ -17,6 +17,7 @@ begin
     opt.on('--certificate CERTIFICATE') { |o| options[:certificate] = o }
     opt.on('--profile_name PROFILE_NAME') { |o| options[:profile_name] = o }
     opt.on('--profile-type PROFILE_TYPE') { |o| options[:profile_type] = o }
+    opt.on('--entitlements ENTITLEMENTS') { |o| options[:entitlements] = o }
   end.parse!
 
   Log.verbose = true
@@ -41,6 +42,10 @@ begin
     result = { status: 'OK' }
   when 'create_profile'
     result = create_profile(options[:profile_type], options[:bundle_id], options[:certificate], options[:profile_name])
+  when 'check_bundleid'
+    entitlements = JSON.parse(Base64.decode64(options[:entitlements]))
+    Log.info("Entitlements: #{entitlements}")
+    check_bundleid(options[:bundle_id], entitlements)
   end
 
   response = { data: result }

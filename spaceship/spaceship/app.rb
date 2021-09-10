@@ -1,4 +1,5 @@
 require 'spaceship'
+require_relative 'portal/app_client'
 
 def get_app(bundle_id)
   app = nil
@@ -8,8 +9,18 @@ def get_app(bundle_id)
 
   {
     id: app.app_id,
-    bundleID: app.bundle_id
+    bundleID: app.bundle_id,
+    entitlements: app.details.features
   }
+end
+
+def check_bundleid(bundle_id, entitlements)
+  app = nil
+  run_or_raise_preferred_error_message do
+    app = Spaceship::Portal.app.find(bundle_id)
+  end
+
+  Portal::AppClient.all_services_enabled?(app, entitlements)
 end
 
 

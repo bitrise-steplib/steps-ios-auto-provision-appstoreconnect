@@ -1,4 +1,3 @@
-# require_relative 'certificate_info'
 require_relative 'utils'
 require_relative 'portal/certificate_client'
 

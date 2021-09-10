@@ -25,14 +25,9 @@ def list_profiles(profile_type, name)
       id: profile.id,
       uuid: profile.uuid,
       name: profile.name,
-      # @example Active (profile is fine)
-      #   "Active"
-      # @example Expired (time ran out)
-      #   "Expired"
-      # @example Invalid (e.g. code signing identity not available any more)
-      #   "Invalid"
-      status: profile.status,
+      status: map_profile_status_to_api_status(profile.status),
       expiry: profile.expires,
+      platform: map_profile_platform_to_api_platform(profile.platform),
       content: profile_base64,
       app_id: profile.app.app_id,
       bundle_id: profile.app.bundle_id,
@@ -70,7 +65,7 @@ def create_profile(profile_type, bundle_id, certificate_id, profile_name)
     name: profile.name,
     status: profile.status,
     expiry: profile.expires,
-    platform: 'IOS',
+    platform: map_profile_platform_to_api_platform(profile.platform),
     content: profile_base64,
     app_id: profile.app.app_id,
     bundle_id: profile.app.bundle_id
@@ -89,5 +84,27 @@ def portal_profile_class(distribution_type)
     Spaceship::Portal.provisioning_profile.in_house
   else
     raise "invalid distribution type provided: #{distribution_type}, available: [IOS_APP_DEVELOPMENT, IOS_APP_STORE, IOS_APP_ADHOC, IOS_APP_INHOUSE]"
+  end
+end
+
+def map_profile_status_to_api_status(status)
+  case status
+  when 'Active'
+    'ACTIVE'
+  when 'Expired'
+    'EXPIRED'
+  when 'Invalid'
+    'INVALID'
+  else
+    raise "invalid profile statuse #{status}"
+  end
+end
+
+def map_profile_platform_to_api_platform(platform)
+  case platform
+  when 'ios'
+    'IOS'
+  else
+    raise "unsupported platform #{platform}"
   end
 end
