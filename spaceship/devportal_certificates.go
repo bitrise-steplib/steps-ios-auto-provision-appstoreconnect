@@ -22,12 +22,14 @@ import (
 //go:embed spaceship
 var spaceship embed.FS
 
-type SpaceshipCertificateSource struct {
+// CertificateSource ...
+type CertificateSource struct {
 	client       *Client
 	certificates map[appstoreconnect.CertificateType][]autoprovision.APICertificate
 }
 
-func (s *SpaceshipCertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovision.APICertificate, error) {
+// QueryCertificateBySerial ...
+func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovision.APICertificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
 			return autoprovision.APICertificate{}, err
@@ -43,7 +45,8 @@ func (s *SpaceshipCertificateSource) QueryCertificateBySerial(serial *big.Int) (
 	return autoprovision.APICertificate{}, fmt.Errorf("can not find certificate with serial")
 }
 
-func (s *SpaceshipCertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autoprovision.APICertificate, error) {
+// QueryAllIOSCertificates ...
+func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autoprovision.APICertificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
 			return nil, err
@@ -53,13 +56,14 @@ func (s *SpaceshipCertificateSource) QueryAllIOSCertificates() (map[appstoreconn
 	return s.certificates, nil
 }
 
+// NewSpaceshipCertificateSource ...
 func NewSpaceshipCertificateSource(client *Client) autoprovision.CertificateSource {
-	return &SpaceshipCertificateSource{
+	return &CertificateSource{
 		client: client,
 	}
 }
 
-func (s *SpaceshipCertificateSource) downloadAll() error {
+func (s *CertificateSource) downloadAll() error {
 	devCertsCmd, err := s.client.createRequestCommand("list_dev_certs")
 	if err != nil {
 		return err

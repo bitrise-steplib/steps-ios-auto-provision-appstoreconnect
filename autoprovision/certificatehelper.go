@@ -30,10 +30,12 @@ var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.Certifi
 	Enterprise:  appstoreconnect.IOSDistribution,
 }
 
+// APICertificateSource ...
 type APICertificateSource struct {
 	client *appstoreconnect.Client
 }
 
+// QueryCertificateBySerial ...
 func (s *APICertificateSource) QueryCertificateBySerial(serial *big.Int) (APICertificate, error) {
 	response, err := s.client.Provisioning.FetchCertificate(serial.Text(16))
 	if err != nil {
@@ -62,6 +64,7 @@ func (s *APICertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.Ce
 	return typeToCertificates, nil
 }
 
+// NewAPICertificateSource ...
 func NewAPICertificateSource(client *appstoreconnect.Client) CertificateSource {
 	return &APICertificateSource{
 		client: client,

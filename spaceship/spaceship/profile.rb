@@ -19,7 +19,6 @@ def list_profiles(profile_type, name)
 
   profile_infos = []
   matching_profiles.each do |profile|
-    Log.info("#{profile}")
     profile_base64 = Base64.encode64(profile.download)
 
     profile_info = {
@@ -47,8 +46,6 @@ def list_profiles(profile_type, name)
 end
 
 def delete_profile(id)
-  Log.info("DELETE PROFILE #{id}")
-
   profile = Spaceship::Portal::ProvisioningProfile.new
   profile.id = id
   profile.delete!
@@ -66,7 +63,6 @@ def create_profile(profile_type, bundle_id, certificate_id, profile_name)
     profile = profile_class.create!(bundle_id: bundle_id, certificate: cert, name: profile_name, sub_platform: nil)
   end
 
-  Log.info("Created profile: #{profile}")
   profile_base64 = Base64.encode64(profile.download)
   {
     id: profile.id,

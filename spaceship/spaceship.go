@@ -15,11 +15,13 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
+// Client ...
 type Client struct {
 	workDir    string
 	authConfig appleauth.AppleID
 }
 
+// NewClient ...
 func NewClient(authConfig *appleauth.AppleID) (*Client, error) {
 	if authConfig == nil {
 		panic("Invalid authentication state")
@@ -36,10 +38,11 @@ func NewClient(authConfig *appleauth.AppleID) (*Client, error) {
 	}, nil
 }
 
+// NewSpaceshipDevportalClient ...
 func NewSpaceshipDevportalClient(client *Client) autoprovision.DevportalClient {
 	return autoprovision.DevportalClient{
 		CertificateSource: NewSpaceshipCertificateSource(client),
-		DeviceLister:      &SpaceshipDeviceLister{},
+		DeviceLister:      &DeviceLister{},
 		ProfileClient:     NewSpaceshipProfileClient(client),
 	}
 }

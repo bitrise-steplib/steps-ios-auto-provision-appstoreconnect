@@ -15,6 +15,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
+// ProfileClient ...
 type ProfileClient interface {
 	FindProfile(name string, profileType appstoreconnect.ProfileType) (*appstoreconnect.Profile, error)
 	DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error
@@ -28,10 +29,12 @@ type ProfileClient interface {
 	CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 }
 
+// APIProfileClient ...
 type APIProfileClient struct {
 	client *appstoreconnect.Client
 }
 
+// NewAPIProfileClient ...
 func NewAPIProfileClient(client *appstoreconnect.Client) ProfileClient {
 	return &APIProfileClient{client: client}
 }

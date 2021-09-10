@@ -2,10 +2,12 @@ package autoprovision
 
 import "github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 
+// APIDeviceLister ...
 type APIDeviceLister struct {
 	client *appstoreconnect.Client
 }
 
+// NewAPIDeviceLister ...
 func NewAPIDeviceLister(client *appstoreconnect.Client) DeviceLister {
 	return &APIDeviceLister{client: client}
 }

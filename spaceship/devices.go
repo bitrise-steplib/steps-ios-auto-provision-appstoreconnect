@@ -2,8 +2,10 @@ package spaceship
 
 import "github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 
-type SpaceshipDeviceLister struct{}
+// DeviceLister ...
+type DeviceLister struct{}
 
-func (*SpaceshipDeviceLister) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
+// ListDevices ...
+func (*DeviceLister) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
 	return nil, nil
 }
