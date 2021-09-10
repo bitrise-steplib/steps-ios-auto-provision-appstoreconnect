@@ -19,7 +19,7 @@ type MockCertificateSource struct {
 func (m *MockCertificateSource) QueryCertificateBySerial(serial *big.Int) (APICertificate, error) {
 	for _, certList := range m.certs {
 		for _, cert := range certList {
-			if cert.Certificate.Certificate.SerialNumber == serial {
+			if serial.Cmp(cert.Certificate.Certificate.SerialNumber) == 0 {
 				return cert, nil
 			}
 		}

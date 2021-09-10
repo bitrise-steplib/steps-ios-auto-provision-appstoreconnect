@@ -36,7 +36,8 @@ func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovi
 		}
 	}
 
-	for _, cert := range s.certificates[appstoreconnect.IOSDevelopment] {
+	allCerts := append(s.certificates[appstoreconnect.IOSDevelopment], s.certificates[appstoreconnect.IOSDistribution]...)
+	for _, cert := range allCerts {
 		if serial.Cmp(cert.Certificate.Certificate.SerialNumber) == 0 {
 			return cert, nil
 		}

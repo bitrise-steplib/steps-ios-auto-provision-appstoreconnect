@@ -174,7 +174,7 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 		}
 
 		if requiredCertificateTypes[certificateType] && len(matchingCertificates) == 0 {
-			return nil, fmt.Errorf("not found any of the following %s certificates on Developer Portal:\n%s", certificateType, CertsToString(localCertificates))
+			return nil, fmt.Errorf("not found any of the following %s certificates on Developer Portal:\n%s", certificateType, CertsToString(validLocalCertificates))
 		}
 
 		if len(matchingCertificates) > 0 {
