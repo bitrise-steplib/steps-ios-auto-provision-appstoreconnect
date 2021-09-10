@@ -1,4 +1,3 @@
-require_relative 'utils'
 require_relative 'portal/certificate_client'
 
 # CertificateHelper ...
@@ -14,7 +13,6 @@ class CertificateHelper
   end
 
   def get_cert_infos(portal_certificates)
-    Log.debug('Certificates on Apple Developer Portal:')
     cert_infos = []
     portal_certificates.each do |cert|
       downloaded_portal_cert = cert.download
@@ -26,8 +24,6 @@ class CertificateHelper
       }
 
       cert_infos.append(cert_info)
-
-      Log.debug("- #{cert.name}: #{certificate_name_and_serial(downloaded_portal_cert)} expire: #{downloaded_portal_cert.not_after}")
     end
 
     cert_infos

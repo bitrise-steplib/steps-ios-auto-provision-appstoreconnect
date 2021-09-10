@@ -10,6 +10,8 @@ begin
   OptionParser.new do |opt|
     opt.on('--username USERNAME') { |o| options[:username] = o }
     opt.on('--password PASSWORD') { |o| options[:password] = o }
+    opt.on('--session SESSION') { |o| options[:session] = Base64.decode64(o) }
+    opt.on('--team-id TEAM_ID') { |o| options[:team_id] = o }
     opt.on('--subcommand SUBCOMMAND') { |o| options[:subcommand] = o }
     opt.on('--bundle_id BUNDLE_ID') { |o| options[:bundle_id] = o }
     opt.on('--id ID') { |o| options[:id] = o }
@@ -17,12 +19,12 @@ begin
     opt.on('--certificate CERTIFICATE') { |o| options[:certificate] = o }
     opt.on('--profile_name PROFILE_NAME') { |o| options[:profile_name] = o }
     opt.on('--profile-type PROFILE_TYPE') { |o| options[:profile_type] = o }
-    opt.on('--entitlements ENTITLEMENTS') { |o| options[:entitlements] = o }
+    opt.on('--entitlements ENTITLEMENTS') { |o| options[:entitlements] = Base64.decode64(o) }
   end.parse!
 
   Log.verbose = true
 
-  Portal::AuthClient.login(options[:username], options[:password])
+  Portal::AuthClient.login(options[:username], options[:password], options[:session], options[:team_id])
   Log.info('logged in')
 
   result = '{}'
@@ -45,10 +47,10 @@ begin
   when 'create_profile'
     result = create_profile(options[:profile_type], options[:bundle_id], options[:certificate], options[:profile_name])
   when 'check_bundleid'
-    entitlements = JSON.parse(Base64.decode64(options[:entitlements]))
+    entitlements = JSON.parse(options[:entitlements])
     check_bundleid(options[:bundle_id], entitlements)
   when 'sync_bundleid'
-    entitlements = JSON.parse(Base64.decode64(options[:entitlements]))
+    entitlements = JSON.parse(options[:entitlements])
     sync_bundleid(options[:bundle_id], entitlements)
   end
 

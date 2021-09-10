@@ -17,13 +17,14 @@ type CertificateFileURL struct {
 
 // Config holds the step inputs
 type Config struct {
-	BitriseConnection string          `env:"connection,opt[automatic,api_key,off]"`
+	BitriseConnection string          `env:"connection,opt[automatic,api_key,apple_id,off]"`
 	APIKeyPath        stepconf.Secret `env:"api_key_path"`
 	APIIssuer         string          `env:"api_issuer"`
 	// Apple ID
 	AppleID             string          `env:"apple_id"`
 	Password            stepconf.Secret `env:"password"`
 	AppSpecificPassword stepconf.Secret `env:"app_password"`
+	TeamID              string          `env:"team_id"`
 	InHouse             bool            `env:"in_house"`
 
 	ProjectPath         string `env:"project_path,dir"`
@@ -100,6 +101,7 @@ func parseAuthSources(bitriseConnection string) ([]appleauth.Source, error) {
 	case "apple_id":
 		return []appleauth.Source{
 			&appleauth.InputAppleIDSource{},
+			&appleauth.ConnectionAppleIDFastlaneSource{},
 		}, nil
 	case "off":
 		return []appleauth.Source{

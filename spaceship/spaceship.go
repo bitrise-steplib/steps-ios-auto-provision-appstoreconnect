@@ -2,6 +2,7 @@ package spaceship
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,10 +20,11 @@ import (
 type Client struct {
 	workDir    string
 	authConfig appleauth.AppleID
+	teamID     string
 }
 
 // NewClient ...
-func NewClient(authConfig *appleauth.AppleID) (*Client, error) {
+func NewClient(authConfig *appleauth.AppleID, teamID string) (*Client, error) {
 	if authConfig == nil {
 		panic("Invalid authentication state")
 	}
@@ -35,6 +37,7 @@ func NewClient(authConfig *appleauth.AppleID) (*Client, error) {
 	return &Client{
 		workDir:    dir,
 		authConfig: *authConfig,
+		teamID:     teamID,
 	}, nil
 }
 
@@ -51,6 +54,8 @@ func (c *Client) createRequestCommand(subCommand string, opts ...string) (*comma
 	s := []string{"bundle", "exec", "ruby", "main.rb",
 		"--username", c.authConfig.Username,
 		"--password", c.authConfig.Password,
+		"--session", base64.StdEncoding.EncodeToString([]byte(c.authConfig.Session)),
+		"--team-id", c.teamID,
 		"--subcommand", subCommand,
 	}
 	s = append(s, opts...)
@@ -60,36 +65,7 @@ func (c *Client) createRequestCommand(subCommand string, opts ...string) (*comma
 	}
 	spaceshipCmd.SetDir(c.workDir)
 
-	var envs []string
-	var globallySetAuthEnvs []string
-	for envKey, envValue := range fastlaneAuthParams(c.authConfig) {
-		if _, set := os.LookupEnv(envKey); set {
-			globallySetAuthEnvs = append(globallySetAuthEnvs, envKey)
-		}
-
-		envs = append(envs, fmt.Sprintf("%s=%s", envKey, envValue))
-	}
-	if len(globallySetAuthEnvs) != 0 {
-		log.Warnf("Fastlane authentication-related environment varibale(s) (%s) are set, overriding.", globallySetAuthEnvs)
-		log.Infof("To stop overriding authentication-related environment variables, please set Bitrise Apple Developer Connection input to 'off' and leave authentication-related inputs empty.")
-	}
-
-	spaceshipCmd.AppendEnvs(envs...)
-
 	return spaceshipCmd, nil
-}
-
-// fastlaneAuthParams converts Apple credentials to Fastlane env vars and arguments
-func fastlaneAuthParams(appleID appleauth.AppleID) map[string]string {
-	envs := make(map[string]string)
-	if appleID.Session != "" {
-		envs["FASTLANE_SESSION"] = appleID.Session
-	}
-	if appleID.AppSpecificPassword != "" {
-		envs["FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD"] = appleID.AppSpecificPassword
-	}
-
-	return envs
 }
 
 func runSpaceshipCommand(cmd *command.Model) (string, error) {

@@ -13,7 +13,6 @@ import (
 	"github.com/bitrise-io/go-steputils/command/gems"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
@@ -194,33 +193,4 @@ func getSpaceshipDirectory() (string, error) {
 	}
 
 	return targetDir, nil
-}
-
-func createProfile() error {
-	client, err := NewClient(&appleauth.AppleID{})
-	if err != nil {
-		return fmt.Errorf("failed to initialize Spaceship client: %v", err)
-	}
-
-	s := NewSpaceshipCertificateSource(client)
-
-	certs, err := s.QueryAllIOSCertificates()
-	if err != nil {
-		return err
-	}
-	devCerts := certs[appstoreconnect.IOSDevelopment]
-	cert := devCerts[0]
-
-	cmd, err := client.createRequestCommand("create_profile",
-		"--bundle_id", "io.bitrise.ios.Fennec",
-		"--certificate", cert.ID,
-		"--profile_name", "lib_test",
-	)
-	if err != nil {
-		return err
-	}
-
-	output, err := runSpaceshipCommand(cmd)
-	fmt.Println(output)
-	return err
 }

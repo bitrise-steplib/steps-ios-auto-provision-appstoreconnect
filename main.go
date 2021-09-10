@@ -386,7 +386,7 @@ func main() {
 		log.Donef("the client created for %s", client.BaseURL)
 		devportalClient = autoprovision.NewAPIDevportalClient(client)
 	} else {
-		client, err := spaceship.NewClient(authConfig.AppleID)
+		client, err := spaceship.NewClient(authConfig.AppleID, stepConf.TeamID)
 		if err != nil {
 			failf("failed to initialize Spaceship client: %v")
 		}
