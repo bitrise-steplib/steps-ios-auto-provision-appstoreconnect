@@ -53,7 +53,7 @@ func (c *MockClient) Do(req *http.Request) (*http.Response, error) {
 // // Bundle ID
 // FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 // CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
-// SyncBundleID(bundleIDID string, entitlements Entitlement) error
+// SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error
 // CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 
 func (c *MockClient) GetProfiles(req *http.Request) (*http.Response, error) {

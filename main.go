@@ -155,7 +155,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 			if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
-				if err := m.client.SyncBundleID(bundleID.ID, autoprovision.Entitlement(entitlements)); err != nil {
+				if err := m.client.SyncBundleID(*bundleID, autoprovision.Entitlement(entitlements)); err != nil {
 					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
 				}
 
@@ -190,7 +190,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 		log.Errorf("  app ID created but couldn't add iCloud containers: %v", containers)
 	}
 
-	if err := m.client.SyncBundleID(bundleID.ID, capabilities); err != nil {
+	if err := m.client.SyncBundleID(*bundleID, capabilities); err != nil {
 		return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
 	}
 

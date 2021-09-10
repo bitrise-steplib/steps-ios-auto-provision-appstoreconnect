@@ -27,7 +27,7 @@ type ProfileInfo struct {
 	ID           string                           `json:"id"`
 	UUID         string                           `json:"uuid"`
 	Name         string                           `json:"name"`
-	Status       string                           `json:"status"` // "Active" "Expired" "Invalid"
+	Status       appstoreconnect.ProfileState     `json:"status"`
 	Expiry       time.Time                        `json:"expiry"`
 	Platform     appstoreconnect.BundleIDPlatform `json:"platform"`
 	Content      string                           `json:"content"`
@@ -173,12 +173,24 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 		return nil, fmt.Errorf("failed to unmarshal response: %v (%s)", err, output)
 	}
 
+	profileContent, err := base64.StdEncoding.DecodeString(profileResponse.Data.Content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode profile contents: %v", err)
+	}
+
 	return &appstoreconnect.Profile{
 		ID: profileResponse.Data.ID,
 		Attributes: appstoreconnect.ProfileAttributes{
-			UUID:     profileResponse.Data.UUID,
-			Name:     profileResponse.Data.Name,
-			Platform: profileResponse.Data.Platform,
+			Name:           profileResponse.Data.Name,
+			UUID:           profileResponse.Data.UUID,
+			ProfileState:   appstoreconnect.ProfileState(profileResponse.Data.Status),
+			ProfileContent: profileContent,
+			Platform:       profileResponse.Data.Platform,
+			SpaceshipAttributes: appstoreconnect.SpaceshipAttributes{
+				BundleID:       profileResponse.Data.BundleID,
+				DeviceIDs:      profileResponse.Data.Devices,
+				CertificateIDs: profileResponse.Data.Certificates,
+			},
 		},
 	}, nil
 }
@@ -186,6 +198,33 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 // FindBundleID ...
 func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	cmd, err := c.client.createRequestCommand("get_app", "--bundle_id", bundleIDIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := runSpaceshipCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	var appResponse struct {
+		Data AppInfo `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &appResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	return &appstoreconnect.BundleID{
+		ID: appResponse.Data.ID,
+		Attributes: appstoreconnect.BundleIDAttributes{
+			Identifier: appResponse.Data.BundleID,
+		},
+	}, nil
+}
+
+// CreateBundleID ...
+func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
+	cmd, err := c.client.createRequestCommand("create_bundleid", "--bundle_id", bundleIDIdentifier)
 	if err != nil {
 		return nil, err
 	}
@@ -232,11 +271,22 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 }
 
 // SyncBundleID ...
-func (c *ProfileClient) SyncBundleID(bundleIDID string, entitlements autoprovision.Entitlement) error {
-	panic("implement")
-}
+func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, projectEntitlements autoprovision.Entitlement) error {
+	entitlementsBytes, err := json.Marshal(projectEntitlements)
+	if err != nil {
+		return err
+	}
+	entitlementsBase64 := base64.StdEncoding.EncodeToString(entitlementsBytes)
 
-// CreateBundleID ...
-func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	panic("implement")
+	cmd, err := c.client.createRequestCommand("sync_bundleid", "--bundle_id", bundleID.Attributes.Identifier, "--entitlements", entitlementsBase64)
+	if err != nil {
+		return err
+	}
+
+	_, err = runSpaceshipCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

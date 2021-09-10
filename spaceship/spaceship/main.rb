@@ -37,6 +37,8 @@ begin
     result = list_profiles(options[:profile_type], options[:name])
   when 'get_app'
     result = get_app(options[:bundle_id])
+  when 'create_app'
+    result = create_app(options[:bundle_id])
   when 'delete_profile'
     delete_profile(options[:id])
     result = { status: 'OK' }
@@ -44,8 +46,10 @@ begin
     result = create_profile(options[:profile_type], options[:bundle_id], options[:certificate], options[:profile_name])
   when 'check_bundleid'
     entitlements = JSON.parse(Base64.decode64(options[:entitlements]))
-    Log.info("Entitlements: #{entitlements}")
     check_bundleid(options[:bundle_id], entitlements)
+  when 'sync_bundleid'
+    entitlements = JSON.parse(Base64.decode64(options[:entitlements]))
+    sync_bundleid(options[:bundle_id], entitlements)
   end
 
   response = { data: result }

@@ -62,20 +62,6 @@ module Portal
       'com.apple.external-accessory.wireless-configuration' => 'WC421J6T7P'
     }.freeze
 
-    def self.ensure_app(bundle_id)
-      app = Spaceship::Portal.app.find(bundle_id)
-      return app if app
-
-      name = "Bitrise - (#{bundle_id.tr('.', ' ')})"
-      Log.debug("registering app: #{name} with bundle id: (#{bundle_id})")
-
-      app = nil
-      run_or_raise_preferred_error_message { app = Spaceship::Portal.app.create!(bundle_id: bundle_id, name: name) }
-
-      raise "failed to create app with bundle id: #{bundle_id}" unless app
-      app
-    end
-
     def self.all_services_enabled?(app, entitlements)
       entitlements ||= {}
       app_features = app.details.features

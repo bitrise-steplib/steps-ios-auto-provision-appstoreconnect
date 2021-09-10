@@ -87,7 +87,7 @@ func (c *APIProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bu
 }
 
 // SyncBundleID ...
-func (c *APIProfileClient) SyncBundleID(bundleIDID string, entitlements Entitlement) error {
+func (c *APIProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error {
 	for key, value := range entitlements {
 		ent := Entitlement{key: value}
 		cap, err := ent.Capability()
@@ -107,7 +107,7 @@ func (c *APIProfileClient) SyncBundleID(bundleIDID string, entitlements Entitlem
 				Relationships: appstoreconnect.BundleIDCapabilityCreateRequestDataRelationships{
 					BundleID: appstoreconnect.BundleIDCapabilityCreateRequestDataRelationshipsBundleID{
 						Data: appstoreconnect.BundleIDCapabilityCreateRequestDataRelationshipsBundleIDData{
-							ID:   bundleIDID,
+							ID:   bundleID.ID,
 							Type: "bundleIds",
 						},
 					},
