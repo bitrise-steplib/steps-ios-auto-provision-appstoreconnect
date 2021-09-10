@@ -40,6 +40,7 @@ func NewSpaceshipDevportalClient(client *Client) autoprovision.DevportalClient {
 	return autoprovision.DevportalClient{
 		CertificateSource: NewSpaceshipCertificateSource(client),
 		DeviceLister:      &SpaceshipDeviceLister{},
+		ProfileClient:     NewSpaceshipProfileClient(client),
 	}
 }
 
@@ -95,8 +96,8 @@ func runSpaceshipCommand(cmd *command.Model) (string, error) {
 	cmd.SetStderr(outWriter)
 
 	// ToDo: redact password
-	// fmt.Println()
-	// log.Donef("$ %s", cmd.PrintableCommandArgs())
+	fmt.Println()
+	log.Donef("$ %s", cmd.PrintableCommandArgs())
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("spaceship command failed, output: %s, error: %v", output.String(), err)
 	}
@@ -111,7 +112,7 @@ func runSpaceshipCommand(cmd *command.Model) (string, error) {
 		Error string `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(match), &response); err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %v", err)
+		return "", fmt.Errorf("failed to unmarshal response: %v (%s)", err, match)
 	}
 
 	if response.Error != "" {
