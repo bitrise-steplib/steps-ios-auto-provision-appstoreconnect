@@ -41,6 +41,7 @@ type ProfileInfo struct {
 type AppInfo struct {
 	ID       string `json:"id"`
 	BundleID string `json:"bundleID"`
+	Name     string `json:"name"`
 }
 
 // FindProfile ...
@@ -218,6 +219,7 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 		ID: appResponse.Data.ID,
 		Attributes: appstoreconnect.BundleIDAttributes{
 			Identifier: appResponse.Data.BundleID,
+			Name:       appResponse.Data.Name,
 		},
 	}, nil
 }
@@ -245,6 +247,7 @@ func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconn
 		ID: appResponse.Data.ID,
 		Attributes: appstoreconnect.BundleIDAttributes{
 			Identifier: appResponse.Data.BundleID,
+			Name:       appResponse.Data.Name,
 		},
 	}, nil
 }

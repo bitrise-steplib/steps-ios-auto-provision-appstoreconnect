@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
@@ -71,9 +72,11 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 	var filteredDevices []appstoreconnect.Device
 	for _, d := range devices {
 		if udid != "" && d.Attributes.UDID != udid {
+			log.Debugf("Device filtered out, UDID required: %s actual: %s", udid, d.Attributes.UDID)
 			continue
 		}
 		if d.Attributes.Platform != appstoreconnect.BundleIDPlatform(platform) {
+			log.Debugf("Device filtered out, platform required: %s actual: %s", appstoreconnect.BundleIDPlatform(platform), d.Attributes.Platform)
 			continue
 		}
 	}

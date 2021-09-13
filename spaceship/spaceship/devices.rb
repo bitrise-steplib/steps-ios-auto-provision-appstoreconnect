@@ -1,6 +1,5 @@
 require 'spaceship'
 require_relative 'log'
-require_relative 'portal/device_client'
 
 def list_devices
   devices = Spaceship::Portal.device.all(mac: false, include_disabled: false) || []

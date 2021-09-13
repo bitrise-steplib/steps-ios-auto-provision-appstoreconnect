@@ -10,6 +10,7 @@ def get_app(bundle_id)
   {
     id: app.app_id,
     bundleID: app.bundle_id,
+    name: app.name,
     entitlements: app.details.features
   }
 end
@@ -24,7 +25,8 @@ def create_app(bundle_id)
 
   {
     id: app.app_id,
-    bundleID: app.bundle_id
+    bundleID: app.bundle_id,
+    name: app.name
   }
 end
 
