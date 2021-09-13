@@ -177,7 +177,7 @@ func Test_findMissingContainers(t *testing.T) {
 	}
 }
 
-func Test_checkProfileExpiry(t *testing.T) {
+func Test_IsProfileExpired(t *testing.T) {
 	tests := []struct {
 		prof                appstoreconnect.Profile
 		minProfileDaysValid int
@@ -191,7 +191,7 @@ func Test_checkProfileExpiry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
+			if got := IsProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
 				t.Errorf("checkProfileExpiry() = %v, want %v", got, tt.want)
 			}
 		})
