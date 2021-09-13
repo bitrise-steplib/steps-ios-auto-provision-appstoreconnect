@@ -48,7 +48,8 @@ def create_profile(profile_type, bundle_id, certificate_id, profile_name)
   cert.id = certificate_id
 
   profile_class = portal_profile_class(profile_type)
-  profile = profile_class.create!(bundle_id: bundle_id, certificate: cert, name: profile_name, sub_platform: nil)
+  sub_platform = portal_profile_sub_platform(profile_type)
+  profile = profile_class.create!(bundle_id: bundle_id, certificate: cert, name: profile_name, sub_platform: sub_platform)
 
   profile_base64 = Base64.encode64(profile.download)
   {
@@ -66,9 +67,9 @@ end
 
 def portal_profile_class(distribution_type)
   case distribution_type
-  when 'IOS_APP_DEVELOPMENT'
+  when 'IOS_APP_DEVELOPMENT', 'TVOS_APP_DEVELOPMENT'
     Spaceship::Portal.provisioning_profile.development
-  when 'IOS_APP_STORE'
+  when 'IOS_APP_STORE', 'TVOS_APP_DISTRIBUTION'
     Spaceship::Portal.provisioning_profile.app_store
   when 'IOS_APP_ADHOC'
     Spaceship::Portal.provisioning_profile.ad_hoc
@@ -77,6 +78,14 @@ def portal_profile_class(distribution_type)
   else
     raise "invalid distribution type provided: #{distribution_type}, available: [IOS_APP_DEVELOPMENT, IOS_APP_STORE, IOS_APP_ADHOC, IOS_APP_INHOUSE]"
   end
+end
+
+def portal_profile_sub_platform(distribution_type)
+  case distribution_type
+  when 'TVOS_APP_DEVELOPMENT', 'TVOS_APP_DISTRIBUTION'
+    'tvOS'
+  end
+  nil
 end
 
 def map_profile_status_to_api_status(status)

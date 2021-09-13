@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
@@ -136,7 +135,6 @@ func (c *ProfileClient) CheckProfile(prof appstoreconnect.Profile, entitlements 
 
 // DeleteProfile ...
 func (c *ProfileClient) DeleteProfile(id string) error {
-	log.Infof("DeleteProfile (%s)", id)
 	cmd, err := c.client.createRequestCommand("delete_profile", "--id", id)
 	if err != nil {
 		return err

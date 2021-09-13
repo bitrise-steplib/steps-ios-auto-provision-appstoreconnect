@@ -79,6 +79,8 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 			log.Debugf("Device filtered out, platform required: %s actual: %s", appstoreconnect.BundleIDPlatform(platform), d.Attributes.Platform)
 			continue
 		}
+
+		filteredDevices = append(filteredDevices, d)
 	}
 
 	return filteredDevices, nil
