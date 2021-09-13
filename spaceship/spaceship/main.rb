@@ -61,8 +61,11 @@ begin
 
   response = { data: result }
   puts response.to_json.to_s
+rescue RetryNeeded
+  result = { retry: true }
+  puts result.to_json.to_s
 rescue Spaceship::BasicPreferredInfoError, Spaceship::UnexpectedResponse => e
-  result = { error: "Spaceship message: #{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}" }
+  result = { error: "#{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}" }
   puts result.to_json.to_s
 rescue => e
   result = { error: "#{e}, stacktrace: #{e.backtrace.join("\n")}" }

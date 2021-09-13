@@ -9,6 +9,8 @@ class Profile
   attr_accessor :id
 end
 
+class RetryNeeded < StandardError; end
+
 def list_profiles(profile_type, name)
   profile_class = portal_profile_class(profile_type)
   profiles = profile_class.all(mac: false, xcode: false)
@@ -49,6 +51,7 @@ def create_profile(profile_type, bundle_id, certificate_id, profile_name)
 
   profile_class = portal_profile_class(profile_type)
   sub_platform = portal_profile_sub_platform(profile_type)
+  
   profile = profile_class.create!(bundle_id: bundle_id, certificate: cert, name: profile_name, sub_platform: sub_platform)
 
   profile_base64 = Base64.encode64(profile.download)
@@ -63,6 +66,10 @@ def create_profile(profile_type, bundle_id, certificate_id, profile_name)
     app_id: profile.app.app_id,
     bundle_id: profile.app.bundle_id
   }
+rescue => e
+  raise e unless e.to_s =~ /Multiple profiles found with the name/i
+
+  raise RetryNeeded
 end
 
 def portal_profile_class(distribution_type)
