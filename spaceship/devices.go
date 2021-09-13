@@ -1,11 +1,104 @@
 package spaceship
 
-import "github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+import (
+	"encoding/json"
+	"fmt"
 
-// DeviceLister ...
-type DeviceLister struct{}
+	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+)
+
+// DeviceClient ...
+type DeviceClient struct {
+	client *Client
+}
+
+// NewDeviceClient ...
+func NewDeviceClient(client *Client) *DeviceClient {
+	return &DeviceClient{client: client}
+}
+
+// DeviceInfo ...
+type DeviceInfo struct {
+	ID       string                           `json:"id"`
+	UDID     string                           `json:"udid"`
+	Name     string                           `json:"name"`
+	Model    string                           `json:"model"`
+	Status   appstoreconnect.Status           `json:"status"`
+	Platform appstoreconnect.BundleIDPlatform `json:"platform"`
+	Class    appstoreconnect.DeviceClass      `json:"class"`
+}
+
+func newDevice(d DeviceInfo) *appstoreconnect.Device {
+	return &appstoreconnect.Device{
+		ID:   d.ID,
+		Type: d.Model,
+		Attributes: appstoreconnect.DeviceAttributes{
+			DeviceClass: d.Class,
+			Model:       d.Model,
+			Name:        d.Name,
+			Platform:    d.Platform,
+			Status:      d.Status,
+			UDID:        d.UDID,
+		},
+	}
+}
 
 // ListDevices ...
-func (*DeviceLister) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
-	return nil, nil
+func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
+	cmd, err := d.client.createRequestCommand("list_devices")
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := runSpaceshipCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	var deviceResponse struct {
+		Data []DeviceInfo `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &deviceResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	var devices []appstoreconnect.Device
+	for _, d := range deviceResponse.Data {
+		devices = append(devices, *newDevice(d))
+	}
+
+	var filteredDevices []appstoreconnect.Device
+	for _, d := range devices {
+		if udid != "" && d.Attributes.UDID != udid {
+			continue
+		}
+		if d.Attributes.Platform != appstoreconnect.BundleIDPlatform(platform) {
+			continue
+		}
+	}
+
+	return filteredDevices, nil
+}
+
+// RegisterDevice ...
+func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
+	cmd, err := d.client.createRequestCommand("register_device", "--udid", testDevice.DeviceID, "--name", testDevice.Title)
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := runSpaceshipCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	var deviceResponse struct {
+		Data DeviceInfo `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &deviceResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	return newDevice(deviceResponse.Data), nil
 }

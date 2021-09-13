@@ -5,9 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"regexp"
+	"strings"
 
 	"github.com/bitrise-io/go-steputils/command/rubycommand"
 	"github.com/bitrise-io/go-utils/command"
@@ -45,39 +44,50 @@ func NewClient(authConfig *appleauth.AppleID, teamID string) (*Client, error) {
 func NewSpaceshipDevportalClient(client *Client) autoprovision.DevportalClient {
 	return autoprovision.DevportalClient{
 		CertificateSource: NewSpaceshipCertificateSource(client),
-		DeviceLister:      &DeviceLister{},
+		DeviceClient:      NewDeviceClient(client),
 		ProfileClient:     NewSpaceshipProfileClient(client),
 	}
 }
 
-func (c *Client) createRequestCommand(subCommand string, opts ...string) (*command.Model, error) {
-	s := []string{"bundle", "exec", "ruby", "main.rb",
+type spaceshipCommand struct {
+	command              *command.Model
+	printableCommandArgs string
+}
+
+func (c *Client) createRequestCommand(subCommand string, opts ...string) (spaceshipCommand, error) {
+	authParams := []string{
 		"--username", c.authConfig.Username,
 		"--password", c.authConfig.Password,
 		"--session", base64.StdEncoding.EncodeToString([]byte(c.authConfig.Session)),
 		"--team-id", c.teamID,
+	}
+	s := []string{"bundle", "exec", "ruby", "main.rb",
 		"--subcommand", subCommand,
 	}
 	s = append(s, opts...)
+	printableCommand := strings.Join(s, " ")
+	s = append(s, authParams...)
+
 	spaceshipCmd, err := rubycommand.NewFromSlice(s)
 	if err != nil {
-		return nil, err
+		return spaceshipCommand{}, err
 	}
 	spaceshipCmd.SetDir(c.workDir)
 
-	return spaceshipCmd, nil
+	return spaceshipCommand{
+		command:              spaceshipCmd,
+		printableCommandArgs: printableCommand,
+	}, nil
 }
 
-func runSpaceshipCommand(cmd *command.Model) (string, error) {
+func runSpaceshipCommand(cmd spaceshipCommand) (string, error) {
 	var output bytes.Buffer
-	outWriter := io.MultiWriter(os.Stdout, &output)
-	cmd.SetStdout(outWriter)
-	cmd.SetStderr(outWriter)
+	outWriter := &output
+	cmd.command.SetStdout(outWriter)
+	cmd.command.SetStderr(outWriter)
 
-	// ToDo: redact password
-	fmt.Println()
-	log.Donef("$ %s", cmd.PrintableCommandArgs())
-	if err := cmd.Run(); err != nil {
+	log.Debugf("$ %s", cmd.printableCommandArgs)
+	if err := cmd.command.Run(); err != nil {
 		return "", fmt.Errorf("spaceship command failed, output: %s, error: %v", output.String(), err)
 	}
 

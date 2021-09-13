@@ -2,6 +2,7 @@ require_relative 'portal/auth_client'
 require_relative 'certificate_helper'
 require_relative 'profile'
 require_relative 'app'
+require_relative 'devices'
 require_relative 'log'
 require 'optparse'
 
@@ -20,12 +21,12 @@ begin
     opt.on('--profile_name PROFILE_NAME') { |o| options[:profile_name] = o }
     opt.on('--profile-type PROFILE_TYPE') { |o| options[:profile_type] = o }
     opt.on('--entitlements ENTITLEMENTS') { |o| options[:entitlements] = Base64.decode64(o) }
+    opt.on('--udid UDID') { |o| options[:udid] = o }
   end.parse!
 
   Log.verbose = true
 
   Portal::AuthClient.login(options[:username], options[:password], options[:session], options[:team_id])
-  Log.info('logged in')
 
   result = '{}'
   case options[:subcommand]
@@ -52,10 +53,17 @@ begin
   when 'sync_bundleid'
     entitlements = JSON.parse(options[:entitlements])
     sync_bundleid(options[:bundle_id], entitlements)
+  when 'list_devices'
+    result = list_devices
+  when 'register_device'
+    result = register_device(options[:udid], options[:name])
   end
 
   response = { data: result }
   puts response.to_json.to_s
+rescue Spaceship::BasicPreferredInfoError, Spaceship::UnexpectedResponse => e
+  result = { error: "Spaceship message: #{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}" }
+  puts result.to_json.to_s
 rescue => e
   result = { error: "#{e}, stacktrace: #{e.backtrace.join("\n")}" }
   puts result.to_json.to_s

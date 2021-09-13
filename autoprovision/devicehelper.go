@@ -1,19 +1,30 @@
 package autoprovision
 
-import "github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+import (
+	"net/http"
 
-// APIDeviceLister ...
-type APIDeviceLister struct {
+	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+)
+
+type DeviceClient interface {
+	ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error)
+	RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error)
+}
+
+// APIDeviceClient ...
+type APIDeviceClient struct {
 	client *appstoreconnect.Client
 }
 
-// NewAPIDeviceLister ...
-func NewAPIDeviceLister(client *appstoreconnect.Client) DeviceLister {
-	return &APIDeviceLister{client: client}
+// NewAPIDeviceClient ...
+func NewAPIDeviceClient(client *appstoreconnect.Client) DeviceClient {
+	return &APIDeviceClient{client: client}
 }
 
 // ListDevices returns the registered devices on the Apple Developer portal
-func (d *APIDeviceLister) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
+func (d *APIDeviceClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
 	var nextPageURL string
 	var devices []appstoreconnect.Device
 	for {
@@ -37,4 +48,33 @@ func (d *APIDeviceLister) ListDevices(udid string, platform appstoreconnect.Devi
 			return devices, nil
 		}
 	}
+}
+
+func (d *APIDeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
+	// The API seems to recognize existing devices even with different casing and '-' separator removed.
+	// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
+	// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged.
+	req := appstoreconnect.DeviceCreateRequest{
+		Data: appstoreconnect.DeviceCreateRequestData{
+			Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
+				Name:     "Bitrise test device",
+				Platform: appstoreconnect.IOS,
+				UDID:     testDevice.DeviceID,
+			},
+			Type: "devices",
+		},
+	}
+
+	registeredDevice, err := d.client.Provisioning.RegisterNewDevice(req)
+	if err != nil {
+		rerr, ok := err.(*appstoreconnect.ErrorResponse)
+		if ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
+			log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", err)
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &registeredDevice.Data, nil
 }

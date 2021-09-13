@@ -24,7 +24,7 @@ def create_app(bundle_id)
 
   {
     id: app.app_id,
-    bundleID: app.bundle_id,
+    bundleID: app.bundle_id
   }
 end
 

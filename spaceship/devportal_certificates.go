@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 
 	"github.com/bitrise-io/go-steputils/command/gems"
-	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
@@ -99,8 +98,8 @@ type certificatesResponse struct {
 	} `json:"data"`
 }
 
-func parseCertificates(spaceshipCommand *command.Model) ([]autoprovision.APICertificate, error) {
-	output, err := runSpaceshipCommand(spaceshipCommand)
+func parseCertificates(cmd spaceshipCommand) ([]autoprovision.APICertificate, error) {
+	output, err := runSpaceshipCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +147,6 @@ func getSpaceshipDirectory() (string, error) {
 			return err
 		}
 
-		log.Printf("%s", path)
 		if d.IsDir() {
 			return os.MkdirAll(filepath.Join(targetDir, path), 0700)
 		}

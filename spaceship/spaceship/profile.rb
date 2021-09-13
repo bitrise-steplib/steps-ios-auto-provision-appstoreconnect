@@ -10,11 +10,8 @@ class Profile
 end
 
 def list_profiles(profile_type, name)
-  profiles = []
   profile_class = portal_profile_class(profile_type)
-  run_or_raise_preferred_error_message do
-    profiles = profile_class.all(mac: false, xcode: false)
-  end
+  profiles = profile_class.all(mac: false, xcode: false)
   matching_profiles = profiles.select { |prof| prof.name == name }
 
   profile_infos = []
@@ -47,16 +44,11 @@ def delete_profile(id)
 end
 
 def create_profile(profile_type, bundle_id, certificate_id, profile_name)
-  list_profiles(profile_type, profile_name)
-
   cert = Cert.new
   cert.id = certificate_id
 
-  profile = nil
   profile_class = portal_profile_class(profile_type)
-  run_or_raise_preferred_error_message do
-    profile = profile_class.create!(bundle_id: bundle_id, certificate: cert, name: profile_name, sub_platform: nil)
-  end
+  profile = profile_class.create!(bundle_id: bundle_id, certificate: cert, name: profile_name, sub_platform: nil)
 
   profile_base64 = Base64.encode64(profile.download)
   {

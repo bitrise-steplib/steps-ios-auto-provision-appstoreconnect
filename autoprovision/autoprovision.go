@@ -27,7 +27,7 @@ type DeviceLister interface {
 // DevportalClient ...
 type DevportalClient struct {
 	CertificateSource CertificateSource
-	DeviceLister      DeviceLister
+	DeviceClient      DeviceClient
 	ProfileClient     ProfileClient
 }
 
@@ -35,7 +35,7 @@ type DevportalClient struct {
 func NewAPIDevportalClient(client *appstoreconnect.Client) DevportalClient {
 	return DevportalClient{
 		CertificateSource: NewAPICertificateSource(client),
-		DeviceLister:      NewAPIDeviceLister(client),
+		DeviceClient:      NewAPIDeviceClient(client),
 		ProfileClient:     NewAPIProfileClient(client),
 	}
 }
