@@ -78,12 +78,12 @@ def portal_profile_class(distribution_type)
     Spaceship::Portal.provisioning_profile.development
   when 'IOS_APP_STORE', 'TVOS_APP_DISTRIBUTION'
     Spaceship::Portal.provisioning_profile.app_store
-  when 'IOS_APP_ADHOC'
+  when 'IOS_APP_ADHOC', 'TVOS_APP_ADHOC'
     Spaceship::Portal.provisioning_profile.ad_hoc
-  when 'IOS_APP_INHOUSE'
+  when 'IOS_APP_INHOUSE', 'TVOS_APP_INHOUSE'
     Spaceship::Portal.provisioning_profile.in_house
   else
-    raise "invalid distribution type provided: #{distribution_type}, available: [IOS_APP_DEVELOPMENT, IOS_APP_STORE, IOS_APP_ADHOC, IOS_APP_INHOUSE]"
+    raise "invalid distribution type provided: #{distribution_type}"
   end
 end
 
