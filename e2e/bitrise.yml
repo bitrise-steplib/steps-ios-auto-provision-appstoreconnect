@@ -11,6 +11,7 @@ app:
     - BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
     - BITFALL_APPSTORECONNECT_API_KEY_URL: $BITFALL_APPSTORECONNECT_API_KEY_URL
     - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+    - ITUNES_CONNECT_TEAM_ID : $ITUNES_CONNECT_TEAM_ID
 
 workflows:
   test_xcode13_uitest_signing:
@@ -276,6 +277,11 @@ workflows:
       - cocoapods-install:
           run_if: '{{enveq "INSTALL_PODS" "true"}}'
           title: CocoaPods install
+      - script:
+          run_if: '{{enveq "USE_APPLE_ID" "true"}}'
+          inputs:
+          - contents: |-
+              envman add --key CONNECTION --value apple_id
       - path::./:
           title: Step Test
           run_if: "true"
@@ -283,6 +289,7 @@ workflows:
             - connection: $CONNECTION
             - api_key_path: $API_KEY_PATH
             - api_issuer: $API_ISSUER
+            - team_id: $ITUNES_CONNECT_TEAM_ID
             - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
             - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
             - distribution_type: $DISTRIBUTION_TYPE

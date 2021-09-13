@@ -8,6 +8,15 @@ workflows:
 
   e2e:
     steps:
+    - script:
+        inputs:
+        - contents: envman add --key USE_APPLE_ID --value "true"
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        inputs:
+        - workflow: e2e
+    - script:
+        inputs:
+        - contents: envman add --key USE_APPLE_ID --value "false"
     - git::https://github.com/bitrise-steplib/steps-check.git:
         inputs:
         - workflow: e2e
@@ -49,8 +58,6 @@ workflows:
         - connection: "off"
         - api_key_path: $APPSTORECONNECT_API_KEY_URL
         - api_issuer: $APPSTORECONNECT_API_KEY_ISSUER
-        # - apple_id: $APPLE_ID
-        # - password: $APPLE_PASSWORD
         - certificate_urls: $BITRISE_CERTIFICATE_URL
         - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE
         - distribution_type: $IPA_EXPORT_METHOD
