@@ -288,7 +288,8 @@ func checkProfileDevices(client *appstoreconnect.Client, prof appstoreconnect.Pr
 	return nil
 }
 
-func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) bool {
+// IsProfileExpired ...
+func IsProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) bool {
 	relativeExpiryTime := time.Now()
 	if minProfileDaysValid > 0 {
 		relativeExpiryTime = relativeExpiryTime.Add(time.Duration(minProfileDaysValid) * 24 * time.Hour)
@@ -298,7 +299,7 @@ func isProfileExpired(prof appstoreconnect.Profile, minProfileDaysValid int) boo
 
 // CheckProfile ...
 func (c *APIProfileClient) CheckProfile(prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
-	if isProfileExpired(prof, minProfileDaysValid) {
+	if IsProfileExpired(prof, minProfileDaysValid) {
 		return NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
 		}

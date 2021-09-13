@@ -219,7 +219,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 	if profile == nil {
 		log.Warnf("  profile does not exist, generating...")
 	} else {
-		log.Printf("  Bitrise managed profile found: %s", profile.Attributes.Name)
+		log.Printf("  Bitrise managed profile found: %s ID: %s UUID: %s Expiry: %s", profile.Attributes.Name, profile.ID, profile.Attributes.UUID, time.Time(profile.Attributes.ExpirationDate))
 
 		if profile.Attributes.ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project

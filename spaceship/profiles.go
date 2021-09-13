@@ -36,6 +36,30 @@ type ProfileInfo struct {
 	Devices      []string                         `json:"devices"`
 }
 
+func newProfile(p ProfileInfo) (appstoreconnect.Profile, error) {
+	contents, err := base64.StdEncoding.DecodeString(p.Content)
+	if err != nil {
+		return appstoreconnect.Profile{}, fmt.Errorf("failed to decode profile contents: %v", err)
+	}
+
+	return appstoreconnect.Profile{
+		ID: p.ID,
+		Attributes: appstoreconnect.ProfileAttributes{
+			Name:           p.Name,
+			UUID:           p.UUID,
+			ProfileState:   appstoreconnect.ProfileState(p.Status),
+			ProfileContent: contents,
+			Platform:       p.Platform,
+			ExpirationDate: appstoreconnect.Time(p.Expiry),
+			SpaceshipAttributes: appstoreconnect.SpaceshipAttributes{
+				BundleID:       p.BundleID,
+				DeviceIDs:      p.Devices,
+				CertificateIDs: p.Certificates,
+			},
+		},
+	}, nil
+}
+
 // AppInfo ...
 type AppInfo struct {
 	ID       string `json:"id"`
@@ -62,38 +86,16 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	var match *ProfileInfo
-	for _, p := range profileResponse.Data {
-		if name == p.Name {
-			match = &p
-			break
-		}
-	}
-
-	if match == nil {
+	if len(profileResponse.Data) == 0 {
 		return nil, nil
 	}
 
-	profileContent, err := base64.StdEncoding.DecodeString(match.Content)
+	profile, err := newProfile(profileResponse.Data[0])
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode profile contents: %v", err)
+		return nil, err
 	}
 
-	return &appstoreconnect.Profile{
-		ID: match.ID,
-		Attributes: appstoreconnect.ProfileAttributes{
-			Name:           match.Name,
-			UUID:           match.UUID,
-			ProfileState:   appstoreconnect.ProfileState(match.Status),
-			ProfileContent: profileContent,
-			Platform:       match.Platform,
-			SpaceshipAttributes: appstoreconnect.SpaceshipAttributes{
-				BundleID:       match.BundleID,
-				DeviceIDs:      match.Devices,
-				CertificateIDs: match.Certificates,
-			},
-		},
-	}, nil
+	return &profile, nil
 }
 
 // DeleteExpiredProfile ...
@@ -103,6 +105,12 @@ func (c *ProfileClient) DeleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 
 // CheckProfile ...
 func (c *ProfileClient) CheckProfile(prof appstoreconnect.Profile, entitlements autoprovision.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+	if autoprovision.IsProfileExpired(prof, minProfileDaysValid) {
+		return autoprovision.NonmatchingProfileError{
+			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
+		}
+	}
+
 	for _, id := range deviceIDs {
 		if !sliceutil.IsStringInSlice(id, prof.Attributes.SpaceshipAttributes.DeviceIDs) {
 			return autoprovision.NonmatchingProfileError{
@@ -166,32 +174,18 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 	}
 
 	var profileResponse struct {
-		Data *ProfileInfo `json:"data"`
+		Data ProfileInfo `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(output), &profileResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %v (%s)", err, output)
 	}
 
-	profileContent, err := base64.StdEncoding.DecodeString(profileResponse.Data.Content)
+	profile, err := newProfile(profileResponse.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode profile contents: %v", err)
+		return nil, err
 	}
 
-	return &appstoreconnect.Profile{
-		ID: profileResponse.Data.ID,
-		Attributes: appstoreconnect.ProfileAttributes{
-			Name:           profileResponse.Data.Name,
-			UUID:           profileResponse.Data.UUID,
-			ProfileState:   appstoreconnect.ProfileState(profileResponse.Data.Status),
-			ProfileContent: profileContent,
-			Platform:       profileResponse.Data.Platform,
-			SpaceshipAttributes: appstoreconnect.SpaceshipAttributes{
-				BundleID:       profileResponse.Data.BundleID,
-				DeviceIDs:      profileResponse.Data.Devices,
-				CertificateIDs: profileResponse.Data.Certificates,
-			},
-		},
-	}, nil
+	return &profile, nil
 }
 
 // FindBundleID ...
