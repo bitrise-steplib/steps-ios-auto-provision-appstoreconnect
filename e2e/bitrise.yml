@@ -328,7 +328,7 @@ workflows:
     steps:
       - script:
           inputs:
-            - contents: envman add --key CONNECTION --value apple_id
+            - content: envman add --key CONNECTION --value apple_id
     after_run:
       - _run
 
