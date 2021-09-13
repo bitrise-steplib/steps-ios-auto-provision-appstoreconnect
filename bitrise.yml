@@ -8,15 +8,6 @@ workflows:
 
   e2e:
     steps:
-    - script:
-        inputs:
-        - contents: envman add --key USE_APPLE_ID --value "true"
-    - git::https://github.com/bitrise-steplib/steps-check.git:
-        inputs:
-        - workflow: e2e
-    - script:
-        inputs:
-        - contents: envman add --key USE_APPLE_ID --value "false"
     - git::https://github.com/bitrise-steplib/steps-check.git:
         inputs:
         - workflow: e2e

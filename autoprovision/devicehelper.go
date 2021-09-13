@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
+// DeviceClient ...
 type DeviceClient interface {
 	ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error)
 	RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error)
@@ -50,6 +51,7 @@ func (d *APIDeviceClient) ListDevices(udid string, platform appstoreconnect.Devi
 	}
 }
 
+// RegisterDevice ...
 func (d *APIDeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
 	// The API seems to recognize existing devices even with different casing and '-' separator removed.
 	// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.

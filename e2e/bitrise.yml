@@ -52,6 +52,9 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_build_for_test
+      - _run_with_apple_id
+      - _check_outputs
+      - _check_xcode_build_for_test
 
   test_uitest_signing:
     before_run:
@@ -91,6 +94,9 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_build_for_test
+      - _run_with_apple_id
+      - _check_outputs
+      - _check_xcode_build_for_test
 
   test_bundle_id:
     envs:
@@ -108,6 +114,9 @@ workflows:
       - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
       - _run
+      - _check_outputs
+      - _check_xcode_archive
+      - _run_with_apple_id
       - _check_outputs
       - _check_xcode_archive
 
@@ -129,6 +138,9 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - _run_with_apple_id
+      - _check_outputs
+      - _check_xcode_archive
 
   test_entitlements:
     envs:
@@ -146,6 +158,9 @@ workflows:
       - API_ISSUER:
     after_run:
       - _run
+      - _check_outputs
+      - _check_xcode_archive
+      - _run_with_apple_id
       - _check_outputs
       - _check_xcode_archive
 
@@ -175,6 +190,9 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - _run_with_apple_id
+      - _check_outputs
+      - _check_xcode_archive
 
   test_tvos:
     steps:
@@ -202,6 +220,9 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - _run_with_apple_id
+      - _check_outputs
+      - _check_xcode_archive
 
   test_tvos_development:
     steps:
@@ -227,6 +248,9 @@ workflows:
       - API_ISSUER:
     after_run:
       - _run
+      - _check_outputs
+      - _check_xcode_archive
+      - _run_with_apple_id
       - _check_outputs
       - _check_xcode_archive
 
@@ -259,6 +283,9 @@ workflows:
       - _run
       - _check_outputs
       - _check_xcode_archive
+      - _run_with_apple_id
+      - _check_outputs
+      - _check_xcode_archive
 
   _run:
     steps:
@@ -277,11 +304,6 @@ workflows:
       - cocoapods-install:
           run_if: '{{enveq "INSTALL_PODS" "true"}}'
           title: CocoaPods install
-      - script:
-          run_if: '{{enveq "USE_APPLE_ID" "true"}}'
-          inputs:
-          - contents: |-
-              envman add --key CONNECTION --value apple_id
       - path::./:
           title: Step Test
           run_if: "true"
@@ -301,6 +323,14 @@ workflows:
             - keychain_path: $BITRISE_KEYCHAIN_PATH
             - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
             - verbose_log: "yes"
+
+  _run_with_apple_id:
+    steps:
+      - script:
+          inputs:
+            - contents: envman add --key CONNECTION --value apple_id
+    after_run:
+      - _run
 
   _check_outputs:
     steps:
