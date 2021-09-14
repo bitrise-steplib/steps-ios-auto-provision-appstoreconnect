@@ -92,6 +92,10 @@ inputs:
       title: "API Key Issuer ID"
       description: |-
         Issuer ID. Required if **API Key URL** (`api_key_path`) is specified.
+  - team_id: ""
+    opts:
+      category: Debug
+      title: Developer Portal team ID (used only for Apple ID authentication)
   - distribution_type: development
     opts:
       title: Distribution type

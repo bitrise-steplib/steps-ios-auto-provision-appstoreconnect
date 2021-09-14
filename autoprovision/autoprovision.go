@@ -19,11 +19,6 @@ type CertificateSource interface {
 	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]APICertificate, error)
 }
 
-// DeviceLister ...
-type DeviceLister interface {
-	ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error)
-}
-
 // DevportalClient ...
 type DevportalClient struct {
 	CertificateSource CertificateSource
