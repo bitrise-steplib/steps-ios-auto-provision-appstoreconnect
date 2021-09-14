@@ -96,7 +96,6 @@ func parseAuthSources(bitriseConnection string) ([]appleauth.Source, error) {
 		}, nil
 	case "apple_id":
 		return []appleauth.Source{
-			&appleauth.InputAppleIDSource{},
 			&appleauth.ConnectionAppleIDFastlaneSource{},
 		}, nil
 	case "off":
