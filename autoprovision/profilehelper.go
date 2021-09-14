@@ -318,14 +318,9 @@ func findMissingContainers(projectEnts, profileEnts serialized.Object) ([]string
 	return missing, nil
 }
 
-func checkProfileCertificates(prof Profile, certificateIDs []string) error {
-	ids, err := prof.CertificateIDs()
-	if err != nil {
-		return err
-	}
-
+func checkProfileCertificates(profileCertificateIDs map[string]bool, certificateIDs []string) error {
 	for _, id := range certificateIDs {
-		if !ids[id] {
+		if !profileCertificateIDs[id] {
 			return NonmatchingProfileError{
 				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
 			}
@@ -334,14 +329,9 @@ func checkProfileCertificates(prof Profile, certificateIDs []string) error {
 	return nil
 }
 
-func checkProfileDevices(prof Profile, deviceIDs []string) error {
-	ids, err := prof.DeviceIDs()
-	if err != nil {
-		return err
-	}
-
+func checkProfileDevices(profileDeviceIDs map[string]bool, deviceIDs []string) error {
 	for _, id := range deviceIDs {
-		if !ids[id] {
+		if !profileDeviceIDs[id] {
 			return NonmatchingProfileError{
 				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
 			}
@@ -372,11 +362,19 @@ func CheckProfile(client ProfileClient, prof Profile, entitlements Entitlement, 
 		return err
 	}
 
-	if err := checkProfileCertificates(prof, certificateIDs); err != nil {
+	profileCertificateIDs, err := prof.CertificateIDs()
+	if err != nil {
+		return err
+	}
+	if err := checkProfileCertificates(profileCertificateIDs, certificateIDs); err != nil {
 		return err
 	}
 
-	return checkProfileDevices(prof, deviceIDs)
+	profileDeviceIDs, err := prof.DeviceIDs()
+	if err != nil {
+		return err
+	}
+	return checkProfileDevices(profileDeviceIDs, deviceIDs)
 }
 
 // DeleteProfile ...

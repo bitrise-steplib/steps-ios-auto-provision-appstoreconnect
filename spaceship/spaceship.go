@@ -2,6 +2,7 @@ package spaceship
 
 import (
 	"bytes"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -18,6 +19,9 @@ import (
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
+
+//go:embed spaceship
+var spaceship embed.FS
 
 // Client ...
 type Client struct {
