@@ -11,6 +11,9 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -44,6 +47,18 @@ func (c *MockClient) Do(req *http.Request) (*http.Response, error) {
 
 	return nil, fmt.Errorf("invalid endpoint called: %s, method: %s", req.URL.Path, req.Method)
 }
+
+// type ProfileClient interface {
+// 	FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error)
+// 	DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error
+// 	DeleteProfile(id string) error
+// 	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
+// 	// Bundle ID
+// 	FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
+// 	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
+// 	SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error
+// 	CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
+// }
 
 func (c *MockClient) GetProfiles(req *http.Request) (*http.Response, error) {
 	args := c.Called(req)
@@ -92,80 +107,81 @@ func newResponse(t *testing.T, status int, body map[string]interface{}) *http.Re
 	return &resp
 }
 
-// func TestEnsureProfile_ExpiredProfile(t *testing.T) {
-// 	// Arrange
-// 	mockClient := &MockClient{}
+func TestEnsureProfile_ExpiredProfile(t *testing.T) {
+	// Arrange
+	mockClient := &MockClient{}
 
-// 	mockClient.
-// 		On("GetProfiles", mock.AnythingOfType("*http.Request")).
-// 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
+	mockClient.
+		On("GetProfiles", mock.AnythingOfType("*http.Request")).
+		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
-// 	mockClient.
-// 		On("PostProfilesFailed", mock.AnythingOfType("*http.Request")).
-// 		Return(newResponse(t, http.StatusConflict,
-// 			map[string]interface{}{
-// 				"errors": []interface{}{map[string]interface{}{"detail": "ENTITY_ERROR: There is a problem with the request entity: Multiple profiles found with the name 'Bitrise iOS development - (io.bitrise.testapp)'.  Please remove the duplicate profiles and try again."}},
-// 			}), nil)
+	mockClient.
+		On("PostProfilesFailed", mock.AnythingOfType("*http.Request")).
+		Return(newResponse(t, http.StatusConflict,
+			map[string]interface{}{
+				"errors": []interface{}{map[string]interface{}{"detail": "ENTITY_ERROR: There is a problem with the request entity: Multiple profiles found with the name 'Bitrise iOS development - (io.bitrise.testapp)'.  Please remove the duplicate profiles and try again."}},
+			}), nil)
 
-// 	mockClient.
-// 		On("GetBundleIDCapabilities", mock.AnythingOfType("*http.Request")).
-// 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
+	mockClient.
+		On("GetBundleIDCapabilities", mock.AnythingOfType("*http.Request")).
+		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
-// 	mockClient.
-// 		On("GetBundleIDProfiles", mock.AnythingOfType("*http.Request")).
-// 		Return(newResponse(t, http.StatusOK,
-// 			map[string]interface{}{
-// 				"data": []interface{}{
-// 					map[string]interface{}{
-// 						"attributes": map[string]interface{}{"name": "Bitrise iOS development - (io.bitrise.testapp)"},
-// 						"id":         "1",
-// 					},
-// 				}},
-// 		), nil)
+	mockClient.
+		On("GetBundleIDProfiles", mock.AnythingOfType("*http.Request")).
+		Return(newResponse(t, http.StatusOK,
+			map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{
+						"attributes": map[string]interface{}{"name": "Bitrise iOS development - (io.bitrise.testapp)"},
+						"id":         "1",
+					},
+				}},
+		), nil)
 
-// 	mockClient.
-// 		On("DeleteProfiles", mock.AnythingOfType("*http.Request")).
-// 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
+	mockClient.
+		On("DeleteProfiles", mock.AnythingOfType("*http.Request")).
+		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
-// 	mockClient.
-// 		On("PostProfilesSuccess", mock.AnythingOfType("*http.Request")).
-// 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
+	mockClient.
+		On("PostProfilesSuccess", mock.AnythingOfType("*http.Request")).
+		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
-// 	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
-// 	manager := ProfileManager{
-// 		client: client,
-// 		// cache io.bitrise.testapp bundle ID, so that no need to mock bundle ID GET requests
-// 		bundleIDByBundleIDIdentifer: map[string]*appstoreconnect.BundleID{"io.bitrise.testapp": {
-// 			Relationships: appstoreconnect.BundleIDRelationships{
-// 				Profiles: appstoreconnect.RelationshipsLinks{
-// 					Links: appstoreconnect.Links{
-// 						Related: "https://api.appstoreconnect.apple.com/v1/bundleID/profiles",
-// 					},
-// 				},
-// 				Capabilities: appstoreconnect.RelationshipsLinks{
-// 					Links: appstoreconnect.Links{
-// 						Related: "https://api.appstoreconnect.apple.com/v1/bundleID/capabilities",
-// 					},
-// 				},
-// 			},
-// 		}},
-// 		containersByBundleID: nil}
+	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
+	devportalClient := autoprovision.NewAPIDevportalClient(client)
+	manager := ProfileManager{
+		client: devportalClient.ProfileClient,
+		// cache io.bitrise.testapp bundle ID, so that no need to mock bundle ID GET requests
+		bundleIDByBundleIDIdentifer: map[string]*appstoreconnect.BundleID{"io.bitrise.testapp": {
+			Relationships: appstoreconnect.BundleIDRelationships{
+				Profiles: appstoreconnect.RelationshipsLinks{
+					Links: appstoreconnect.Links{
+						Related: "https://api.appstoreconnect.apple.com/v1/bundleID/profiles",
+					},
+				},
+				Capabilities: appstoreconnect.RelationshipsLinks{
+					Links: appstoreconnect.Links{
+						Related: "https://api.appstoreconnect.apple.com/v1/bundleID/capabilities",
+					},
+				},
+			},
+		}},
+		containersByBundleID: nil}
 
-// 	// Act
-// 	profile, err := manager.EnsureProfile(
-// 		appstoreconnect.IOSAppDevelopment,
-// 		"io.bitrise.testapp",
-// 		serialized.Object(map[string]interface{}{}),
-// 		[]string{},
-// 		[]string{},
-// 		0,
-// 	)
+	// Act
+	profile, err := manager.EnsureProfile(
+		appstoreconnect.IOSAppDevelopment,
+		"io.bitrise.testapp",
+		serialized.Object(map[string]interface{}{}),
+		[]string{},
+		[]string{},
+		0,
+	)
 
-// 	// Assert
-// 	require.NoError(t, err)
-// 	require.NotNil(t, profile)
-// 	mockClient.AssertExpectations(t)
-// }
+	// Assert
+	require.NoError(t, err)
+	require.NotNil(t, profile)
+	mockClient.AssertExpectations(t)
+}
 
 func TestDownloadLocalCertificates(t *testing.T) {
 	const teamID = "MYTEAMID"
