@@ -99,11 +99,15 @@ func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*
 	}
 
 	var deviceResponse struct {
-		Data DeviceInfo `json:"data"`
+		Data *DeviceInfo `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(output), &deviceResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	return newDevice(deviceResponse.Data), nil
+	if deviceResponse.Data == nil {
+		return nil, nil
+	}
+
+	return newDevice(*deviceResponse.Data), nil
 }
