@@ -1,6 +1,6 @@
 require_relative 'portal/auth_client'
-require_relative 'certificate_helper'
-require_relative 'profile'
+require_relative 'certificates'
+require_relative 'profiles'
 require_relative 'app'
 require_relative 'devices'
 require_relative 'log'
@@ -17,8 +17,8 @@ begin
     opt.on('--bundle_id BUNDLE_ID') { |o| options[:bundle_id] = o }
     opt.on('--id ID') { |o| options[:id] = o }
     opt.on('--name NAME') { |o| options[:name] = o }
-    opt.on('--certificate CERTIFICATE') { |o| options[:certificate] = o }
-    opt.on('--profile_name PROFILE_NAME') { |o| options[:profile_name] = o }
+    opt.on('--certificate-id CERTIFICATE') { |o| options[:certificate_id] = o }
+    opt.on('--profile-name PROFILE_NAME') { |o| options[:profile_name] = o }
     opt.on('--profile-type PROFILE_TYPE') { |o| options[:profile_type] = o }
     opt.on('--entitlements ENTITLEMENTS') { |o| options[:entitlements] = Base64.decode64(o) }
     opt.on('--udid UDID') { |o| options[:udid] = o }
@@ -37,7 +37,7 @@ begin
     client = CertificateHelper.new
     result = client.list_dist_certs
   when 'list_profiles'
-    result = list_profiles(options[:profile_type], options[:name])
+    result = list_profiles(options[:profile_type], options[:profile_name])
   when 'get_app'
     result = get_app(options[:bundle_id])
   when 'create_app'
@@ -46,7 +46,7 @@ begin
     delete_profile(options[:id])
     result = { status: 'OK' }
   when 'create_profile'
-    result = create_profile(options[:profile_type], options[:bundle_id], options[:certificate], options[:profile_name])
+    result = create_profile(options[:profile_type], options[:bundle_id], options[:certificate_id], options[:profile_name])
   when 'check_bundleid'
     entitlements = JSON.parse(options[:entitlements])
     check_bundleid(options[:bundle_id], entitlements)

@@ -89,7 +89,10 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 
 // RegisterDevice ...
 func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
-	cmd, err := d.client.createRequestCommand("register_device", "--udid", testDevice.DeviceID, "--name", testDevice.Title)
+	cmd, err := d.client.createRequestCommand("register_device",
+		"--udid", testDevice.DeviceID,
+		"--name", testDevice.Title,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,15 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
+const (
+	profileNameArgKey   = "--profile-name"
+	profileTypeArgKey   = "--profile-type"
+	certificateIDArgkey = "--certificate-id"
+
+	bundleIDIdentifierArgkey = "--bundle_id"
+	entitlementsArgKey       = "--entitlements"
+)
+
 // Profile ...
 type Profile struct {
 	attributes     appstoreconnect.ProfileAttributes
@@ -116,7 +125,10 @@ type AppInfo struct {
 
 // FindProfile ...
 func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autoprovision.Profile, error) {
-	cmd, err := c.client.createRequestCommand("list_profiles", "--name", name, "--profile-type", string(profileType))
+	cmd, err := c.client.createRequestCommand("list_profiles",
+		profileNameArgKey, name,
+		profileTypeArgKey, string(profileType),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -168,10 +180,10 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 // CreateProfile ...
 func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autoprovision.Profile, error) {
 	cmd, err := c.client.createRequestCommand("create_profile",
-		"--bundle_id", bundleID.Attributes.Identifier,
-		"--certificate", certificateIDs[0],
-		"--profile_name", name,
-		"--profile-type", string(profileType),
+		bundleIDIdentifierArgkey, bundleID.Attributes.Identifier,
+		certificateIDArgkey, certificateIDs[0],
+		profileNameArgKey, name,
+		profileTypeArgKey, string(profileType),
 	)
 	if err != nil {
 		return nil, err
@@ -199,7 +211,9 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 
 // FindBundleID ...
 func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	cmd, err := c.client.createRequestCommand("get_app", "--bundle_id", bundleIDIdentifier)
+	cmd, err := c.client.createRequestCommand("get_app",
+		bundleIDIdentifierArgkey, bundleIDIdentifier,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +241,9 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 
 // CreateBundleID ...
 func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	cmd, err := c.client.createRequestCommand("create_bundleid", "--bundle_id", bundleIDIdentifier)
+	cmd, err := c.client.createRequestCommand("create_bundleid",
+		bundleIDIdentifierArgkey, bundleIDIdentifier,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +277,10 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 	}
 	entitlementsBase64 := base64.StdEncoding.EncodeToString(entitlementsBytes)
 
-	cmd, err := c.client.createRequestCommand("check_bundleid", "--bundle_id", bundleID.Attributes.Identifier, "--entitlements", entitlementsBase64)
+	cmd, err := c.client.createRequestCommand("check_bundleid",
+		bundleIDIdentifierArgkey, bundleID.Attributes.Identifier,
+		entitlementsArgKey, entitlementsBase64,
+	)
 	if err != nil {
 		return err
 	}
@@ -282,7 +301,10 @@ func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, projectE
 	}
 	entitlementsBase64 := base64.StdEncoding.EncodeToString(entitlementsBytes)
 
-	cmd, err := c.client.createRequestCommand("sync_bundleid", "--bundle_id", bundleID.Attributes.Identifier, "--entitlements", entitlementsBase64)
+	cmd, err := c.client.createRequestCommand("sync_bundleid",
+		bundleIDIdentifierArgkey, bundleID.Attributes.Identifier,
+		entitlementsArgKey, entitlementsBase64,
+	)
 	if err != nil {
 		return err
 	}
