@@ -91,6 +91,8 @@ func runSpaceshipCommand(cmd spaceshipCommand) (string, error) {
 		return "", fmt.Errorf("spaceship command failed, output: %s, error: %v", output.String(), err)
 	}
 
+	log.Debugf("\n%s\n", output.String())
+
 	jsonRegexp := regexp.MustCompile(`(?m)^\{.*\}$`)
 	match := jsonRegexp.FindString(output.String())
 	if match == "" {

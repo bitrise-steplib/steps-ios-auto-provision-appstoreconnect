@@ -3,6 +3,7 @@ package spaceship
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -99,10 +100,15 @@ func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*
 	}
 
 	var deviceResponse struct {
-		Data *DeviceInfo `json:"data"`
+		Data     *DeviceInfo `json:"data"`
+		Warnings []string    `json:"warnings"`
 	}
 	if err := json.Unmarshal([]byte(output), &deviceResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	if len(deviceResponse.Warnings) != 0 {
+		log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", strings.Join(deviceResponse.Warnings, "\n"))
 	}
 
 	if deviceResponse.Data == nil {

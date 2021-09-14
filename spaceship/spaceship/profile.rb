@@ -13,7 +13,14 @@ class RetryNeeded < StandardError; end
 
 def list_profiles(profile_type, name)
   profile_class = portal_profile_class(profile_type)
-  profiles = profile_class.all(mac: false, xcode: false)
+  sub_platform = portal_profile_sub_platform(profile_type)
+  profiles = []
+  if sub_platform == 'tvOS'
+    profiles = profile_class.all_tvos
+  else
+    profiles = profile_class.all(mac: false, xcode: false)
+  end
+
   matching_profiles = profiles.select { |prof| prof.name == name }
 
   profile_infos = []
@@ -51,8 +58,13 @@ def create_profile(profile_type, bundle_id, certificate_id, profile_name)
 
   profile_class = portal_profile_class(profile_type)
   sub_platform = portal_profile_sub_platform(profile_type)
-  
-  profile = profile_class.create!(bundle_id: bundle_id, certificate: cert, name: profile_name, sub_platform: sub_platform)
+
+  profile = profile_class.create!(
+    name: profile_name,
+    bundle_id: bundle_id,
+    certificate: cert,
+    sub_platform: sub_platform
+  )
 
   profile_base64 = Base64.encode64(profile.download)
   {
@@ -88,11 +100,7 @@ def portal_profile_class(distribution_type)
 end
 
 def portal_profile_sub_platform(distribution_type)
-  case distribution_type
-  when 'TVOS_APP_DEVELOPMENT', 'TVOS_APP_DISTRIBUTION'
-    'tvOS'
-  end
-  nil
+  %w[TVOS_APP_DEVELOPMENT TVOS_APP_DISTRIBUTION].include?(distribution_type) ? 'tvOS' : nil
 end
 
 def map_profile_status_to_api_status(status)
