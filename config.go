@@ -21,11 +21,7 @@ type Config struct {
 	APIKeyPath        stepconf.Secret `env:"api_key_path"`
 	APIIssuer         string          `env:"api_issuer"`
 	// Apple ID
-	AppleID             string          `env:"apple_id"`
-	Password            stepconf.Secret `env:"password"`
-	AppSpecificPassword stepconf.Secret `env:"app_password"`
-	TeamID              string          `env:"team_id"`
-	InHouse             bool            `env:"in_house"`
+	TeamID string `env:"team_id"`
 
 	ProjectPath         string `env:"project_path,dir"`
 	Scheme              string `env:"scheme,required"`

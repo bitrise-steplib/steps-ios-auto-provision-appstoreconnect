@@ -375,13 +375,10 @@ func main() {
 		failf("Could not configure Apple Service authentication: %v", err)
 	}
 
-	// Remove
-	var client *appstoreconnect.Client
-
 	var devportalClient autoprovision.DevportalClient
 	if authConfig.APIKey != nil {
 		httpClient := appstoreconnect.NewRetryableHTTPClient()
-		client = appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
+		client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
 		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
 		log.Donef("the client created for %s", client.BaseURL)
 		devportalClient = autoprovision.NewAPIDevportalClient(client)
