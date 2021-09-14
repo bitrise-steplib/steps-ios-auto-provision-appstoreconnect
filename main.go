@@ -200,7 +200,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 }
 
 // EnsureProfile ...
-func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*appstoreconnect.Profile, error) {
+func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*autoprovision.Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities: %s", entitlements)
@@ -219,11 +219,11 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 	if profile == nil {
 		log.Warnf("  profile does not exist, generating...")
 	} else {
-		log.Printf("  Bitrise managed profile found: %s ID: %s UUID: %s Expiry: %s", profile.Attributes.Name, profile.ID, profile.Attributes.UUID, time.Time(profile.Attributes.ExpirationDate))
+		log.Printf("  Bitrise managed profile found: %s ID: %s UUID: %s Expiry: %s", profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
 
-		if profile.Attributes.ProfileState == appstoreconnect.Active {
+		if profile.Attributes().ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			err := m.client.CheckProfile(*profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
+			err := m.client.CheckProfile(profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
 				if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
@@ -232,16 +232,16 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 				}
 			} else { // Profile matches
 				log.Donef("  profile is in sync with the project requirements")
-				return profile, nil
+				return &profile, nil
 			}
 		}
 
-		if profile.Attributes.ProfileState == appstoreconnect.Invalid {
+		if profile.Attributes().ProfileState == appstoreconnect.Invalid {
 			// If the profile's bundle id gets modified, the profile turns in Invalid state.
 			log.Warnf("  the profile state is invalid, regenerating ...")
 		}
 
-		if err := m.client.DeleteProfile(profile.ID); err != nil {
+		if err := m.client.DeleteProfile(profile.ID()); err != nil {
 			return nil, fmt.Errorf("failed to delete profile: %s", err)
 		}
 	}
@@ -272,17 +272,17 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 				return nil, fmt.Errorf("failed to create profile: %s", err)
 			}
 
-			log.Donef("  profile created: %s", profile.Attributes.Name)
+			log.Donef("  profile created: %s", profile.Attributes().Name)
 
-			return profile, nil
+			return &profile, nil
 		}
 
 		return nil, fmt.Errorf("failed to create profile: %s", err)
 	}
 
-	log.Donef("  profile created: %s", profile.Attributes.Name)
+	log.Donef("  profile created: %s", profile.Attributes().Name)
 
-	return profile, nil
+	return &profile, nil
 }
 
 func isMultipleProfileErr(err error) bool {
@@ -545,8 +545,8 @@ func main() {
 
 	// Ensure Profiles
 	type CodesignSettings struct {
-		ArchivableTargetProfilesByBundleID map[string]appstoreconnect.Profile
-		UITestTargetProfilesByBundleID     map[string]appstoreconnect.Profile
+		ArchivableTargetProfilesByBundleID map[string]autoprovision.Profile
+		UITestTargetProfilesByBundleID     map[string]autoprovision.Profile
 		Certificate                        certificateutil.CertificateInfoModel
 	}
 
@@ -580,8 +580,8 @@ func main() {
 		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
 		codesignSettings := CodesignSettings{
-			ArchivableTargetProfilesByBundleID: map[string]appstoreconnect.Profile{},
-			UITestTargetProfilesByBundleID:     map[string]appstoreconnect.Profile{},
+			ArchivableTargetProfilesByBundleID: map[string]autoprovision.Profile{},
+			UITestTargetProfilesByBundleID:     map[string]autoprovision.Profile{},
 			Certificate:                        certs[0].Certificate,
 		}
 
@@ -674,10 +674,10 @@ func main() {
 		}
 
 		log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
-		log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
+		log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
 		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
-		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
+		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
 			failf("Failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
 	}
@@ -707,11 +707,11 @@ func main() {
 			}
 
 			log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
-			log.Printf("  provisioning Profile: %s", profile.Attributes.Name)
+			log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
 			log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
 			for _, c := range uiTestTarget.BuildConfigurationList.BuildConfigurations {
-				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes.UUID); err != nil {
+				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
 					failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
 				}
 			}
@@ -741,7 +741,7 @@ func main() {
 
 		log.Printf("profiles:")
 		for _, profile := range codesignSettings.ArchivableTargetProfilesByBundleID {
-			log.Printf("- %s", profile.Attributes.Name)
+			log.Printf("- %s", profile.Attributes().Name)
 
 			if err := autoprovision.WriteProfile(profile); err != nil {
 				failf("Failed to write profile to file: %s", err)
@@ -749,7 +749,7 @@ func main() {
 		}
 
 		for _, profile := range codesignSettings.UITestTargetProfilesByBundleID {
-			log.Printf("- %s", profile.Attributes.Name)
+			log.Printf("- %s", profile.Attributes().Name)
 
 			if err := autoprovision.WriteProfile(profile); err != nil {
 				failf("Failed to write profile to file: %s", err)
@@ -784,7 +784,7 @@ func main() {
 			failf("No provisioning profile ensured for the main target")
 		}
 
-		outputs["BITRISE_DEVELOPMENT_PROFILE"] = profile.Attributes.UUID
+		outputs["BITRISE_DEVELOPMENT_PROFILE"] = profile.Attributes().UUID
 	}
 
 	if stepConf.DistributionType() != autoprovision.Development {
@@ -804,7 +804,7 @@ func main() {
 			failf("No provisioning profile ensured for the main target")
 		}
 
-		outputs["BITRISE_PRODUCTION_PROFILE"] = profile.Attributes.UUID
+		outputs["BITRISE_PRODUCTION_PROFILE"] = profile.Attributes().UUID
 	}
 
 	for k, v := range outputs {

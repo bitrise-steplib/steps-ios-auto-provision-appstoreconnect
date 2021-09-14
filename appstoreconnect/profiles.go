@@ -76,24 +76,16 @@ func (t ProfileType) ReadableString() string {
 	return ""
 }
 
-// SpaceshipAttributes ...
-type SpaceshipAttributes struct {
-	BundleID       string
-	DeviceIDs      []string
-	CertificateIDs []string
-}
-
 // ProfileAttributes ...
 type ProfileAttributes struct {
-	Name                string           `json:"name"`
-	Platform            BundleIDPlatform `json:"platform"`
-	ProfileContent      []byte           `json:"profileContent"`
-	UUID                string           `json:"uuid"`
-	CreatedDate         string           `json:"createdDate"`
-	ProfileState        ProfileState     `json:"profileState"`
-	ProfileType         ProfileType      `json:"profileType"`
-	ExpirationDate      Time             `json:"expirationDate"`
-	SpaceshipAttributes SpaceshipAttributes
+	Name           string           `json:"name"`
+	Platform       BundleIDPlatform `json:"platform"`
+	ProfileContent []byte           `json:"profileContent"`
+	UUID           string           `json:"uuid"`
+	CreatedDate    string           `json:"createdDate"`
+	ProfileState   ProfileState     `json:"profileState"`
+	ProfileType    ProfileType      `json:"profileType"`
+	ExpirationDate Time             `json:"expirationDate"`
 }
 
 // Profile ...

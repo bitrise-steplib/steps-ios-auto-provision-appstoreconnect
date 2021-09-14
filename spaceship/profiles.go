@@ -6,10 +6,59 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
+
+// Profile ...
+type Profile struct {
+	attributes     appstoreconnect.ProfileAttributes
+	id             string
+	bundleID       string
+	deviceIDs      []string
+	certificateIDs []string
+}
+
+// ID ...
+func (p Profile) ID() string {
+	return p.id
+}
+
+// Attributes ...
+func (p Profile) Attributes() appstoreconnect.ProfileAttributes {
+	return p.attributes
+}
+
+// CertificateIDs ...
+func (p Profile) CertificateIDs() (map[string]bool, error) {
+	ids := make(map[string]bool)
+	for _, id := range p.certificateIDs {
+		ids[id] = true
+	}
+
+	return ids, nil
+}
+
+// DeviceIDs ...
+func (p Profile) DeviceIDs() (map[string]bool, error) {
+	ids := make(map[string]bool)
+	for _, id := range p.deviceIDs {
+		ids[id] = true
+	}
+
+	return ids, nil
+}
+
+// BundleID ...
+func (p Profile) BundleID() (appstoreconnect.BundleID, error) {
+	return appstoreconnect.BundleID{
+		ID: p.id,
+		Attributes: appstoreconnect.BundleIDAttributes{
+			Identifier: p.bundleID,
+			Name:       p.attributes.Name,
+		},
+	}, nil
+}
 
 // ProfileClient ...
 type ProfileClient struct {
@@ -36,27 +85,25 @@ type ProfileInfo struct {
 	Devices      []string                         `json:"devices"`
 }
 
-func newProfile(p ProfileInfo) (appstoreconnect.Profile, error) {
+func newProfile(p ProfileInfo) (Profile, error) {
 	contents, err := base64.StdEncoding.DecodeString(p.Content)
 	if err != nil {
-		return appstoreconnect.Profile{}, fmt.Errorf("failed to decode profile contents: %v", err)
+		return Profile{}, fmt.Errorf("failed to decode profile contents: %v", err)
 	}
 
-	return appstoreconnect.Profile{
-		ID: p.ID,
-		Attributes: appstoreconnect.ProfileAttributes{
+	return Profile{
+		attributes: appstoreconnect.ProfileAttributes{
 			Name:           p.Name,
 			UUID:           p.UUID,
 			ProfileState:   appstoreconnect.ProfileState(p.Status),
 			ProfileContent: contents,
 			Platform:       p.Platform,
 			ExpirationDate: appstoreconnect.Time(p.Expiry),
-			SpaceshipAttributes: appstoreconnect.SpaceshipAttributes{
-				BundleID:       p.BundleID,
-				DeviceIDs:      p.Devices,
-				CertificateIDs: p.Certificates,
-			},
 		},
+		id:             p.ID,
+		bundleID:       p.BundleID,
+		certificateIDs: p.Certificates,
+		deviceIDs:      p.Devices,
 	}, nil
 }
 
@@ -68,7 +115,7 @@ type AppInfo struct {
 }
 
 // FindProfile ...
-func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (*appstoreconnect.Profile, error) {
+func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autoprovision.Profile, error) {
 	cmd, err := c.client.createRequestCommand("list_profiles", "--name", name, "--profile-type", string(profileType))
 	if err != nil {
 		return nil, err
@@ -95,7 +142,7 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 		return nil, err
 	}
 
-	return &profile, nil
+	return profile, nil
 }
 
 // DeleteExpiredProfile ...
@@ -104,34 +151,42 @@ func (c *ProfileClient) DeleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 }
 
 // CheckProfile ...
-func (c *ProfileClient) CheckProfile(prof appstoreconnect.Profile, entitlements autoprovision.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+func (c *ProfileClient) CheckProfile(prof autoprovision.Profile, entitlements autoprovision.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
 	if autoprovision.IsProfileExpired(prof, minProfileDaysValid) {
 		return autoprovision.NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
 		}
 	}
 
+	profileDeviceIDs, err := prof.DeviceIDs()
+	if err != nil {
+		return err
+	}
 	for _, id := range deviceIDs {
-		if !sliceutil.IsStringInSlice(id, prof.Attributes.SpaceshipAttributes.DeviceIDs) {
+		if !profileDeviceIDs[id] {
 			return autoprovision.NonmatchingProfileError{
 				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
 			}
 		}
 	}
 
+	profileCertificateIDs, err := prof.CertificateIDs()
+	if err != nil {
+		return err
+	}
 	for _, id := range certificateIDs {
-		if !sliceutil.IsStringInSlice(id, prof.Attributes.SpaceshipAttributes.CertificateIDs) {
+		if !profileCertificateIDs[id] {
 			return autoprovision.NonmatchingProfileError{
 				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
 			}
 		}
 	}
 
-	bundleID := appstoreconnect.BundleID{
-		Attributes: appstoreconnect.BundleIDAttributes{
-			Identifier: prof.Attributes.SpaceshipAttributes.BundleID,
-		},
+	bundleID, err := prof.BundleID()
+	if err != nil {
+		return err
 	}
+
 	if err := c.CheckBundleIDEntitlements(bundleID, entitlements); err != nil {
 		return autoprovision.NonmatchingProfileError{
 			Reason: "entitlements are missing",
@@ -157,7 +212,7 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 }
 
 // CreateProfile ...
-func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (*appstoreconnect.Profile, error) {
+func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autoprovision.Profile, error) {
 	cmd, err := c.client.createRequestCommand("create_profile",
 		"--bundle_id", bundleID.Attributes.Identifier,
 		"--certificate", certificateIDs[0],
@@ -185,7 +240,7 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 		return nil, err
 	}
 
-	return &profile, nil
+	return profile, nil
 }
 
 // FindBundleID ...

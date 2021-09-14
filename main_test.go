@@ -45,17 +45,6 @@ func (c *MockClient) Do(req *http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("invalid endpoint called: %s, method: %s", req.URL.Path, req.Method)
 }
 
-// FindProfile(name string, profileType appstoreconnect.ProfileType) (*appstoreconnect.Profile, error)
-// DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error
-// CheckProfile(prof appstoreconnect.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error
-// DeleteProfile(id string) error
-// CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (*appstoreconnect.Profile, error)
-// // Bundle ID
-// FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
-// CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
-// SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error
-// CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
-
 func (c *MockClient) GetProfiles(req *http.Request) (*http.Response, error) {
 	args := c.Called(req)
 	return args.Get(0).(*http.Response), args.Error(1)
