@@ -28,7 +28,6 @@ type Profile interface {
 type ProfileClient interface {
 	FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error)
 	DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error
-	CheckProfile(prof Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error
 	DeleteProfile(id string) error
 	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
 	// Bundle ID
@@ -242,7 +241,7 @@ func wrapInProfileError(err error) error {
 	return err
 }
 
-func (c *APIProfileClient) checkProfileEntitlements(prof Profile, projectEntitlements Entitlement) error {
+func checkProfileEntitlements(client ProfileClient, prof Profile, projectEntitlements Entitlement) error {
 	profileEnts, err := parseRawProfileEntitlements(prof)
 	if err != nil {
 		return err
@@ -265,7 +264,7 @@ func (c *APIProfileClient) checkProfileEntitlements(prof Profile, projectEntitle
 		return err
 	}
 
-	return c.CheckBundleIDEntitlements(bundleID, projectEntitlements)
+	return client.CheckBundleIDEntitlements(bundleID, projectEntitlements)
 }
 
 func parseRawProfileEntitlements(prof Profile) (serialized.Object, error) {
@@ -362,14 +361,14 @@ func IsProfileExpired(prof Profile, minProfileDaysValid int) bool {
 }
 
 // CheckProfile ...
-func (c *APIProfileClient) CheckProfile(prof Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+func CheckProfile(client ProfileClient, prof Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
 	if IsProfileExpired(prof, minProfileDaysValid) {
 		return NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
 		}
 	}
 
-	if err := c.checkProfileEntitlements(prof, entitlements); err != nil {
+	if err := checkProfileEntitlements(client, prof, entitlements); err != nil {
 		return err
 	}
 

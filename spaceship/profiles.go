@@ -150,52 +150,6 @@ func (c *ProfileClient) DeleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 	return c.DeleteProfile(bundleID.ID)
 }
 
-// CheckProfile ...
-func (c *ProfileClient) CheckProfile(prof autoprovision.Profile, entitlements autoprovision.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
-	if autoprovision.IsProfileExpired(prof, minProfileDaysValid) {
-		return autoprovision.NonmatchingProfileError{
-			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
-		}
-	}
-
-	profileDeviceIDs, err := prof.DeviceIDs()
-	if err != nil {
-		return err
-	}
-	for _, id := range deviceIDs {
-		if !profileDeviceIDs[id] {
-			return autoprovision.NonmatchingProfileError{
-				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
-			}
-		}
-	}
-
-	profileCertificateIDs, err := prof.CertificateIDs()
-	if err != nil {
-		return err
-	}
-	for _, id := range certificateIDs {
-		if !profileCertificateIDs[id] {
-			return autoprovision.NonmatchingProfileError{
-				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
-			}
-		}
-	}
-
-	bundleID, err := prof.BundleID()
-	if err != nil {
-		return err
-	}
-
-	if err := c.CheckBundleIDEntitlements(bundleID, entitlements); err != nil {
-		return autoprovision.NonmatchingProfileError{
-			Reason: "entitlements are missing",
-		}
-	}
-
-	return nil
-}
-
 // DeleteProfile ...
 func (c *ProfileClient) DeleteProfile(id string) error {
 	cmd, err := c.client.createRequestCommand("delete_profile", "--id", id)
