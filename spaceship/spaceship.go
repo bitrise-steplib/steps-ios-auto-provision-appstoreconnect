@@ -5,9 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/bitrise-io/go-steputils/command/gems"
 	"github.com/bitrise-io/go-steputils/command/rubycommand"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
@@ -28,7 +32,7 @@ func NewClient(authConfig *appleauth.AppleID, teamID string) (*Client, error) {
 		panic("Invalid authentication state")
 	}
 
-	dir, err := getSpaceshipDirectory()
+	dir, err := preapreSpaceship()
 	if err != nil {
 		return nil, err
 	}
@@ -111,4 +115,67 @@ func runSpaceshipCommand(cmd spaceshipCommand) (string, error) {
 	}
 
 	return match, nil
+}
+
+func preapreSpaceship() (string, error) {
+	targetDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return "", err
+	}
+
+	fsys, err := fs.Sub(spaceship, "spaceship")
+	if err != nil {
+		return "", err
+	}
+
+	if err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			log.Warnf("%s", err)
+			return err
+		}
+
+		if d.IsDir() {
+			return os.MkdirAll(filepath.Join(targetDir, path), 0700)
+		}
+
+		content, err := fs.ReadFile(fsys, path)
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(filepath.Join(targetDir, path), content, 0700); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return "", err
+	}
+
+	bundler := gems.Version{Found: true, Version: "2.2.24"}
+	installBundlerCommand := gems.InstallBundlerCommand(bundler)
+	installBundlerCommand.SetStdout(os.Stdout).SetStderr(os.Stderr)
+	installBundlerCommand.SetDir(targetDir)
+
+	fmt.Println()
+	log.Donef("$ %s", installBundlerCommand.PrintableCommandArgs())
+	if err := installBundlerCommand.Run(); err != nil {
+		return "", fmt.Errorf("command failed, error: %s", err)
+	}
+
+	fmt.Println()
+	cmd, err := gems.BundleInstallCommand(bundler)
+	if err != nil {
+		return "", fmt.Errorf("failed to create bundle command model, error: %s", err)
+	}
+	cmd.SetStdout(os.Stdout).SetStderr(os.Stderr)
+	cmd.SetDir(targetDir)
+
+	fmt.Println()
+	log.Donef("$ %s", cmd.PrintableCommandArgs())
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("Command failed, error: %s", err)
+	}
+
+	return targetDir, nil
 }

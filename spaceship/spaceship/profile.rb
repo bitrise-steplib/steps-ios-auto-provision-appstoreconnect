@@ -88,7 +88,7 @@ def portal_profile_class(distribution_type)
   case distribution_type
   when 'IOS_APP_DEVELOPMENT', 'TVOS_APP_DEVELOPMENT'
     Spaceship::Portal.provisioning_profile.development
-  when 'IOS_APP_STORE', 'TVOS_APP_DISTRIBUTION'
+  when 'IOS_APP_STORE', 'TVOS_APP_STORE'
     Spaceship::Portal.provisioning_profile.app_store
   when 'IOS_APP_ADHOC', 'TVOS_APP_ADHOC'
     Spaceship::Portal.provisioning_profile.ad_hoc
