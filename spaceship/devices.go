@@ -2,6 +2,7 @@ package spaceship
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -110,12 +111,14 @@ func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	if len(deviceResponse.Warnings) != 0 {
-		log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", strings.Join(deviceResponse.Warnings, "\n"))
-	}
-
 	if deviceResponse.Data == nil {
-		return nil, nil
+		if len(deviceResponse.Warnings) != 0 {
+			return nil, appstoreconnect.DeviceRegistrationError{
+				Reason: strings.Join(deviceResponse.Warnings, "\n"),
+			}
+		}
+
+		return nil, errors.New("unexpected RegisterDevice response")
 	}
 
 	return newDevice(*deviceResponse.Data), nil

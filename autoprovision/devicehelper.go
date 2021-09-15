@@ -1,9 +1,9 @@
 package autoprovision
 
 import (
+	"fmt"
 	"net/http"
 
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
@@ -71,8 +71,9 @@ func (d *APIDeviceClient) RegisterDevice(testDevice devportalservice.TestDevice)
 	if err != nil {
 		rerr, ok := err.(*appstoreconnect.ErrorResponse)
 		if ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
-			log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", err)
-			return nil, nil
+			return nil, appstoreconnect.DeviceRegistrationError{
+				Reason: fmt.Sprintf("%v", err),
+			}
 		}
 
 		return nil, err

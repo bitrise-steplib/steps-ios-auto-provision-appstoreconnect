@@ -36,7 +36,7 @@ func NewClient(authConfig *appleauth.AppleID, teamID string) (*Client, error) {
 		panic("Invalid authentication state")
 	}
 
-	dir, err := preapreSpaceship()
+	dir, err := prepareSpaceship()
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func runSpaceshipCommand(cmd spaceshipCommand) (string, error) {
 	return match, nil
 }
 
-func preapreSpaceship() (string, error) {
+func prepareSpaceship() (string, error) {
 	targetDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return "", err
