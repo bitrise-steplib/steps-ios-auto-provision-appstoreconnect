@@ -7,18 +7,20 @@ def get_app(bundle_id)
     app = Spaceship::Portal.app.find(bundle_id)
   end
 
-  {
+  return [] unless app
+
+  [{
     id: app.app_id,
     bundleID: app.bundle_id,
     name: app.name,
     entitlements: app.details.features
-  }
+  }]
 end
 
-def create_app(bundle_id)
+def create_app(bundle_id, bundle_id_name)
   app = nil
   run_or_raise_preferred_error_message do
-    app = Spaceship::Portal.app.create!(bundle_id: bundle_id, name: name)
+    app = Spaceship::Portal.app.create!(bundle_id: bundle_id, name: bundle_id_name)
   end
 
   raise "failed to create app with bundle id: #{bundle_id}" unless app

@@ -124,7 +124,8 @@ func (c *APIProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, entit
 	return nil
 }
 
-func appIDName(bundleID string) string {
+// AppIDName ...
+func AppIDName(bundleID string) string {
 	prefix := ""
 	if strings.HasSuffix(bundleID, ".*") {
 		prefix = "Wildcard "
@@ -135,7 +136,7 @@ func appIDName(bundleID string) string {
 
 // CreateBundleID ...
 func (c *APIProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	appIDName := appIDName(bundleIDIdentifier)
+	appIDName := AppIDName(bundleIDIdentifier)
 
 	r, err := c.client.Provisioning.CreateBundleID(
 		appstoreconnect.BundleIDCreateRequest{

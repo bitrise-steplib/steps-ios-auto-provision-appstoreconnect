@@ -16,7 +16,8 @@ const (
 	profileTypeArgKey   = "--profile-type"
 	certificateIDArgKey = "--certificate-id"
 
-	bundleIDIdentifierArgKey = "--bundle_id"
+	bundleIDIdentifierArgKey = "--bundle-id"
+	bundleIDNameArgKey       = "--bundle-id-name"
 	entitlementsArgKey       = "--entitlements"
 )
 
@@ -223,25 +224,31 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 	}
 
 	var appResponse struct {
-		Data AppInfo `json:"data"`
+		Data []AppInfo `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(output), &appResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
+	if len(appResponse.Data) == 0 {
+		return nil, nil
+	}
+
+	bundleID := appResponse.Data[0]
 	return &appstoreconnect.BundleID{
-		ID: appResponse.Data.ID,
+		ID: bundleID.ID,
 		Attributes: appstoreconnect.BundleIDAttributes{
-			Identifier: appResponse.Data.BundleID,
-			Name:       appResponse.Data.Name,
+			Identifier: bundleID.BundleID,
+			Name:       bundleID.Name,
 		},
 	}, nil
 }
 
 // CreateBundleID ...
 func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	cmd, err := c.client.createRequestCommand("create_bundleid",
+	cmd, err := c.client.createRequestCommand("create_app",
 		bundleIDIdentifierArgKey, bundleIDIdentifier,
+		bundleIDNameArgKey, autoprovision.AppIDName(bundleIDIdentifier),
 	)
 	if err != nil {
 		return nil, err

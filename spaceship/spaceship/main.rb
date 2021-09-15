@@ -14,7 +14,8 @@ begin
     opt.on('--session SESSION') { |o| options[:session] = Base64.decode64(o) }
     opt.on('--team-id TEAM_ID') { |o| options[:team_id] = o }
     opt.on('--subcommand SUBCOMMAND') { |o| options[:subcommand] = o }
-    opt.on('--bundle_id BUNDLE_ID') { |o| options[:bundle_id] = o }
+    opt.on('--bundle-id BUNDLE_ID') { |o| options[:bundle_id] = o }
+    opt.on('--bundle-id-name BUNDLE_ID_NAME') { |o| options[:bundle_id_name] = o }
     opt.on('--id ID') { |o| options[:id] = o }
     opt.on('--name NAME') { |o| options[:name] = o }
     opt.on('--certificate-id CERTIFICATE') { |o| options[:certificate_id] = o }
@@ -41,7 +42,7 @@ begin
   when 'get_app'
     result = get_app(options[:bundle_id])
   when 'create_app'
-    result = create_app(options[:bundle_id])
+    result = create_app(options[:bundle_id], options[:bundle_id_name])
   when 'delete_profile'
     delete_profile(options[:id])
     result = { status: 'OK' }
@@ -57,6 +58,8 @@ begin
     result = list_devices
   when 'register_device'
     result = register_device(options[:udid], options[:name])
+  else
+    raise "Unknown subcommand: #{options[:subcommand]}"
   end
 
   response = { data: result }
