@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
@@ -148,6 +149,9 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 	if len(profileResponse.Data) == 0 {
 		return nil, nil
 	}
+	if len(profileResponse.Data) > 1 {
+		log.Warnf("More than one matching profile found, using the first one: %+v", profileResponse.Data)
+	}
 
 	profile, err := newProfile(profileResponse.Data[0])
 	if err != nil {
@@ -155,11 +159,6 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 	}
 
 	return profile, nil
-}
-
-// DeleteExpiredProfile ...
-func (c *ProfileClient) DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
-	return c.DeleteProfile(bundleID.ID)
 }
 
 // DeleteProfile ...

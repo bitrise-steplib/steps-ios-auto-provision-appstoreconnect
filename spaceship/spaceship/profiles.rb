@@ -21,7 +21,9 @@ def list_profiles(profile_type, name)
     profiles = profile_class.all(mac: false, xcode: false)
   end
 
-  matching_profiles = profiles.select { |prof| prof.name == name }
+  if name != ''
+    matching_profiles = profiles.select { |prof| prof.name == name }
+  end
 
   profile_infos = []
   matching_profiles.each do |profile|

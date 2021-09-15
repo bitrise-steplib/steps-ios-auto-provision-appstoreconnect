@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
@@ -27,7 +28,6 @@ type Profile interface {
 // ProfileClient ...
 type ProfileClient interface {
 	FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error)
-	DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error
 	DeleteProfile(id string) error
 	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
 	// Bundle ID
@@ -195,8 +195,7 @@ func (c *APIProfileClient) FindProfile(name string, profileType appstoreconnect.
 	return NewAPIProfile(c.client, &r.Data[0]), nil
 }
 
-// DeleteExpiredProfile ...
-func (c *APIProfileClient) DeleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
+func (c *APIProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
 	var nextPageURL string
 	var profile *appstoreconnect.Profile
 
@@ -394,6 +393,32 @@ func (c *APIProfileClient) DeleteProfile(id string) error {
 
 // CreateProfile ...
 func (c *APIProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error) {
+	profile, err := c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs)
+	if err != nil {
+		// Expired profiles are not listed via profiles endpoint,
+		// so we can not catch if the profile already exist but expired, before we attempt to create one with the managed profile name.
+		// As a workaround we use the BundleID profiles relationship url to find and delete the expired profile.
+		if isMultipleProfileErr(err) {
+			log.Warnf("  Profile already exists, but expired, cleaning up...")
+			if err := c.deleteExpiredProfile(&bundleID, name); err != nil {
+				return nil, fmt.Errorf("expired profile cleanup failed: %s", err)
+			}
+
+			profile, err = c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs)
+			if err != nil {
+				return nil, err
+			}
+
+			return profile, nil
+		}
+
+		return nil, err
+	}
+
+	return profile, nil
+}
+
+func (c *APIProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error) {
 	// Create new Bitrise profile on App Store Connect
 	r, err := c.client.Provisioning.CreateProfile(
 		appstoreconnect.NewProfileCreateRequest(
@@ -409,6 +434,10 @@ func (c *APIProfileClient) CreateProfile(name string, profileType appstoreconnec
 	}
 
 	return NewAPIProfile(c.client, &r.Data), nil
+}
+
+func isMultipleProfileErr(err error) bool {
+	return strings.Contains(strings.ToLower(err.Error()), "multiple profiles found with the name")
 }
 
 // WriteProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.

@@ -258,35 +258,11 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 
 	profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
 	if err != nil {
-		// Expired profiles are not listed via profiles endpoint,
-		// so we can not catch if the profile already exist but expired, before we attempt to create one with the managed profile name.
-		// As a workaround we use the BundleID profiles relationship url to find and delete the expired profile.
-		if isMultipleProfileErr(err) {
-			log.Warnf("  Profile already exists, but expired, cleaning up...")
-			if err := m.client.DeleteExpiredProfile(bundleID, name); err != nil {
-				return nil, fmt.Errorf("expired profile cleanup failed: %s", err)
-			}
-
-			profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create profile: %s", err)
-			}
-
-			log.Donef("  profile created: %s", profile.Attributes().Name)
-
-			return &profile, nil
-		}
-
 		return nil, fmt.Errorf("failed to create profile: %s", err)
 	}
 
 	log.Donef("  profile created: %s", profile.Attributes().Name)
-
 	return &profile, nil
-}
-
-func isMultipleProfileErr(err error) bool {
-	return strings.Contains(strings.ToLower(err.Error()), "multiple profiles found with the name")
 }
 
 const notConnected = `Connected Apple Developer Portal Account not found.
