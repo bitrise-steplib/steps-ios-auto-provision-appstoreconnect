@@ -122,7 +122,7 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 	want := []appstoreconnect.Device(nil)
 
 	got, err := registerMissingTestDevices(args.client, args.bitriseDevices, args.devportalDevices)
-	require.NoError(t, err, "registerMissingDevices()")
+	require.ErrorAs(t, err, &appstoreconnect.DeviceRegistrationError{}, "registerMissingDevices()")
 	require.Equal(t, want, got, "registerMissingDevices()")
 	mockClient.AssertExpectations(t)
 }
