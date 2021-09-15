@@ -104,22 +104,24 @@ func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*
 	}
 
 	var deviceResponse struct {
-		Data     *DeviceInfo `json:"data"`
-		Warnings []string    `json:"warnings"`
+		Data struct {
+			Device   *DeviceInfo `json:"device"`
+			Warnings []string    `json:"warnings"`
+		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(output), &deviceResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	if deviceResponse.Data == nil {
-		if len(deviceResponse.Warnings) != 0 {
+	if deviceResponse.Data.Device == nil {
+		if len(deviceResponse.Data.Warnings) != 0 {
 			return nil, appstoreconnect.DeviceRegistrationError{
-				Reason: strings.Join(deviceResponse.Warnings, "\n"),
+				Reason: strings.Join(deviceResponse.Data.Warnings, "\n"),
 			}
 		}
 
-		return nil, errors.New("unexpected RegisterDevice response")
+		return nil, errors.New("unexpected device registration failure")
 	}
 
-	return newDevice(*deviceResponse.Data), nil
+	return newDevice(*deviceResponse.Data.Device), nil
 }
