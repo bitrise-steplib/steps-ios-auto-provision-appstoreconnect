@@ -13,9 +13,9 @@ import (
 const (
 	profileNameArgKey   = "--profile-name"
 	profileTypeArgKey   = "--profile-type"
-	certificateIDArgkey = "--certificate-id"
+	certificateIDArgKey = "--certificate-id"
 
-	bundleIDIdentifierArgkey = "--bundle_id"
+	bundleIDIdentifierArgKey = "--bundle_id"
 	entitlementsArgKey       = "--entitlements"
 )
 
@@ -180,8 +180,8 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 // CreateProfile ...
 func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autoprovision.Profile, error) {
 	cmd, err := c.client.createRequestCommand("create_profile",
-		bundleIDIdentifierArgkey, bundleID.Attributes.Identifier,
-		certificateIDArgkey, certificateIDs[0],
+		bundleIDIdentifierArgKey, bundleID.Attributes.Identifier,
+		certificateIDArgKey, certificateIDs[0],
 		profileNameArgKey, name,
 		profileTypeArgKey, string(profileType),
 	)
@@ -212,7 +212,7 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 // FindBundleID ...
 func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	cmd, err := c.client.createRequestCommand("get_app",
-		bundleIDIdentifierArgkey, bundleIDIdentifier,
+		bundleIDIdentifierArgKey, bundleIDIdentifier,
 	)
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 // CreateBundleID ...
 func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	cmd, err := c.client.createRequestCommand("create_bundleid",
-		bundleIDIdentifierArgkey, bundleIDIdentifier,
+		bundleIDIdentifierArgKey, bundleIDIdentifier,
 	)
 	if err != nil {
 		return nil, err
@@ -278,7 +278,7 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 	entitlementsBase64 := base64.StdEncoding.EncodeToString(entitlementsBytes)
 
 	cmd, err := c.client.createRequestCommand("check_bundleid",
-		bundleIDIdentifierArgkey, bundleID.Attributes.Identifier,
+		bundleIDIdentifierArgKey, bundleID.Attributes.Identifier,
 		entitlementsArgKey, entitlementsBase64,
 	)
 	if err != nil {
@@ -302,7 +302,7 @@ func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, projectE
 	entitlementsBase64 := base64.StdEncoding.EncodeToString(entitlementsBytes)
 
 	cmd, err := c.client.createRequestCommand("sync_bundleid",
-		bundleIDIdentifierArgkey, bundleID.Attributes.Identifier,
+		bundleIDIdentifierArgKey, bundleID.Attributes.Identifier,
 		entitlementsArgKey, entitlementsBase64,
 	)
 	if err != nil {

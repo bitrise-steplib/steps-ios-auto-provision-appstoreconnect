@@ -31,11 +31,7 @@ type Client struct {
 }
 
 // NewClient ...
-func NewClient(authConfig *appleauth.AppleID, teamID string) (*Client, error) {
-	if authConfig == nil {
-		panic("Invalid authentication state")
-	}
-
+func NewClient(authConfig appleauth.AppleID, teamID string) (*Client, error) {
 	dir, err := prepareSpaceship()
 	if err != nil {
 		return nil, err
@@ -43,7 +39,7 @@ func NewClient(authConfig *appleauth.AppleID, teamID string) (*Client, error) {
 
 	return &Client{
 		workDir:    dir,
-		authConfig: *authConfig,
+		authConfig: authConfig,
 		teamID:     teamID,
 	}, nil
 }

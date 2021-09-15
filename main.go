@@ -378,12 +378,14 @@ func main() {
 		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
 		log.Donef("the client created for %s", client.BaseURL)
 		devportalClient = autoprovision.NewAPIDevportalClient(client)
-	} else {
-		client, err := spaceship.NewClient(authConfig.AppleID, stepConf.TeamID)
+	} else if authConfig.AppleID != nil {
+		client, err := spaceship.NewClient(*authConfig.AppleID, stepConf.TeamID)
 		if err != nil {
 			failf("failed to initialize Spaceship client: %v")
 		}
 		devportalClient = spaceship.NewSpaceshipDevportalClient(client)
+	} else {
+		panic("No Apple authentication credentials found.")
 	}
 
 	// Analyzing project

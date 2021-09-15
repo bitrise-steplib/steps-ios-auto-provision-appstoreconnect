@@ -64,12 +64,12 @@ func (s *CertificateSource) downloadAll() error {
 		return err
 	}
 
-	devCerts, err := parseCertificates(devCertsCmd)
+	devCerts, err := getCertificates(devCertsCmd)
 	if err != nil {
 		return err
 	}
 
-	distCers, err := parseCertificates(distCertsCommand)
+	distCers, err := getCertificates(distCertsCommand)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ type certificatesResponse struct {
 	} `json:"data"`
 }
 
-func parseCertificates(cmd spaceshipCommand) ([]autoprovision.APICertificate, error) {
+func getCertificates(cmd spaceshipCommand) ([]autoprovision.APICertificate, error) {
 	output, err := runSpaceshipCommand(cmd)
 	if err != nil {
 		return nil, err
