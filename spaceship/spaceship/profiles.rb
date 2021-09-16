@@ -73,7 +73,7 @@ def create_profile(profile_type, bundle_id, certificate_id, profile_name)
     id: profile.id,
     uuid: profile.uuid,
     name: profile.name,
-    status: profile.status,
+    status: map_profile_platform_to_api_platform(profile.platform),
     expiry: profile.expires,
     platform: map_profile_platform_to_api_platform(profile.platform),
     content: profile_base64,
