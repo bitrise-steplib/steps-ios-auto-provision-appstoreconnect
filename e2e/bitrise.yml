@@ -308,12 +308,10 @@ workflows:
           title: Step Test
           run_if: "true"
           inputs:
-            - connection: apple_id
-            # - api_key_path: $API_KEY_PATH
-            # - api_issuer: $API_ISSUER
+            - connection: $CONNECTION
+            - api_key_path: $API_KEY_PATH
+            - api_issuer: $API_ISSUER
             - team_id: $BITRISE_APPLE_TEAM_ID
-            - build_url: file://./apple_developer_portal_data.json
-            - build_api_token: ---
             - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
             - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
             - distribution_type: $DISTRIBUTION_TYPE
