@@ -177,21 +177,65 @@ func Test_findMissingContainers(t *testing.T) {
 	}
 }
 
-func Test_checkProfileExpiry(t *testing.T) {
+type MockProfile struct {
+	attributes appstoreconnect.ProfileAttributes
+}
+
+func (m MockProfile) ID() string {
+	return ""
+}
+
+func (m MockProfile) Attributes() appstoreconnect.ProfileAttributes {
+	return m.attributes
+}
+
+func (m MockProfile) CertificateIDs() (map[string]bool, error) {
+	return nil, nil
+}
+
+func (m MockProfile) DeviceIDs() (map[string]bool, error) {
+	return nil, nil
+}
+
+func (m MockProfile) BundleID() (appstoreconnect.BundleID, error) {
+	return appstoreconnect.BundleID{}, nil
+}
+
+func Test_IsProfileExpired(t *testing.T) {
 	tests := []struct {
-		prof                appstoreconnect.Profile
+		prof                Profile
 		minProfileDaysValid int
 		name                string
 		want                bool
 	}{
-		{name: "no days set - profile expiry date after current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * time.Hour))}}, want: false},
-		{name: "no days set - profile expiry date before current time", minProfileDaysValid: 0, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(-5 * time.Hour))}}, want: true},
-		{name: "days set - profile expiry date after current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * 24 * time.Hour))}}, want: false},
-		{name: "days set - profile expiry date before current time + days set", minProfileDaysValid: 2, prof: appstoreconnect.Profile{Attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(1 * 24 * time.Hour))}}, want: true},
+		{
+			name:                "no days set - profile expiry date after current time",
+			minProfileDaysValid: 0,
+			prof:                MockProfile{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * time.Hour))}},
+			want:                false,
+		},
+		{
+			name:                "no days set - profile expiry date before current time",
+			minProfileDaysValid: 0,
+			prof:                MockProfile{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(-5 * time.Hour))}},
+			want:                true,
+		},
+		{
+			name:                "days set - profile expiry date after current time + days set",
+			minProfileDaysValid: 2,
+			prof:                MockProfile{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * 24 * time.Hour))}},
+			want:                false,
+		},
+		{
+			name:                "days set - profile expiry date before current time + days set",
+			minProfileDaysValid: 2,
+			prof:                MockProfile{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(1 * 24 * time.Hour))}},
+			want:                true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
+			if got := IsProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
 				t.Errorf("checkProfileExpiry() = %v, want %v", got, tt.want)
 			}
 		})

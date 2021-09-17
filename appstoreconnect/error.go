@@ -36,3 +36,13 @@ func (r ErrorResponse) Error() string {
 
 	return m
 }
+
+// DeviceRegistrationError ...
+type DeviceRegistrationError struct {
+	Reason string
+}
+
+// Error ...
+func (e DeviceRegistrationError) Error() string {
+	return e.Reason
+}

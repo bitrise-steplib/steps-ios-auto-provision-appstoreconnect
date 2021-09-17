@@ -2,6 +2,8 @@
 github.com/bitrise-io/go-plist
 # github.com/bitrise-io/go-steputils v0.0.0-20210527075147-910ce7a105a1
 ## explicit
+github.com/bitrise-io/go-steputils/command/gems
+github.com/bitrise-io/go-steputils/command/rubycommand
 github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/stepconf
 github.com/bitrise-io/go-steputils/tools

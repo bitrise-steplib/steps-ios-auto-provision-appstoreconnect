@@ -30,42 +30,31 @@ var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.Certifi
 	Enterprise:  appstoreconnect.IOSDistribution,
 }
 
-// APICertificate is certificate present on Apple App Store Connect API, could match a local certificate
-type APICertificate struct {
-	Certificate certificateutil.CertificateInfoModel
-	ID          string
+// APICertificateSource ...
+type APICertificateSource struct {
+	client *appstoreconnect.Client
 }
 
-// CertificateSource ...
-type CertificateSource struct {
-	client                       *appstoreconnect.Client
-	queryCertificateBySerialFunc func(*appstoreconnect.Client, *big.Int) (APICertificate, error)
-	queryAllCertificatesFunc     func(*appstoreconnect.Client) (map[appstoreconnect.CertificateType][]APICertificate, error)
-}
-
-// APIClient ...
-func APIClient(client *appstoreconnect.Client) CertificateSource {
-	return CertificateSource{
-		client:                       client,
-		queryCertificateBySerialFunc: queryCertificateBySerial,
-		queryAllCertificatesFunc:     queryAllIOSCertificates,
+// QueryCertificateBySerial ...
+func (s *APICertificateSource) QueryCertificateBySerial(serial *big.Int) (APICertificate, error) {
+	response, err := s.client.Provisioning.FetchCertificate(serial.Text(16))
+	if err != nil {
+		return APICertificate{}, err
 	}
+
+	certs, err := parseCertificatesResponse([]appstoreconnect.Certificate{response})
+	if err != nil {
+		return APICertificate{}, err
+	}
+	return certs[0], nil
 }
 
-func (c *CertificateSource) queryCertificateBySerial(serial *big.Int) (APICertificate, error) {
-	return c.queryCertificateBySerialFunc(c.client, serial)
-}
-
-func (c *CertificateSource) queryAllCertificates() (map[appstoreconnect.CertificateType][]APICertificate, error) {
-	return c.queryAllCertificatesFunc(c.client)
-}
-
-// queryAllIOSCertificates returns all iOS certificates from App Store Connect API
-func queryAllIOSCertificates(client *appstoreconnect.Client) (map[appstoreconnect.CertificateType][]APICertificate, error) {
+// QueryAllIOSCertificates returns all iOS certificates from App Store Connect API
+func (s *APICertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]APICertificate, error) {
 	typeToCertificates := map[appstoreconnect.CertificateType][]APICertificate{}
 
 	for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.Development, appstoreconnect.IOSDevelopment, appstoreconnect.Distribution, appstoreconnect.IOSDistribution} {
-		certs, err := queryCertificatesByType(client, certType)
+		certs, err := queryCertificatesByType(s.client, certType)
 		if err != nil {
 			return map[appstoreconnect.CertificateType][]APICertificate{}, err
 		}
@@ -73,6 +62,13 @@ func queryAllIOSCertificates(client *appstoreconnect.Client) (map[appstoreconnec
 	}
 
 	return typeToCertificates, nil
+}
+
+// NewAPICertificateSource ...
+func NewAPICertificateSource(client *appstoreconnect.Client) CertificateSource {
+	return &APICertificateSource{
+		client: client,
+	}
 }
 
 func queryCertificatesByType(client *appstoreconnect.Client, certificateType appstoreconnect.CertificateType) ([]APICertificate, error) {
@@ -96,19 +92,6 @@ func queryCertificatesByType(client *appstoreconnect.Client, certificateType app
 			return parseCertificatesResponse(certificates)
 		}
 	}
-}
-
-func queryCertificateBySerial(client *appstoreconnect.Client, serial *big.Int) (APICertificate, error) {
-	response, err := client.Provisioning.FetchCertificate(serial.Text(16))
-	if err != nil {
-		return APICertificate{}, err
-	}
-
-	certs, err := parseCertificatesResponse([]appstoreconnect.Certificate{response})
-	if err != nil {
-		return APICertificate{}, err
-	}
-	return certs[0], nil
 }
 
 func parseCertificatesResponse(response []appstoreconnect.Certificate) ([]APICertificate, error) {
@@ -191,7 +174,7 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 		}
 
 		if requiredCertificateTypes[certificateType] && len(matchingCertificates) == 0 {
-			return nil, fmt.Errorf("not found any of the following %s certificates on Developer Portal:\n%s", certificateType, CertsToString(localCertificates))
+			return nil, fmt.Errorf("not found any of the following %s certificates on Developer Portal:\n%s", certificateType, CertsToString(validLocalCertificates))
 		}
 
 		if len(matchingCertificates) > 0 {
@@ -230,7 +213,7 @@ func MatchLocalToAPICertificates(client CertificateSource, certificateType appst
 	var matchingCertificates []APICertificate
 
 	for _, localCert := range localCertificates {
-		cert, err := client.queryCertificateBySerial(localCert.Certificate.SerialNumber)
+		cert, err := client.QueryCertificateBySerial(localCert.Certificate.SerialNumber)
 		if err != nil {
 			log.Warnf("Certificate (%s) not found on Developer Portal: %s", localCert, err)
 			continue
@@ -247,7 +230,7 @@ func MatchLocalToAPICertificates(client CertificateSource, certificateType appst
 
 // LogAllAPICertificates ...
 func LogAllAPICertificates(client CertificateSource, localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel) error {
-	certificates, err := client.queryAllCertificates()
+	certificates, err := client.QueryAllIOSCertificates()
 	if err != nil {
 		return fmt.Errorf("failed to query certificates on Developer Portal: %s", err)
 	}

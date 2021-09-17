@@ -18,11 +18,11 @@ func Test_registerMissingDevices_alreadyRegistered(t *testing.T) {
 	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
 	args := struct {
-		client           *appstoreconnect.Client
+		client           autoprovision.DeviceClient
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
 	}{
-		client: successClient,
+		client: autoprovision.NewAPIDeviceClient(successClient),
 		bitriseDevices: []devportalservice.TestDevice{{
 			DeviceID:   "71153a920968f2842d360",
 			DeviceType: "ios",
@@ -61,11 +61,11 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
 	args := struct {
-		client           *appstoreconnect.Client
+		client           autoprovision.DeviceClient
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
 	}{
-		client: successClient,
+		client: autoprovision.NewAPIDeviceClient(successClient),
 		bitriseDevices: []devportalservice.TestDevice{{
 			DeviceID:   "71153a920968f2842d360",
 			DeviceType: "ios",
@@ -97,11 +97,11 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 	failureClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
 	args := struct {
-		client           *appstoreconnect.Client
+		client           autoprovision.DeviceClient
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
 	}{
-		client: failureClient,
+		client: autoprovision.NewAPIDeviceClient(failureClient),
 		bitriseDevices: []devportalservice.TestDevice{
 			{
 				DeviceID:   "invalid-udid",

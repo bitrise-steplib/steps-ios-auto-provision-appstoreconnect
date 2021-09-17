@@ -1,6 +1,6 @@
 module github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect
 
-go 1.15
+go 1.16
 
 require (
 	github.com/bitrise-io/go-steputils v0.0.0-20210527075147-910ce7a105a1

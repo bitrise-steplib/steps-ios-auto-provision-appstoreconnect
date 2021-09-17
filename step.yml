@@ -68,11 +68,15 @@ inputs:
         - `automatic`: The Step can use either method: It will attempt to use the Bitrise Apple Developer connection first. If this is not available, it will use the Step input variables.
         - `api_key`: The Step will only use the Bitrise Apple Developer connection. It will not use the Step input variables.
         - `off`: The Step will only use the Step input variables. It will not use the Bitrise Apple Developer connection.
+        - `enterprise-with-apple-id`: [Bitrise Apple Service connection with an Apple Developer Enterpsie account.](https://devcenter.bitrise.io/getting-started/connecting-to-services/connecting-to-an-apple-service-with-apple-id/)
+        - `apple-id`: [Bitrise Apple Service connection with Apple ID.](https://devcenter.bitrise.io/getting-started/connecting-to-services/connecting-to-an-apple-service-with-apple-id/)
       is_required: true
       value_options:
       - "automatic"
       - "api_key"
       - "off"
+      - "enterprise-with-apple-id"
+      - "apple-id"
   - api_key_path: ""
     opts:
       title: "API Key URL"
@@ -92,15 +96,21 @@ inputs:
       title: "API Key Issuer ID"
       description: |-
         Issuer ID. Required if **API Key URL** (`api_key_path`) is specified.
+  - apple_id_team_id: ""
+    opts:
+      category: Apple ID
+      title: Team ID
+      description: |-
+        Needed if the are multiple Developer Portal teams active when using Bitrise Apple Service connection with Apple ID.
   - distribution_type: development
     opts:
       title: Distribution type
       description: Describes how Xcode should sign your project.
       value_options:
-        - "development"
-        - "app-store"
-        - "ad-hoc"
-        - "enterprise"
+      - "development"
+      - "app-store"
+      - "ad-hoc"
+      - "enterprise"
       is_required: true
   - project_path: $BITRISE_PROJECT_PATH
     opts:

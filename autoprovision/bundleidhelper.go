@@ -8,11 +8,11 @@ import (
 )
 
 // FindBundleID ...
-func FindBundleID(client *appstoreconnect.Client, bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
+func (c *APIProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	var nextPageURL string
 	var bundleIDs []appstoreconnect.BundleID
 	for {
-		response, err := client.Provisioning.ListBundleIDs(&appstoreconnect.ListBundleIDsOptions{
+		response, err := c.client.Provisioning.ListBundleIDs(&appstoreconnect.ListBundleIDsOptions{
 			PagingOptions: appstoreconnect.PagingOptions{
 				Limit: 20,
 				Next:  nextPageURL,
@@ -77,8 +77,8 @@ func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCa
 }
 
 // CheckBundleIDEntitlements checks if a given Bundle ID has every capability enabled, required by the project.
-func CheckBundleIDEntitlements(client *appstoreconnect.Client, bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error {
-	response, err := client.Provisioning.Capabilities(bundleID.Relationships.Capabilities.Links.Related)
+func (c *APIProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error {
+	response, err := c.client.Provisioning.Capabilities(bundleID.Relationships.Capabilities.Links.Related)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func CheckBundleIDEntitlements(client *appstoreconnect.Client, bundleID appstore
 }
 
 // SyncBundleID ...
-func SyncBundleID(client *appstoreconnect.Client, bundleIDID string, entitlements Entitlement) error {
+func (c *APIProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error {
 	for key, value := range entitlements {
 		ent := Entitlement{key: value}
 		cap, err := ent.Capability()
@@ -107,7 +107,7 @@ func SyncBundleID(client *appstoreconnect.Client, bundleIDID string, entitlement
 				Relationships: appstoreconnect.BundleIDCapabilityCreateRequestDataRelationships{
 					BundleID: appstoreconnect.BundleIDCapabilityCreateRequestDataRelationshipsBundleID{
 						Data: appstoreconnect.BundleIDCapabilityCreateRequestDataRelationshipsBundleIDData{
-							ID:   bundleIDID,
+							ID:   bundleID.ID,
 							Type: "bundleIds",
 						},
 					},
@@ -115,7 +115,7 @@ func SyncBundleID(client *appstoreconnect.Client, bundleIDID string, entitlement
 				Type: "bundleIdCapabilities",
 			},
 		}
-		_, err = client.Provisioning.EnableCapability(body)
+		_, err = c.client.Provisioning.EnableCapability(body)
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,8 @@ func SyncBundleID(client *appstoreconnect.Client, bundleIDID string, entitlement
 	return nil
 }
 
-func appIDName(bundleID string) string {
+// AppIDName ...
+func AppIDName(bundleID string) string {
 	prefix := ""
 	if strings.HasSuffix(bundleID, ".*") {
 		prefix = "Wildcard "
@@ -134,10 +135,10 @@ func appIDName(bundleID string) string {
 }
 
 // CreateBundleID ...
-func CreateBundleID(client *appstoreconnect.Client, bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	appIDName := appIDName(bundleIDIdentifier)
+func (c *APIProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
+	appIDName := AppIDName(bundleIDIdentifier)
 
-	r, err := client.Provisioning.CreateBundleID(
+	r, err := c.client.Provisioning.CreateBundleID(
 		appstoreconnect.BundleIDCreateRequest{
 			Data: appstoreconnect.BundleIDCreateRequestData{
 				Attributes: appstoreconnect.BundleIDCreateRequestDataAttributes{

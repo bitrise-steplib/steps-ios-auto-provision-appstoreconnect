@@ -13,6 +13,7 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -134,8 +135,9 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
 	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
+	devportalClient := autoprovision.NewAPIDevportalClient(client)
 	manager := ProfileManager{
-		client: client,
+		client: devportalClient.ProfileClient,
 		// cache io.bitrise.testapp bundle ID, so that no need to mock bundle ID GET requests
 		bundleIDByBundleIDIdentifer: map[string]*appstoreconnect.BundleID{"io.bitrise.testapp": {
 			Relationships: appstoreconnect.BundleIDRelationships{
