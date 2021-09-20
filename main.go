@@ -17,7 +17,6 @@ import (
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
@@ -123,148 +122,6 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-// ProfileManager ...
-type ProfileManager struct {
-	client                      autoprovision.ProfileClient
-	bundleIDByBundleIDIdentifer map[string]*appstoreconnect.BundleID
-	containersByBundleID        map[string][]string
-}
-
-// EnsureBundleID ...
-func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements serialized.Object) (*appstoreconnect.BundleID, error) {
-	fmt.Println()
-	log.Infof("  Searching for app ID for bundle ID: %s", bundleIDIdentifier)
-
-	bundleID, ok := m.bundleIDByBundleIDIdentifer[bundleIDIdentifier]
-	if !ok {
-		var err error
-		bundleID, err = m.client.FindBundleID(bundleIDIdentifier)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find bundle ID: %s", err)
-		}
-	}
-
-	if bundleID != nil {
-		log.Printf("  app ID found: %s", bundleID.Attributes.Name)
-
-		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
-
-		// Check if BundleID is sync with the project
-		err := m.client.CheckBundleIDEntitlements(*bundleID, autoprovision.Entitlement(entitlements))
-		if err != nil {
-			if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
-				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
-				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
-				if err := m.client.SyncBundleID(*bundleID, autoprovision.Entitlement(entitlements)); err != nil {
-					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
-				}
-
-				return bundleID, nil
-			}
-
-			return nil, fmt.Errorf("failed to validate bundle ID: %s", err)
-		}
-
-		log.Printf("  app ID capabilities are in sync with the project capabilities")
-
-		return bundleID, nil
-	}
-
-	// Create BundleID
-	log.Warnf("  app ID not found, generating...")
-
-	capabilities := autoprovision.Entitlement(entitlements)
-
-	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
-	}
-
-	containers, err := capabilities.ICloudContainers()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get list of iCloud containers: %s", err)
-	}
-
-	if len(containers) > 0 {
-		m.containersByBundleID[bundleIDIdentifier] = containers
-		log.Errorf("  app ID created but couldn't add iCloud containers: %v", containers)
-	}
-
-	if err := m.client.SyncBundleID(*bundleID, capabilities); err != nil {
-		return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
-	}
-
-	m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
-
-	return bundleID, nil
-}
-
-// EnsureProfile ...
-func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*autoprovision.Profile, error) {
-	fmt.Println()
-	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
-	log.Printf("  capabilities: %s", entitlements)
-
-	// Search for Bitrise managed Profile
-	name, err := autoprovision.ProfileName(profileType, bundleIDIdentifier)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create profile name: %s", err)
-	}
-
-	profile, err := m.client.FindProfile(name, profileType)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find profile: %s", err)
-	}
-
-	if profile == nil {
-		log.Warnf("  profile does not exist, generating...")
-	} else {
-		log.Printf("  Bitrise managed profile found: %s ID: %s UUID: %s Expiry: %s", profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
-
-		if profile.Attributes().ProfileState == appstoreconnect.Active {
-			// Check if Bitrise managed Profile is sync with the project
-			err := autoprovision.CheckProfile(m.client, profile, autoprovision.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
-			if err != nil {
-				if mErr, ok := err.(autoprovision.NonmatchingProfileError); ok {
-					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
-				} else {
-					return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
-				}
-			} else { // Profile matches
-				log.Donef("  profile is in sync with the project requirements")
-				return &profile, nil
-			}
-		}
-
-		if profile.Attributes().ProfileState == appstoreconnect.Invalid {
-			// If the profile's bundle id gets modified, the profile turns in Invalid state.
-			log.Warnf("  the profile state is invalid, regenerating ...")
-		}
-
-		if err := m.client.DeleteProfile(profile.ID()); err != nil {
-			return nil, fmt.Errorf("failed to delete profile: %s", err)
-		}
-	}
-
-	// Search for BundleID
-	bundleID, err := m.EnsureBundleID(bundleIDIdentifier, entitlements)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create Bitrise managed Profile
-	fmt.Println()
-	log.Infof("  Creating profile for bundle id: %s", bundleID.Attributes.Name)
-
-	profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create profile: %s", err)
-	}
-
-	log.Donef("  profile created: %s", profile.Attributes().Name)
-	return &profile, nil
-}
-
 const notConnected = `Connected Apple Developer Portal Account not found.
 Most likely because there is no Apple Developer Portal Account connected to the build.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
@@ -284,15 +141,6 @@ func handleSessionDataError(err error) {
 	fmt.Println()
 	log.Errorf("Failed to activate Bitrise Apple Developer Portal connection: %s", err)
 	log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
-}
-
-func createWildcardBundleID(bundleID string) (string, error) {
-	idx := strings.LastIndex(bundleID, ".")
-	if idx == -1 {
-		return "", fmt.Errorf("invalid bundle id (%s): does not contain *", bundleID)
-	}
-
-	return bundleID[:idx] + ".*", nil
 }
 
 func main() {
@@ -334,6 +182,13 @@ func main() {
 		conn, err = connectionProvider.GetAppleDeveloperConnection()
 		if err != nil {
 			handleSessionDataError(err)
+		}
+
+		if conn != nil && len(conn.DuplicatedTestDevices) != 0 {
+			log.Debugf("Devices with duplicated UDID are registered on Bitrise, will be ignored:")
+			for _, d := range conn.DuplicatedTestDevices {
+				log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+			}
 		}
 
 		if conn != nil && (conn.APIKeyConnection == nil) {
@@ -410,148 +265,23 @@ func main() {
 	// Ensure devices
 	var devPortalDeviceIDs []string
 
-	if distributionTypeRequiresDeviceList(distrTypes) {
-		log.Infof("Fetching Apple Developer Portal devices")
-		// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
-		devPortalDevices, err := devportalClient.DeviceClient.ListDevices("", appstoreconnect.IOSDevice)
+	var bitriseTestDevices []devportalservice.TestDevice
+	if conn != nil {
+		bitriseTestDevices = conn.TestDevices
+	}
+
+	if autoprovision.DistributionTypeRequiresDeviceList(distrTypes) {
+		var err error
+		devPortalDeviceIDs, err = autoprovision.EnsureTestDevices(devportalClient.DeviceClient, bitriseTestDevices, codesignRequirements.Platform)
 		if err != nil {
-			failf("Failed to fetch devices: %s", err)
-		}
-
-		log.Printf("%d devices are registered on the Apple Developer Portal", len(devPortalDevices))
-		for _, devPortalDevice := range devPortalDevices {
-			log.Debugf("- %s, %s, UDID (%s), ID (%s)", devPortalDevice.Attributes.Name, devPortalDevice.Attributes.DeviceClass, devPortalDevice.Attributes.UDID, devPortalDevice.ID)
-		}
-
-		if stepConf.RegisterTestDevices && conn != nil && len(conn.TestDevices) != 0 {
-			fmt.Println()
-			log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(conn.TestDevices))
-			for _, d := range conn.TestDevices {
-				log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
-			}
-
-			if len(conn.DuplicatedTestDevices) != 0 {
-				log.Warnf("Devices with duplicated UDID are registered on Bitrise, will be ignored:")
-				for _, d := range conn.DuplicatedTestDevices {
-					log.Warnf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
-				}
-			}
-
-			newDevPortalDevices, err := registerMissingTestDevices(devportalClient.DeviceClient, conn.TestDevices, devPortalDevices)
-			if err != nil {
-				failf("Failed to register Bitrise Test device on Apple Developer Portal: %s", err)
-			}
-			devPortalDevices = append(devPortalDevices, newDevPortalDevices...)
-		}
-
-		devPortalDevices = filterDevPortalDevices(devPortalDevices, codesignRequirements.Platform)
-
-		for _, devPortalDevice := range devPortalDevices {
-			devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
+			failf("Failed to ensure test devices: %s", err)
 		}
 	}
 
 	// Ensure Profiles
-	type CodesignSettings struct {
-		ArchivableTargetProfilesByBundleID map[string]autoprovision.Profile
-		UITestTargetProfilesByBundleID     map[string]autoprovision.Profile
-		Certificate                        certificateutil.CertificateInfoModel
-	}
-
-	codesignSettingsByDistributionType := map[autoprovision.DistributionType]CodesignSettings{}
-
-	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
-
-	containersByBundleID := map[string][]string{}
-
-	profileManager := ProfileManager{
-		client:                      devportalClient.ProfileClient,
-		bundleIDByBundleIDIdentifer: bundleIDByBundleIDIdentifer,
-		containersByBundleID:        containersByBundleID,
-	}
-
-	for _, distrType := range distrTypes {
-		fmt.Println()
-		log.Infof("Checking %s provisioning profiles", distrType)
-		certType := autoprovision.CertificateTypeByDistribution[distrType]
-		certs := certsByType[certType]
-
-		if len(certs) == 0 {
-			failf("No valid certificate provided for distribution type: %s", distrType)
-		} else if len(certs) > 1 {
-			log.Warnf("Multiple certificates provided for distribution type: %s", distrType)
-			for _, c := range certs {
-				log.Warnf("- %s", c.Certificate.CommonName)
-			}
-			log.Warnf("Using: %s", certs[0].Certificate.CommonName)
-		}
-		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
-
-		codesignSettings := CodesignSettings{
-			ArchivableTargetProfilesByBundleID: map[string]autoprovision.Profile{},
-			UITestTargetProfilesByBundleID:     map[string]autoprovision.Profile{},
-			Certificate:                        certs[0].Certificate,
-		}
-
-		var certIDs []string
-		for _, cert := range certs {
-			certIDs = append(certIDs, cert.ID)
-		}
-
-		platformProfileTypes, ok := autoprovision.PlatformToProfileTypeByDistribution[codesignRequirements.Platform]
-		if !ok {
-			failf("No profiles for platform: %s", codesignRequirements.Platform)
-		}
-
-		profileType := platformProfileTypes[distrType]
-
-		for bundleIDIdentifier, entitlements := range codesignRequirements.ArchivableTargetBundleIDToEntitlements {
-			var profileDeviceIDs []string
-			if distributionTypeRequiresDeviceList([]autoprovision.DistributionType{distrType}) {
-				profileDeviceIDs = devPortalDeviceIDs
-			}
-
-			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, stepConf.MinProfileDaysValid)
-			if err != nil {
-				failf(err.Error())
-			}
-			codesignSettings.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
-
-		}
-
-		if stepConf.SignUITestTargets && distrType == autoprovision.Development {
-			// Capabilities are not supported for UITest targets.
-			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
-			for _, bundleIDIdentifier := range codesignRequirements.UITestTargetBundleIDs {
-				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
-				if err != nil {
-					failf("Could not create wildcard bundle id: %s", err)
-				}
-
-				// Capabilities are not supported for UITest targets.
-				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, stepConf.MinProfileDaysValid)
-				if err != nil {
-					failf(err.Error())
-				}
-				codesignSettings.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
-			}
-		}
-
-		codesignSettingsByDistributionType[distrType] = codesignSettings
-	}
-
-	if len(containersByBundleID) > 0 {
-		fmt.Println()
-		log.Errorf("Unable to automatically assign iCloud containers to the following app IDs:")
-		fmt.Println()
-		for bundleID, containers := range containersByBundleID {
-			log.Warnf("%s, containers:", bundleID)
-			for _, container := range containers {
-				log.Warnf("- %s", container)
-			}
-			fmt.Println()
-		}
-		failf("You have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list")
+	codesignSettingsByDistributionType, err := autoprovision.EnsureProfiles(devportalClient.ProfileClient, distrTypes, certsByType, codesignRequirements, devPortalDeviceIDs, stepConf.MinProfileDaysValid)
+	if err != nil {
+		failf("Failed to ensure profiles: %s", err)
 	}
 
 	// Force Codesign Settings

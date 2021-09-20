@@ -1,11 +1,13 @@
 package autoprovision
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
@@ -79,12 +81,6 @@ func GetCodesignSettingsFromProject(settings ProjectSettings) (CodesignRequireme
 	for _, target := range projHelper.ArchivableTargets() {
 		log.Printf("- %s", target.Name)
 	}
-	if settings.SignUITestTargets {
-		log.Printf("UITest targets:")
-		for _, target := range projHelper.UITestTargets {
-			log.Printf("- %s", target.Name)
-		}
-	}
 
 	archivableTargetBundleIDToEntitlements, err := projHelper.ArchivableTargetBundleIDToEntitlements()
 	if err != nil {
@@ -96,9 +92,17 @@ func GetCodesignSettingsFromProject(settings ProjectSettings) (CodesignRequireme
 		return CodesignRequirements{}, "", fmt.Errorf("please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead")
 	}
 
-	uiTestTargetBundleIDs, err := projHelper.UITestTargetBundleIDs()
-	if err != nil {
-		return CodesignRequirements{}, "", fmt.Errorf("Failed to read UITest targets' entitlements: %s", err)
+	var uiTestTargetBundleIDs []string
+	if settings.SignUITestTargets {
+		log.Printf("UITest targets:")
+		for _, target := range projHelper.UITestTargets {
+			log.Printf("- %s", target.Name)
+		}
+
+		uiTestTargetBundleIDs, err = projHelper.UITestTargetBundleIDs()
+		if err != nil {
+			return CodesignRequirements{}, "", fmt.Errorf("Failed to read UITest targets' entitlements: %s", err)
+		}
 	}
 
 	return CodesignRequirements{
@@ -147,4 +151,152 @@ func SelectCertificatesAndDistributionTypes(certificateSource CertificateSource,
 	log.Printf("ensuring codesigning files for distribution types: %s", distrTypes)
 
 	return certsByType, distrTypes, nil
+}
+
+func EnsureTestDevices(deviceClient DeviceClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
+	var devPortalDeviceIDs []string
+
+	log.Infof("Fetching Apple Developer Portal devices")
+	// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
+	devPortalDevices, err := deviceClient.ListDevices("", appstoreconnect.IOSDevice)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch devices: %s", err)
+	}
+
+	log.Printf("%d devices are registered on the Apple Developer Portal", len(devPortalDevices))
+	for _, devPortalDevice := range devPortalDevices {
+		log.Debugf("- %s, %s, UDID (%s), ID (%s)", devPortalDevice.Attributes.Name, devPortalDevice.Attributes.DeviceClass, devPortalDevice.Attributes.UDID, devPortalDevice.ID)
+	}
+
+	if len(testDevices) != 0 {
+		fmt.Println()
+		log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(testDevices))
+		for _, d := range testDevices {
+			log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+		}
+
+		newDevPortalDevices, err := registerMissingTestDevices(deviceClient, testDevices, devPortalDevices)
+		if err != nil {
+			return nil, fmt.Errorf("failed to register Bitrise Test device on Apple Developer Portal: %s", err)
+		}
+		devPortalDevices = append(devPortalDevices, newDevPortalDevices...)
+	}
+
+	devPortalDevices = filterDevPortalDevices(devPortalDevices, platform)
+
+	for _, devPortalDevice := range devPortalDevices {
+		devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
+	}
+
+	return devPortalDeviceIDs, nil
+}
+
+type CodesignSettings struct {
+	ArchivableTargetProfilesByBundleID map[string]Profile
+	UITestTargetProfilesByBundleID     map[string]Profile
+	Certificate                        certificateutil.CertificateInfoModel
+}
+
+func EnsureProfiles(profileClient ProfileClient, distrTypes []DistributionType,
+	certsByType map[appstoreconnect.CertificateType][]APICertificate, requirements CodesignRequirements,
+	devPortalDeviceIDs []string, minProfileDaysValid int) (map[DistributionType]CodesignSettings, error) {
+	// Ensure Profiles
+	codesignSettingsByDistributionType := map[DistributionType]CodesignSettings{}
+
+	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
+
+	containersByBundleID := map[string][]string{}
+
+	profileManager := ProfileManager{
+		client:                      profileClient,
+		bundleIDByBundleIDIdentifer: bundleIDByBundleIDIdentifer,
+		containersByBundleID:        containersByBundleID,
+	}
+
+	for _, distrType := range distrTypes {
+		fmt.Println()
+		log.Infof("Checking %s provisioning profiles", distrType)
+		certType := CertificateTypeByDistribution[distrType]
+		certs := certsByType[certType]
+
+		if len(certs) == 0 {
+			return nil, fmt.Errorf("no valid certificate provided for distribution type: %s", distrType)
+		} else if len(certs) > 1 {
+			log.Warnf("Multiple certificates provided for distribution type: %s", distrType)
+			for _, c := range certs {
+				log.Warnf("- %s", c.Certificate.CommonName)
+			}
+			log.Warnf("Using: %s", certs[0].Certificate.CommonName)
+		}
+		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
+
+		codesignSettings := CodesignSettings{
+			ArchivableTargetProfilesByBundleID: map[string]Profile{},
+			UITestTargetProfilesByBundleID:     map[string]Profile{},
+			Certificate:                        certs[0].Certificate,
+		}
+
+		var certIDs []string
+		for _, cert := range certs {
+			certIDs = append(certIDs, cert.ID)
+		}
+
+		platformProfileTypes, ok := PlatformToProfileTypeByDistribution[requirements.Platform]
+		if !ok {
+			return nil, fmt.Errorf("no profiles for platform: %s", requirements.Platform)
+		}
+
+		profileType := platformProfileTypes[distrType]
+
+		for bundleIDIdentifier, entitlements := range requirements.ArchivableTargetBundleIDToEntitlements {
+			var profileDeviceIDs []string
+			if DistributionTypeRequiresDeviceList([]DistributionType{distrType}) {
+				profileDeviceIDs = devPortalDeviceIDs
+			}
+
+			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
+			if err != nil {
+				return nil, err
+			}
+			codesignSettings.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+
+		}
+
+		if len(requirements.UITestTargetBundleIDs) > 0 && distrType == Development {
+			// Capabilities are not supported for UITest targets.
+			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
+			for _, bundleIDIdentifier := range requirements.UITestTargetBundleIDs {
+				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
+				if err != nil {
+					return nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
+				}
+
+				// Capabilities are not supported for UITest targets.
+				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
+				if err != nil {
+					return nil, err
+				}
+				codesignSettings.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+			}
+		}
+
+		codesignSettingsByDistributionType[distrType] = codesignSettings
+	}
+
+	if len(containersByBundleID) > 0 {
+		fmt.Println()
+		log.Errorf("Unable to automatically assign iCloud containers to the following app IDs:")
+		fmt.Println()
+		for bundleID, containers := range containersByBundleID {
+			log.Warnf("%s, containers:", bundleID)
+			for _, container := range containers {
+				log.Warnf("- %s", container)
+			}
+			fmt.Println()
+		}
+		// TODO: improve error handling
+		return nil, errors.New("you have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list")
+	}
+
+	return codesignSettingsByDistributionType, nil
 }

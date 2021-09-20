@@ -7,6 +7,17 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
+func createWildcardBundleID(bundleID string) (string, error) {
+	idx := strings.LastIndex(bundleID, ".")
+	if idx == -1 {
+		return "", fmt.Errorf("invalid bundle id (%s): does not contain *", bundleID)
+	}
+
+	return bundleID[:idx] + ".*", nil
+}
+
+// To be moved
+
 // FindBundleID ...
 func (c *APIProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	var nextPageURL string
