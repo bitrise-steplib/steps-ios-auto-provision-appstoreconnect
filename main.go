@@ -121,8 +121,8 @@ func failf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-const notConnected = `Connected Apple Developer Portal Account not found.
-Most likely because there is no Apple Developer Portal Account connected to the build.
+const notConnected = `Bitrise Apple service connection not found.
+Most likely because there is no configured Bitrise Apple service connection.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 
 func autoCodesign(buildURL, buildAPIToken string,
@@ -131,17 +131,19 @@ func autoCodesign(buildURL, buildAPIToken string,
 	codesignRequirements autoprovision.CodesignRequirements, minProfileDaysValid int,
 	keychainPath string, keychainPassword stepconf.Secret) (map[autoprovision.DistributionType]autoprovision.CodesignSettings, error) {
 
+	fmt.Println()
+	log.Infof("Fetching Apple service connection")
 	connectionProvider := devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), buildURL, buildAPIToken)
 	conn, err := connectionProvider.GetAppleDeveloperConnection()
 	if err != nil {
 		if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
 			fmt.Println()
-			log.Warnf("Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
+			log.Warnf("Unauthorized to query Bitrise Apple service connection. This happens by design, with a public app's PR build, to protect secrets.")
 			return nil, err
 		}
 
 		fmt.Println()
-		log.Errorf("Failed to activate Bitrise Apple Developer Portal connection")
+		log.Errorf("Failed to activate Bitrise Apple service connection")
 		log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 
 		return nil, err
@@ -160,25 +162,34 @@ func autoCodesign(buildURL, buildAPIToken string,
 			fmt.Println()
 			log.Warnf("%s", notConnected)
 		}
-		return nil, fmt.Errorf("could not configure Apple Service authentication: %v", err)
+		return nil, fmt.Errorf("could not configure Apple service authentication: %v", err)
+	}
+
+	if authConfig.APIKey != nil {
+		log.Donef("Using Apple service connection with API key.")
+	} else if authConfig.AppleID != nil {
+		log.Donef("Using Apple service connection with Apple ID.")
+	} else {
+		panic("No Apple authentication credentials found.")
 	}
 
 	// create developer portal client
+	fmt.Println()
+	log.Infof("Initializing Developer Portal client")
 	var devportalClient autoprovision.DevportalClient
 	if authConfig.APIKey != nil {
 		httpClient := appstoreconnect.NewRetryableHTTPClient()
 		client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
 		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
-		log.Donef("the client created for %s", client.BaseURL)
 		devportalClient = autoprovision.NewAPIDevportalClient(client)
+		log.Donef("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if authConfig.AppleID != nil {
 		client, err := spaceship.NewClient(*authConfig.AppleID, codesignRequirements.TeamID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to initialize Spaceship client: %v", err)
+			return nil, fmt.Errorf("failed to initialize Apple ID client: %v", err)
 		}
 		devportalClient = spaceship.NewSpaceshipDevportalClient(client)
-	} else {
-		panic("No Apple authentication credentials found.")
+		log.Donef("Apple ID client created")
 	}
 
 	// Downloading certificates
@@ -240,10 +251,6 @@ func main() {
 	stepconf.Print(stepConf)
 
 	log.SetEnableDebugLog(stepConf.VerboseLog)
-
-	// Creating AppstoreConnectAPI client
-	fmt.Println()
-	log.Infof("Creating AppstoreConnectAPI client")
 
 	authInputs := appleauth.Inputs{
 		APIIssuer:  stepConf.APIIssuer,
