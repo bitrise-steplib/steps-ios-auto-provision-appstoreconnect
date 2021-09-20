@@ -220,12 +220,13 @@ func main() {
 	}
 
 	// Analyzing project
-	codesignRequirements, config, err := autoprovision.GetCodesignSettingsFromProject(autoprovision.ProjectSettings{
+	projectSettings := autoprovision.ProjectSettings{
 		ProjectPath:       stepConf.ProjectPath,
 		Scheme:            stepConf.Scheme,
 		Configuration:     stepConf.Configuration,
 		SignUITestTargets: stepConf.SignUITestTargets,
-	})
+	}
+	codesignRequirements, config, err := autoprovision.GetCodesignSettingsFromProject(projectSettings)
 	if err != nil {
 		failf("%v", err)
 	}
@@ -285,84 +286,8 @@ func main() {
 	}
 
 	// Force Codesign Settings
-	projHelper, _, err := autoprovision.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
-	if err != nil {
-		failf("Failed to analyze project: %s", err)
-	}
-
-	fmt.Println()
-	log.Infof("Apply Bitrise managed codesigning on the executable targets")
-	for _, target := range projHelper.ArchivableTargets() {
-		fmt.Println()
-		log.Infof("  Target: %s", target.Name)
-
-		forceCodesignDistribution := stepConf.DistributionType()
-		if _, isDevelopmentAvailable := codesignSettingsByDistributionType[autoprovision.Development]; isDevelopmentAvailable {
-			forceCodesignDistribution = autoprovision.Development
-		}
-
-		codesignSettings, ok := codesignSettingsByDistributionType[forceCodesignDistribution]
-		if !ok {
-			failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
-		}
-		teamID := codesignSettings.Certificate.TeamID
-
-		targetBundleID, err := projHelper.TargetBundleID(target.Name, config)
-		if err != nil {
-			failf(err.Error())
-		}
-		profile, ok := codesignSettings.ArchivableTargetProfilesByBundleID[targetBundleID]
-		if !ok {
-			failf("No profile ensured for the bundleID %s", targetBundleID)
-		}
-
-		log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
-		log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
-		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
-
-		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
-			failf("Failed to apply code sign settings for target (%s): %s", target.Name, err)
-		}
-	}
-
-	if stepConf.SignUITestTargets {
-		fmt.Println()
-		log.Infof("Apply Bitrise managed codesigning on the UITest targets")
-		for _, uiTestTarget := range projHelper.UITestTargets {
-			fmt.Println()
-			log.Infof("  Target: %s", uiTestTarget.Name)
-
-			forceCodesignDistribution := autoprovision.Development
-
-			codesignSettings, ok := codesignSettingsByDistributionType[forceCodesignDistribution]
-			if !ok {
-				failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
-			}
-			teamID := codesignSettings.Certificate.TeamID
-
-			targetBundleID, err := projHelper.TargetBundleID(uiTestTarget.Name, config)
-			if err != nil {
-				failf(err.Error())
-			}
-			profile, ok := codesignSettings.UITestTargetProfilesByBundleID[targetBundleID]
-			if !ok {
-				failf("No profile ensured for the bundleID %s", targetBundleID)
-			}
-
-			log.Printf("  development Team: %s(%s)", codesignSettings.Certificate.TeamName, teamID)
-			log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
-			log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
-
-			for _, c := range uiTestTarget.BuildConfigurationList.BuildConfigurations {
-				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
-					failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
-				}
-			}
-		}
-	}
-
-	if err := projHelper.XcProj.Save(); err != nil {
-		failf("Failed to save project: %s", err)
+	if err = autoprovision.ForceCodesignSettings(projectSettings, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
+		failf("Failed to force codesign settings: %s", err)
 	}
 
 	// Install certificates and profiles
@@ -408,6 +333,11 @@ func main() {
 	// Export output
 	fmt.Println()
 	log.Infof("Exporting outputs")
+
+	projHelper, _, err := autoprovision.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
+	if err != nil {
+		failf("Failed to analyze project: %s", err)
+	}
 
 	outputs := map[string]string{
 		"BITRISE_EXPORT_METHOD":  stepConf.Distribution,
