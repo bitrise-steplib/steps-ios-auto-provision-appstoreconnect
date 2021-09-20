@@ -365,54 +365,14 @@ func main() {
 	}
 
 	// Analyzing project
-	fmt.Println()
-	log.Infof("Analyzing project")
-
-	projHelper, config, err := autoprovision.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
+	codesignRequirements, config, err := autoprovision.GetCodesignSettingsFromProject(autoprovision.ProjectSettings{
+		ProjectPath:       stepConf.ProjectPath,
+		Scheme:            stepConf.Scheme,
+		Configuration:     stepConf.Configuration,
+		SignUITestTargets: stepConf.SignUITestTargets,
+	})
 	if err != nil {
-		failf("Failed to analyze project: %s", err)
-	}
-
-	log.Printf("Configuration: %s", config)
-
-	teamID, err := projHelper.ProjectTeamID(config)
-	if err != nil {
-		failf("Failed to read project team ID: %s", err)
-	}
-
-	log.Printf("Project team ID: %s", teamID)
-
-	platform, err := projHelper.Platform(config)
-	if err != nil {
-		failf("Failed to read project platform: %s", err)
-	}
-
-	log.Printf("Platform: %s", platform)
-
-	log.Printf("Application and App Extension targets:")
-	for _, target := range projHelper.ArchivableTargets() {
-		log.Printf("- %s", target.Name)
-	}
-	if stepConf.SignUITestTargets {
-		log.Printf("UITest targets:")
-		for _, target := range projHelper.UITestTargets {
-			log.Printf("- %s", target.Name)
-		}
-	}
-
-	archivableTargetBundleIDToEntitlements, err := projHelper.ArchivableTargetBundleIDToEntitlements()
-	if err != nil {
-		failf("Failed to read archivable targets' entitlements: %s", err)
-	}
-
-	if ok, entitlement, bundleID := autoprovision.CanGenerateProfileWithEntitlements(archivableTargetBundleIDToEntitlements); !ok {
-		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
-		failf("Please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead.")
-	}
-
-	uiTestTargetBundleIDs, err := projHelper.UITestTargetBundleIDs()
-	if err != nil {
-		failf("Failed to read UITest targets' entitlements: %s", err)
+		failf("%v", err)
 	}
 
 	// Downloading certificates
@@ -435,40 +395,17 @@ func main() {
 		log.Printf("- %s", cert.CommonName)
 	}
 
-	certType, ok := autoprovision.CertificateTypeByDistribution[stepConf.DistributionType()]
-	if !ok {
-		failf("No valid certificate provided for distribution type: %s", stepConf.DistributionType())
-	}
-
-	distrTypes := []autoprovision.DistributionType{stepConf.DistributionType()}
-	requiredCertTypes := map[appstoreconnect.CertificateType]bool{certType: true}
-	if stepConf.DistributionType() != autoprovision.Development {
-		distrTypes = append(distrTypes, autoprovision.Development)
-
-		if stepConf.SignUITestTargets {
-			log.Warnf("UITest target requires development code signing in addition to the specified %s code signing", stepConf.DistributionType())
-			requiredCertTypes[appstoreconnect.IOSDevelopment] = true
-		} else {
-			requiredCertTypes[appstoreconnect.IOSDevelopment] = false
-		}
-	}
-
-	certsByType, err := autoprovision.GetValidCertificates(certs, devportalClient.CertificateSource, requiredCertTypes, teamID, stepConf.VerboseLog)
+	certsByType, distrTypes, err := autoprovision.SelectCertificatesAndDistributionTypes(
+		devportalClient.CertificateSource,
+		certs,
+		stepConf.DistributionType(),
+		codesignRequirements.TeamID,
+		stepConf.SignUITestTargets,
+		stepConf.VerboseLog,
+	)
 	if err != nil {
-		if missingCertErr, ok := err.(autoprovision.MissingCertificateError); ok {
-			log.Errorf(err.Error())
-			log.Warnf("Maybe you forgot to provide a(n) %s type certificate.", missingCertErr.Type)
-			log.Warnf("Upload a %s type certificate (.p12) on the Code Signing tab of the Workflow Editor.", missingCertErr.Type)
-			os.Exit(1)
-		}
-		failf("Failed to get valid certificates: %s", err)
+		failf("%v", err)
 	}
-
-	if len(certsByType) == 1 && stepConf.DistributionType() != autoprovision.Development {
-		// remove development distribution if there is no development certificate uploaded
-		distrTypes = []autoprovision.DistributionType{stepConf.DistributionType()}
-	}
-	log.Printf("ensuring codesigning files for distribution types: %s", distrTypes)
 
 	// Ensure devices
 	var devPortalDeviceIDs []string
@@ -507,7 +444,7 @@ func main() {
 			devPortalDevices = append(devPortalDevices, newDevPortalDevices...)
 		}
 
-		devPortalDevices = filterDevPortalDevices(devPortalDevices, platform)
+		devPortalDevices = filterDevPortalDevices(devPortalDevices, codesignRequirements.Platform)
 
 		for _, devPortalDevice := range devPortalDevices {
 			devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
@@ -561,14 +498,14 @@ func main() {
 			certIDs = append(certIDs, cert.ID)
 		}
 
-		platformProfileTypes, ok := autoprovision.PlatformToProfileTypeByDistribution[platform]
+		platformProfileTypes, ok := autoprovision.PlatformToProfileTypeByDistribution[codesignRequirements.Platform]
 		if !ok {
-			failf("No profiles for platform: %s", platform)
+			failf("No profiles for platform: %s", codesignRequirements.Platform)
 		}
 
 		profileType := platformProfileTypes[distrType]
 
-		for bundleIDIdentifier, entitlements := range archivableTargetBundleIDToEntitlements {
+		for bundleIDIdentifier, entitlements := range codesignRequirements.ArchivableTargetBundleIDToEntitlements {
 			var profileDeviceIDs []string
 			if distributionTypeRequiresDeviceList([]autoprovision.DistributionType{distrType}) {
 				profileDeviceIDs = devPortalDeviceIDs
@@ -585,7 +522,7 @@ func main() {
 		if stepConf.SignUITestTargets && distrType == autoprovision.Development {
 			// Capabilities are not supported for UITest targets.
 			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
-			for _, bundleIDIdentifier := range uiTestTargetBundleIDs {
+			for _, bundleIDIdentifier := range codesignRequirements.UITestTargetBundleIDs {
 				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
 				if err != nil {
 					failf("Could not create wildcard bundle id: %s", err)
@@ -618,6 +555,11 @@ func main() {
 	}
 
 	// Force Codesign Settings
+	projHelper, _, err := autoprovision.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
+	if err != nil {
+		failf("Failed to analyze project: %s", err)
+	}
+
 	fmt.Println()
 	log.Infof("Apply Bitrise managed codesigning on the executable targets")
 	for _, target := range projHelper.ArchivableTargets() {
@@ -633,7 +575,7 @@ func main() {
 		if !ok {
 			failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
 		}
-		teamID = codesignSettings.Certificate.TeamID
+		teamID := codesignSettings.Certificate.TeamID
 
 		targetBundleID, err := projHelper.TargetBundleID(target.Name, config)
 		if err != nil {
@@ -666,7 +608,7 @@ func main() {
 			if !ok {
 				failf("No codesign settings ensured for distribution type %s", stepConf.DistributionType())
 			}
-			teamID = codesignSettings.Certificate.TeamID
+			teamID := codesignSettings.Certificate.TeamID
 
 			targetBundleID, err := projHelper.TargetBundleID(uiTestTarget.Name, config)
 			if err != nil {
@@ -739,7 +681,7 @@ func main() {
 
 	outputs := map[string]string{
 		"BITRISE_EXPORT_METHOD":  stepConf.Distribution,
-		"BITRISE_DEVELOPER_TEAM": teamID,
+		"BITRISE_DEVELOPER_TEAM": codesignRequirements.TeamID,
 	}
 
 	settings, ok := codesignSettingsByDistributionType[autoprovision.Development]
