@@ -12,12 +12,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
+
 	"github.com/bitrise-io/go-steputils/command/gems"
 	"github.com/bitrise-io/go-steputils/command/rubycommand"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 //go:embed spaceship
@@ -45,8 +46,8 @@ func NewClient(authConfig appleauth.AppleID, teamID string) (*Client, error) {
 }
 
 // NewSpaceshipDevportalClient ...
-func NewSpaceshipDevportalClient(client *Client) autoprovision.DevportalClient {
-	return autoprovision.DevportalClient{
+func NewSpaceshipDevportalClient(client *Client) devportal.DevportalClient {
+	return devportal.DevportalClient{
 		CertificateSource: NewSpaceshipCertificateSource(client),
 		DeviceClient:      NewDeviceClient(client),
 		ProfileClient:     NewSpaceshipProfileClient(client),

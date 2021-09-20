@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
+
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
@@ -32,8 +34,8 @@ type DeviceInfo struct {
 	Class    appstoreconnect.DeviceClass      `json:"class"`
 }
 
-func newDevice(d DeviceInfo) *appstoreconnect.Device {
-	return &appstoreconnect.Device{
+func newDevice(d DeviceInfo) *devportal.Device {
+	return &devportal.Device{
 		ID:   d.ID,
 		Type: d.Model,
 		Attributes: appstoreconnect.DeviceAttributes{
@@ -48,7 +50,7 @@ func newDevice(d DeviceInfo) *appstoreconnect.Device {
 }
 
 // ListDevices ...
-func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
+func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]devportal.Device, error) {
 	cmd, err := d.client.createRequestCommand("list_devices")
 	if err != nil {
 		return nil, err
@@ -66,12 +68,12 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	var devices []appstoreconnect.Device
+	var devices []devportal.Device
 	for _, d := range deviceResponse.Data {
 		devices = append(devices, *newDevice(d))
 	}
 
-	var filteredDevices []appstoreconnect.Device
+	var filteredDevices []devportal.Device
 	for _, d := range devices {
 		if udid != "" && d.Attributes.UDID != udid {
 			log.Debugf("Device filtered out, UDID required: %s actual: %s", udid, d.Attributes.UDID)
@@ -89,7 +91,7 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 }
 
 // RegisterDevice ...
-func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
+func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*devportal.Device, error) {
 	cmd, err := d.client.createRequestCommand("register_device",
 		"--udid", testDevice.DeviceID,
 		"--name", testDevice.Title,

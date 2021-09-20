@@ -3,7 +3,6 @@ package autoprovision
 import (
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/log"
@@ -13,34 +12,6 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
 )
-
-// APICertificate is certificate present on Apple App Store Connect API, could match a local certificate
-type APICertificate struct {
-	Certificate certificateutil.CertificateInfoModel
-	ID          string
-}
-
-// CertificateSource ...
-type CertificateSource interface {
-	QueryCertificateBySerial(*big.Int) (APICertificate, error)
-	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]APICertificate, error)
-}
-
-// DevportalClient ...
-type DevportalClient struct {
-	CertificateSource CertificateSource
-	DeviceClient      DeviceClient
-	ProfileClient     ProfileClient
-}
-
-// NewAPIDevportalClient ...
-func NewAPIDevportalClient(client *appstoreconnect.Client) DevportalClient {
-	return DevportalClient{
-		CertificateSource: NewAPICertificateSource(client),
-		DeviceClient:      NewAPIDeviceClient(client),
-		ProfileClient:     NewAPIProfileClient(client),
-	}
-}
 
 type ProjectSettings struct {
 	ProjectPath, Scheme, Configuration string

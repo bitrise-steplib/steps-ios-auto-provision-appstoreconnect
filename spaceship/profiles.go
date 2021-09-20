@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
+
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
@@ -126,7 +128,7 @@ type AppInfo struct {
 }
 
 // FindProfile ...
-func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autoprovision.Profile, error) {
+func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (devportal.Profile, error) {
 	cmd, err := c.client.createRequestCommand("list_profiles",
 		profileNameArgKey, name,
 		profileTypeArgKey, string(profileType),
@@ -178,7 +180,7 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 }
 
 // CreateProfile ...
-func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autoprovision.Profile, error) {
+func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (devportal.Profile, error) {
 	cmd, err := c.client.createRequestCommand("create_profile",
 		bundleIDIdentifierArgKey, bundleID.Attributes.Identifier,
 		certificateIDArgKey, certificateIDs[0],
@@ -248,7 +250,7 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	cmd, err := c.client.createRequestCommand("create_app",
 		bundleIDIdentifierArgKey, bundleIDIdentifier,
-		bundleIDNameArgKey, autoprovision.AppIDName(bundleIDIdentifier),
+		bundleIDNameArgKey, devportal.AppIDName(bundleIDIdentifier),
 	)
 	if err != nil {
 		return nil, err

@@ -6,22 +6,30 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
+
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 // CertificateSource ...
 type CertificateSource struct {
 	client       *Client
-	certificates map[appstoreconnect.CertificateType][]autoprovision.APICertificate
+	certificates map[appstoreconnect.CertificateType][]devportal.APICertificate
+}
+
+// NewSpaceshipCertificateSource ...
+func NewSpaceshipCertificateSource(client *Client) devportal.CertificateSource {
+	return &CertificateSource{
+		client: client,
+	}
 }
 
 // QueryCertificateBySerial ...
-func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovision.APICertificate, error) {
+func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (devportal.APICertificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
-			return autoprovision.APICertificate{}, err
+			return devportal.APICertificate{}, err
 		}
 	}
 
@@ -32,11 +40,11 @@ func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autoprovi
 		}
 	}
 
-	return autoprovision.APICertificate{}, fmt.Errorf("can not find certificate with serial")
+	return devportal.APICertificate{}, fmt.Errorf("can not find certificate with serial")
 }
 
 // QueryAllIOSCertificates ...
-func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autoprovision.APICertificate, error) {
+func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]devportal.APICertificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
 			return nil, err
@@ -44,13 +52,6 @@ func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.Certi
 	}
 
 	return s.certificates, nil
-}
-
-// NewSpaceshipCertificateSource ...
-func NewSpaceshipCertificateSource(client *Client) autoprovision.CertificateSource {
-	return &CertificateSource{
-		client: client,
-	}
 }
 
 func (s *CertificateSource) downloadAll() error {
@@ -74,7 +75,7 @@ func (s *CertificateSource) downloadAll() error {
 		return err
 	}
 
-	s.certificates = map[appstoreconnect.CertificateType][]autoprovision.APICertificate{
+	s.certificates = map[appstoreconnect.CertificateType][]devportal.APICertificate{
 		appstoreconnect.IOSDevelopment:  devCerts,
 		appstoreconnect.IOSDistribution: distCers,
 	}
@@ -89,7 +90,7 @@ type certificatesResponse struct {
 	} `json:"data"`
 }
 
-func getCertificates(cmd spaceshipCommand) ([]autoprovision.APICertificate, error) {
+func getCertificates(cmd spaceshipCommand) ([]devportal.APICertificate, error) {
 	output, err := runSpaceshipCommand(cmd)
 	if err != nil {
 		return nil, err
@@ -100,7 +101,7 @@ func getCertificates(cmd spaceshipCommand) ([]autoprovision.APICertificate, erro
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	var certInfos []autoprovision.APICertificate
+	var certInfos []devportal.APICertificate
 	for _, certInfo := range certificates.Data {
 		pemContent, err := base64.StdEncoding.DecodeString(certInfo.Content)
 		if err != nil {
@@ -112,7 +113,7 @@ func getCertificates(cmd spaceshipCommand) ([]autoprovision.APICertificate, erro
 			return nil, err
 		}
 
-		certInfos = append(certInfos, autoprovision.APICertificate{
+		certInfos = append(certInfos, devportal.APICertificate{
 			Certificate: certificateutil.NewCertificateInfo(*cert, nil),
 			ID:          certInfo.ID,
 		})
