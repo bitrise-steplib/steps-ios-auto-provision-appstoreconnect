@@ -125,21 +125,111 @@ const notConnected = `Connected Apple Developer Portal Account not found.
 Most likely because there is no Apple Developer Portal Account connected to the build.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 
-func handleSessionDataError(err error) {
-	if err == nil {
-		return
-	}
+func autoCodesign(buildURL, buildAPIToken string,
+	authSources []appleauth.Source, certificateURLs []CertificateFileURL, distributionType autoprovision.DistributionType,
+	signUITestTargets, verboseLog bool,
+	codesignRequirements autoprovision.CodesignRequirements, minProfileDaysValid int,
+	keychainPath string, keychainPassword stepconf.Secret) (map[autoprovision.DistributionType]autoprovision.CodesignSettings, error) {
 
-	if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
+	connectionProvider := devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), buildURL, buildAPIToken)
+	conn, err := connectionProvider.GetAppleDeveloperConnection()
+	if err != nil {
+		if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
+			fmt.Println()
+			log.Warnf("Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
+			return nil, err
+		}
+
 		fmt.Println()
-		log.Warnf("%s", "Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
+		log.Errorf("Failed to activate Bitrise Apple Developer Portal connection")
+		log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 
-		return
+		return nil, err
 	}
 
+	if len(conn.DuplicatedTestDevices) != 0 {
+		log.Debugf("Devices with duplicated UDID are registered on Bitrise, will be ignored:")
+		for _, d := range conn.DuplicatedTestDevices {
+			log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+		}
+	}
+
+	authConfig, err := appleauth.Select(conn, authSources, appleauth.Inputs{})
+	if err != nil {
+		if conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
+			fmt.Println()
+			log.Warnf("%s", notConnected)
+		}
+		return nil, fmt.Errorf("could not configure Apple Service authentication: %v", err)
+	}
+
+	// create developer portal client
+	var devportalClient autoprovision.DevportalClient
+	if authConfig.APIKey != nil {
+		httpClient := appstoreconnect.NewRetryableHTTPClient()
+		client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
+		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
+		log.Donef("the client created for %s", client.BaseURL)
+		devportalClient = autoprovision.NewAPIDevportalClient(client)
+	} else if authConfig.AppleID != nil {
+		client, err := spaceship.NewClient(*authConfig.AppleID, codesignRequirements.TeamID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize Spaceship client: %v", err)
+		}
+		devportalClient = spaceship.NewSpaceshipDevportalClient(client)
+	} else {
+		panic("No Apple authentication credentials found.")
+	}
+
+	// Downloading certificates
 	fmt.Println()
-	log.Errorf("Failed to activate Bitrise Apple Developer Portal connection: %s", err)
-	log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
+	log.Infof("Downloading certificates")
+
+	certs, err := downloadCertificates(certificateURLs)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to download certificates: %s", err)
+	}
+
+	log.Printf("%d certificates downloaded:", len(certs))
+
+	for _, cert := range certs {
+		log.Printf("- %s", cert.CommonName)
+	}
+
+	certsByType, distrTypes, err := autoprovision.SelectCertificatesAndDistributionTypes(
+		devportalClient.CertificateSource,
+		certs,
+		distributionType,
+		codesignRequirements.TeamID,
+		signUITestTargets,
+		verboseLog,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+
+	// Ensure devices
+	var devPortalDeviceIDs []string
+	if autoprovision.DistributionTypeRequiresDeviceList(distrTypes) {
+		var err error
+		devPortalDeviceIDs, err = autoprovision.EnsureTestDevices(devportalClient.DeviceClient, conn.TestDevices, codesignRequirements.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to ensure test devices: %s", err)
+		}
+	}
+
+	// Ensure Profiles
+	codesignSettingsByDistributionType, err := autoprovision.EnsureProfiles(devportalClient.ProfileClient, distrTypes, certsByType, codesignRequirements, devPortalDeviceIDs, minProfileDaysValid)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to ensure profiles: %s", err)
+	}
+
+	// Install certificates and profiles
+	if err := autoprovision.InstallCertificatesAndProfiles(codesignSettingsByDistributionType, keychainPath, keychainPassword); err != nil {
+		return nil, fmt.Errorf("Failed to install codesigning files: %s", err)
+	}
+
+	return codesignSettingsByDistributionType, nil
 }
 
 func main() {
@@ -168,54 +258,9 @@ func main() {
 		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", stepConf.BitriseConnection)
 	}
 
-	var connectionProvider *devportalservice.BitriseClient
-	if stepConf.BuildURL != "" && stepConf.BuildAPIToken != "" {
-		connectionProvider = devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), stepConf.BuildURL, stepConf.BuildAPIToken)
-	} else {
-		fmt.Println()
-		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
-	}
-	var conn *devportalservice.AppleDeveloperConnection
-	if stepConf.BitriseConnection != "off" && connectionProvider != nil {
-		var err error
-		conn, err = connectionProvider.GetAppleDeveloperConnection()
-		if err != nil {
-			handleSessionDataError(err)
-		}
-
-		if conn != nil && len(conn.DuplicatedTestDevices) != 0 {
-			log.Debugf("Devices with duplicated UDID are registered on Bitrise, will be ignored:")
-			for _, d := range conn.DuplicatedTestDevices {
-				log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
-			}
-		}
-
-		if conn != nil && (conn.APIKeyConnection == nil) {
-			fmt.Println()
-			log.Warnf("%s", notConnected)
-		}
-	}
-
-	authConfig, err := appleauth.Select(conn, authSources, authInputs)
+	certURLs, err := stepConf.CertificateFileURLs()
 	if err != nil {
-		failf("Could not configure Apple Service authentication: %v", err)
-	}
-
-	var devportalClient autoprovision.DevportalClient
-	if authConfig.APIKey != nil {
-		httpClient := appstoreconnect.NewRetryableHTTPClient()
-		client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
-		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
-		log.Donef("the client created for %s", client.BaseURL)
-		devportalClient = autoprovision.NewAPIDevportalClient(client)
-	} else if authConfig.AppleID != nil {
-		client, err := spaceship.NewClient(*authConfig.AppleID, stepConf.TeamID)
-		if err != nil {
-			failf("failed to initialize Spaceship client: %v")
-		}
-		devportalClient = spaceship.NewSpaceshipDevportalClient(client)
-	} else {
-		panic("No Apple authentication credentials found.")
+		failf("Failed to convert certificate URLs: %s", err)
 	}
 
 	// Analyzing project
@@ -230,68 +275,15 @@ func main() {
 		failf("%v", err)
 	}
 
-	// Downloading certificates
-	fmt.Println()
-	log.Infof("Downloading certificates")
-
-	certURLs, err := stepConf.CertificateFileURLs()
+	codesignSettingsByDistributionType, err := autoCodesign(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, certURLs, stepConf.DistributionType(), stepConf.SignUITestTargets,
+		stepConf.VerboseLog, codesignRequirements, stepConf.MinProfileDaysValid, stepConf.KeychainPath, stepConf.KeychainPassword)
 	if err != nil {
-		failf("Failed to convert certificate URLs: %s", err)
-	}
-
-	certs, err := downloadCertificates(certURLs)
-	if err != nil {
-		failf("Failed to download certificates: %s", err)
-	}
-
-	log.Printf("%d certificates downloaded:", len(certs))
-
-	for _, cert := range certs {
-		log.Printf("- %s", cert.CommonName)
-	}
-
-	certsByType, distrTypes, err := autoprovision.SelectCertificatesAndDistributionTypes(
-		devportalClient.CertificateSource,
-		certs,
-		stepConf.DistributionType(),
-		codesignRequirements.TeamID,
-		stepConf.SignUITestTargets,
-		stepConf.VerboseLog,
-	)
-	if err != nil {
-		failf("%v", err)
-	}
-
-	// Ensure devices
-	var devPortalDeviceIDs []string
-
-	var bitriseTestDevices []devportalservice.TestDevice
-	if conn != nil {
-		bitriseTestDevices = conn.TestDevices
-	}
-
-	if autoprovision.DistributionTypeRequiresDeviceList(distrTypes) {
-		var err error
-		devPortalDeviceIDs, err = autoprovision.EnsureTestDevices(devportalClient.DeviceClient, bitriseTestDevices, codesignRequirements.Platform)
-		if err != nil {
-			failf("Failed to ensure test devices: %s", err)
-		}
-	}
-
-	// Ensure Profiles
-	codesignSettingsByDistributionType, err := autoprovision.EnsureProfiles(devportalClient.ProfileClient, distrTypes, certsByType, codesignRequirements, devPortalDeviceIDs, stepConf.MinProfileDaysValid)
-	if err != nil {
-		failf("Failed to ensure profiles: %s", err)
+		failf("Automatic code signing failed: %s", err)
 	}
 
 	// Force Codesign Settings
 	if err := autoprovision.ForceCodesignSettings(projectSettings, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
 		failf("Failed to force codesign settings: %s", err)
-	}
-
-	// Install certificates and profiles
-	if err := autoprovision.InstallCertificatesAndProfiles(codesignSettingsByDistributionType, stepConf.KeychainPath, stepConf.KeychainPassword); err != nil {
-		failf("Failed to install codesigning files: %s", err)
 	}
 
 	// Export output
