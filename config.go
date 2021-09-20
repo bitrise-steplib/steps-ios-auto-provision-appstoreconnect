@@ -7,13 +7,9 @@ import (
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autocodesign"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
-
-// CertificateFileURL contains a p12 file URL and passphrase
-type CertificateFileURL struct {
-	URL, Passphrase string
-}
 
 // Config holds the step inputs
 type Config struct {
@@ -61,15 +57,15 @@ func (c Config) ValidateCertificates() ([]string, []string, error) {
 }
 
 // CertificateFileURLs returns an array of p12 file URLs and passphrases
-func (c Config) CertificateFileURLs() ([]CertificateFileURL, error) {
+func (c Config) CertificateFileURLs() ([]autocodesign.CertificateFileURL, error) {
 	pfxURLs, passphrases, err := c.ValidateCertificates()
 	if err != nil {
 		return nil, err
 	}
 
-	files := make([]CertificateFileURL, len(pfxURLs))
+	files := make([]autocodesign.CertificateFileURL, len(pfxURLs))
 	for i, pfxURL := range pfxURLs {
-		files[i] = CertificateFileURL{
+		files[i] = autocodesign.CertificateFileURL{
 			URL:        pfxURL,
 			Passphrase: passphrases[i],
 		}
