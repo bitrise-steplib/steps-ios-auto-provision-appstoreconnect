@@ -19,7 +19,6 @@ import (
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/spaceship"
 )
 
@@ -286,48 +285,13 @@ func main() {
 	}
 
 	// Force Codesign Settings
-	if err = autoprovision.ForceCodesignSettings(projectSettings, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
+	if err := autoprovision.ForceCodesignSettings(projectSettings, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
 		failf("Failed to force codesign settings: %s", err)
 	}
 
 	// Install certificates and profiles
-	fmt.Println()
-	log.Infof("Install certificates and profiles")
-
-	kc, err := keychain.New(stepConf.KeychainPath, stepConf.KeychainPassword)
-	if err != nil {
-		failf("Failed to initialize keychain: %s", err)
-	}
-
-	i := 0
-	for _, codesignSettings := range codesignSettingsByDistributionType {
-		log.Printf("certificate: %s", codesignSettings.Certificate.CommonName)
-
-		if err := kc.InstallCertificate(codesignSettings.Certificate, ""); err != nil {
-			failf("Failed to install certificate: %s", err)
-		}
-
-		log.Printf("profiles:")
-		for _, profile := range codesignSettings.ArchivableTargetProfilesByBundleID {
-			log.Printf("- %s", profile.Attributes().Name)
-
-			if err := autoprovision.WriteProfile(profile); err != nil {
-				failf("Failed to write profile to file: %s", err)
-			}
-		}
-
-		for _, profile := range codesignSettings.UITestTargetProfilesByBundleID {
-			log.Printf("- %s", profile.Attributes().Name)
-
-			if err := autoprovision.WriteProfile(profile); err != nil {
-				failf("Failed to write profile to file: %s", err)
-			}
-		}
-
-		if i < len(codesignSettingsByDistributionType)-1 {
-			fmt.Println()
-		}
-		i++
+	if err := autoprovision.InstallCertificatesAndProfiles(codesignSettingsByDistributionType, stepConf.KeychainPath, stepConf.KeychainPassword); err != nil {
+		failf("Failed to install codesigning files: %s", err)
 	}
 
 	// Export output
