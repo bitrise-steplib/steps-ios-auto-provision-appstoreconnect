@@ -10,8 +10,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
-// EnsureTestDevices ...
-func EnsureTestDevices(deviceClient devportal.DeviceClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
+func ensureTestDevices(deviceClient devportal.DeviceClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
 	var devPortalDeviceIDs []string
 
 	log.Infof("Fetching Apple Developer Portal devices")

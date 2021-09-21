@@ -58,7 +58,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 
 	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 	devportalClient := appstoreconnectclient.NewAPIDevportalClient(client)
-	manager := ProfileManager{
+	manager := profileManager{
 		client: devportalClient.ProfileClient,
 		// cache io.bitrise.testapp bundle ID, so that no need to mock bundle ID GET requests
 		bundleIDByBundleIDIdentifer: map[string]*appstoreconnect.BundleID{"io.bitrise.testapp": {
@@ -78,7 +78,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		containersByBundleID: nil}
 
 	// Act
-	profile, err := manager.EnsureProfile(
+	profile, err := manager.ensureProfile(
 		appstoreconnect.IOSAppDevelopment,
 		"io.bitrise.testapp",
 		serialized.Object(map[string]interface{}{}),
@@ -281,7 +281,7 @@ func Test_profileName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.profileType), func(t *testing.T) {
-			got, err := ProfileName(tt.profileType, tt.bundleID)
+			got, err := profileName(tt.profileType, tt.bundleID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("profileName() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -442,7 +442,7 @@ func Test_IsProfileExpired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
+			if got := isProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
 				t.Errorf("checkProfileExpiry() = %v, want %v", got, tt.want)
 			}
 		})

@@ -17,8 +17,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
-// EnsureProfiles ...
-func EnsureProfiles(profileClient devportal.ProfileClient, distrTypes []DistributionType,
+func ensureProfiles(profileClient devportal.ProfileClient, distrTypes []DistributionType,
 	certsByType map[appstoreconnect.CertificateType][]devportal.Certificate, requirements CodesignRequirements,
 	devPortalDeviceIDs []string, minProfileDaysValid int) (map[DistributionType]CodesignSettings, error) {
 	// Ensure Profiles
@@ -28,7 +27,7 @@ func EnsureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 
 	containersByBundleID := map[string][]string{}
 
-	profileManager := ProfileManager{
+	profileManager := profileManager{
 		client:                      profileClient,
 		bundleIDByBundleIDIdentifer: bundleIDByBundleIDIdentifer,
 		containersByBundleID:        containersByBundleID,
@@ -71,11 +70,11 @@ func EnsureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 
 		for bundleIDIdentifier, entitlements := range requirements.ArchivableTargetBundleIDToEntitlements {
 			var profileDeviceIDs []string
-			if DistributionTypeRequiresDeviceList([]DistributionType{distrType}) {
+			if distributionTypeRequiresDeviceList([]DistributionType{distrType}) {
 				profileDeviceIDs = devPortalDeviceIDs
 			}
 
-			profile, err := profileManager.EnsureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
+			profile, err := profileManager.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
 			if err != nil {
 				return nil, err
 			}
@@ -93,7 +92,7 @@ func EnsureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 				}
 
 				// Capabilities are not supported for UITest targets.
-				profile, err := profileManager.EnsureProfile(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
+				profile, err := profileManager.ensureProfile(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
 				if err != nil {
 					return nil, err
 				}
@@ -122,15 +121,13 @@ func EnsureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 	return codesignSettingsByDistributionType, nil
 }
 
-// ProfileManager ...
-type ProfileManager struct {
+type profileManager struct {
 	client                      devportal.ProfileClient
 	bundleIDByBundleIDIdentifer map[string]*appstoreconnect.BundleID
 	containersByBundleID        map[string][]string
 }
 
-// EnsureBundleID ...
-func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements serialized.Object) (*appstoreconnect.BundleID, error) {
+func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements serialized.Object) (*appstoreconnect.BundleID, error) {
 	fmt.Println()
 	log.Infof("  Searching for app ID for bundle ID: %s", bundleIDIdentifier)
 
@@ -198,14 +195,13 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 	return bundleID, nil
 }
 
-// EnsureProfile ...
-func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*devportal.Profile, error) {
+func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*devportal.Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities: %s", entitlements)
 
 	// Search for Bitrise managed Profile
-	name, err := ProfileName(profileType, bundleIDIdentifier)
+	name, err := profileName(profileType, bundleIDIdentifier)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create profile name: %s", err)
 	}
@@ -222,7 +218,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes().ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			err := CheckProfile(m.client, profile, devportal.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
+			err := checkProfile(m.client, profile, devportal.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
 				if mErr, ok := err.(devportal.NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
@@ -246,7 +242,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 	}
 
 	// Search for BundleID
-	bundleID, err := m.EnsureBundleID(bundleIDIdentifier, entitlements)
+	bundleID, err := m.ensureBundleID(bundleIDIdentifier, entitlements)
 	if err != nil {
 		return nil, err
 	}
@@ -264,8 +260,7 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 	return &profile, nil
 }
 
-// DistributionTypeRequiresDeviceList ...
-func DistributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
+func distributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
 	for _, distrType := range distrTypes {
 		if distrType == Development || distrType == AdHoc {
 			return true
@@ -283,8 +278,8 @@ func createWildcardBundleID(bundleID string) (string, error) {
 	return bundleID[:idx] + ".*", nil
 }
 
-// ProfileName generates profile name with layout: Bitrise <platform> <distribution type> - (<bundle id>)
-func ProfileName(profileType appstoreconnect.ProfileType, bundleID string) (string, error) {
+// profileName generates profile name with layout: Bitrise <platform> <distribution type> - (<bundle id>)
+func profileName(profileType appstoreconnect.ProfileType, bundleID string) (string, error) {
 	platform, ok := ProfileTypeToPlatform[profileType]
 	if !ok {
 		return "", fmt.Errorf("unknown profile type: %s", profileType)
@@ -405,8 +400,7 @@ func checkProfileDevices(profileDeviceIDs map[string]bool, deviceIDs []string) e
 	return nil
 }
 
-// IsProfileExpired ...
-func IsProfileExpired(prof devportal.Profile, minProfileDaysValid int) bool {
+func isProfileExpired(prof devportal.Profile, minProfileDaysValid int) bool {
 	relativeExpiryTime := time.Now()
 	if minProfileDaysValid > 0 {
 		relativeExpiryTime = relativeExpiryTime.Add(time.Duration(minProfileDaysValid) * 24 * time.Hour)
@@ -414,9 +408,8 @@ func IsProfileExpired(prof devportal.Profile, minProfileDaysValid int) bool {
 	return time.Time(prof.Attributes().ExpirationDate).Before(relativeExpiryTime)
 }
 
-// CheckProfile ...
-func CheckProfile(client devportal.ProfileClient, prof devportal.Profile, entitlements devportal.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
-	if IsProfileExpired(prof, minProfileDaysValid) {
+func checkProfile(client devportal.ProfileClient, prof devportal.Profile, entitlements devportal.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+	if isProfileExpired(prof, minProfileDaysValid) {
 		return devportal.NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
 		}
@@ -454,10 +447,10 @@ func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serial
 	return true, "", ""
 }
 
-// WriteProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.
+// writeProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.
 // Xcode uses profiles located in that directory.
 // The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
-func WriteProfile(profile devportal.Profile) error {
+func writeProfile(profile devportal.Profile) error {
 	homeDir := os.Getenv("HOME")
 	profilesDir := path.Join(homeDir, "Library/MobileDevice/Provisioning Profiles")
 	if exists, err := pathutil.IsDirExists(profilesDir); err != nil {

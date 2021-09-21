@@ -10,8 +10,7 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
-// SelectCertificatesAndDistributionTypes ...
-func SelectCertificatesAndDistributionTypes(certificateSource devportal.CertificateSource, certs []certificateutil.CertificateInfoModel, distribution DistributionType, teamID string, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]devportal.Certificate, []DistributionType, error) {
+func selectCertificatesAndDistributionTypes(certificateSource devportal.CertificateSource, certs []certificateutil.CertificateInfoModel, distribution DistributionType, teamID string, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]devportal.Certificate, []DistributionType, error) {
 	certType, ok := CertificateTypeByDistribution[distribution]
 	if !ok {
 		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", distribution))
@@ -30,7 +29,7 @@ func SelectCertificatesAndDistributionTypes(certificateSource devportal.Certific
 		}
 	}
 
-	certsByType, err := GetValidCertificates(certs, certificateSource, requiredCertTypes, teamID, verboseLog)
+	certsByType, err := getValidCertificates(certs, certificateSource, requiredCertTypes, teamID, verboseLog)
 	if err != nil {
 		if missingCertErr, ok := err.(MissingCertificateError); ok {
 			log.Errorf(err.Error())
@@ -51,9 +50,8 @@ func SelectCertificatesAndDistributionTypes(certificateSource devportal.Certific
 	return certsByType, distrTypes, nil
 }
 
-// GetValidCertificates ...
-func GetValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client devportal.CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string, isDebugLog bool) (map[appstoreconnect.CertificateType][]devportal.Certificate, error) {
-	typeToLocalCerts, err := GetValidLocalCertificates(localCertificates, teamID)
+func getValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client devportal.CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string, isDebugLog bool) (map[appstoreconnect.CertificateType][]devportal.Certificate, error) {
+	typeToLocalCerts, err := getValidLocalCertificates(localCertificates, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,14 +66,14 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 
 	// only for debugging
 	if isDebugLog {
-		if err := LogAllAPICertificates(client, typeToLocalCerts); err != nil {
+		if err := logAllAPICertificates(client, typeToLocalCerts); err != nil {
 			log.Debugf("Failed to log all Developer Portal certificates: %s", err)
 		}
 	}
 
 	validAPICertificates := map[appstoreconnect.CertificateType][]devportal.Certificate{}
 	for certificateType, validLocalCertificates := range typeToLocalCerts {
-		matchingCertificates, err := MatchLocalToAPICertificates(client, certificateType, validLocalCertificates)
+		matchingCertificates, err := matchLocalToAPICertificates(client, certificateType, validLocalCertificates)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +86,7 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 		}
 
 		if requiredCertificateTypes[certificateType] && len(matchingCertificates) == 0 {
-			return nil, fmt.Errorf("not found any of the following %s certificates on Developer Portal:\n%s", certificateType, CertsToString(validLocalCertificates))
+			return nil, fmt.Errorf("not found any of the following %s certificates on Developer Portal:\n%s", certificateType, certsToString(validLocalCertificates))
 		}
 
 		if len(matchingCertificates) > 0 {
@@ -99,8 +97,8 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 	return validAPICertificates, nil
 }
 
-// GetValidLocalCertificates returns validated and deduplicated local certificates
-func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoModel, teamID string) (map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel, error) {
+// getValidLocalCertificates returns validated and deduplicated local certificates
+func getValidLocalCertificates(certificates []certificateutil.CertificateInfoModel, teamID string) (map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel, error) {
 	preFilteredCerts := certificateutil.FilterValidCertificateInfos(certificates)
 
 	if len(preFilteredCerts.InvalidCertificates) != 0 {
@@ -110,20 +108,20 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 		log.Warnf("Ignoring duplicated certificates with the same name: %s", preFilteredCerts.DuplicatedCertificates)
 	}
 
-	log.Debugf("Valid and deduplicated certificates:\n%s", CertsToString(preFilteredCerts.ValidCertificates))
+	log.Debugf("Valid and deduplicated certificates:\n%s", certsToString(preFilteredCerts.ValidCertificates))
 
 	localCertificates := map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{}
 	for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.IOSDevelopment, appstoreconnect.IOSDistribution} {
 		localCertificates[certType] = filterCertificates(preFilteredCerts.ValidCertificates, certType, teamID)
 	}
 
-	log.Debugf("Valid and deduplicated certificates for Development team (%s):\n%s", teamID, CertsToString(preFilteredCerts.ValidCertificates))
+	log.Debugf("Valid and deduplicated certificates for Development team (%s):\n%s", teamID, certsToString(preFilteredCerts.ValidCertificates))
 
 	return localCertificates, nil
 }
 
-// MatchLocalToAPICertificates ...
-func MatchLocalToAPICertificates(client devportal.CertificateSource, certificateType appstoreconnect.CertificateType, localCertificates []certificateutil.CertificateInfoModel) ([]devportal.Certificate, error) {
+// matchLocalToAPICertificates ...
+func matchLocalToAPICertificates(client devportal.CertificateSource, certificateType appstoreconnect.CertificateType, localCertificates []certificateutil.CertificateInfoModel) ([]devportal.Certificate, error) {
 	var matchingCertificates []devportal.Certificate
 
 	for _, localCert := range localCertificates {
@@ -142,8 +140,8 @@ func MatchLocalToAPICertificates(client devportal.CertificateSource, certificate
 	return matchingCertificates, nil
 }
 
-// LogAllAPICertificates ...
-func LogAllAPICertificates(client devportal.CertificateSource, localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel) error {
+// logAllAPICertificates ...
+func logAllAPICertificates(client devportal.CertificateSource, localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel) error {
 	certificates, err := client.QueryAllIOSCertificates()
 	if err != nil {
 		return fmt.Errorf("failed to query certificates on Developer Portal: %s", err)
@@ -171,7 +169,7 @@ func filterCertificates(certificates []certificateutil.CertificateInfoModel, cer
 		}
 	}
 
-	log.Debugf("Valid certificates with type %s:\n%s", certificateType, CertsToString(filteredCertificates))
+	log.Debugf("Valid certificates with type %s:\n%s", certificateType, certsToString(filteredCertificates))
 
 	if len(filteredCertificates) == 0 {
 		return nil
@@ -183,13 +181,13 @@ func filterCertificates(certificates []certificateutil.CertificateInfoModel, cer
 		filteredCertificates = certsByTeam[teamID]
 	}
 
-	log.Debugf("Valid certificates with type %s, Team ID: (%s):\n%s", certificateType, teamID, CertsToString(filteredCertificates))
+	log.Debugf("Valid certificates with type %s, Team ID: (%s):\n%s", certificateType, teamID, certsToString(filteredCertificates))
 
 	if len(filteredCertificates) == 0 {
 		return nil
 	}
 
-	log.Debugf("Valid certificates with type %s, Team ID: (%s)\n%s ", certificateType, teamID, CertsToString(filteredCertificates))
+	log.Debugf("Valid certificates with type %s, Team ID: (%s)\n%s ", certificateType, teamID, certsToString(filteredCertificates))
 
 	return filteredCertificates
 }
@@ -209,8 +207,7 @@ func isDistributionCertificate(cert certificateutil.CertificateInfoModel) bool {
 		strings.HasPrefix(strings.ToLower(cert.CommonName), strings.ToLower("Apple Distribution"))
 }
 
-// CertsToString ...
-func CertsToString(certs []certificateutil.CertificateInfoModel) (s string) {
+func certsToString(certs []certificateutil.CertificateInfoModel) (s string) {
 	for i, cert := range certs {
 		s += "- "
 		s += cert.String()

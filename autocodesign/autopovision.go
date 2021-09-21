@@ -30,7 +30,7 @@ func InstallCertificatesAndProfiles(codesignSettingsByDistributionType map[Distr
 		for _, profile := range codesignSettings.ArchivableTargetProfilesByBundleID {
 			log.Printf("- %s", profile.Attributes().Name)
 
-			if err := WriteProfile(profile); err != nil {
+			if err := writeProfile(profile); err != nil {
 				return fmt.Errorf("failed to write profile to file: %s", err)
 			}
 		}
@@ -38,7 +38,7 @@ func InstallCertificatesAndProfiles(codesignSettingsByDistributionType map[Distr
 		for _, profile := range codesignSettings.UITestTargetProfilesByBundleID {
 			log.Printf("- %s", profile.Attributes().Name)
 
-			if err := WriteProfile(profile); err != nil {
+			if err := writeProfile(profile); err != nil {
 				return fmt.Errorf("failed to write profile to file: %s", err)
 			}
 		}

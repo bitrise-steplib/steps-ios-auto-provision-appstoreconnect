@@ -28,7 +28,7 @@ func downloadCertificates(URLs []CertificateFileURL) ([]certificateutil.Certific
 		if err != nil {
 			return nil, err
 		}
-		log.Debugf("Codesign identities included:\n%s", CertsToString(p12CertInfos))
+		log.Debugf("Codesign identities included:\n%s", certsToString(p12CertInfos))
 
 		certInfos = append(certInfos, p12CertInfos...)
 	}

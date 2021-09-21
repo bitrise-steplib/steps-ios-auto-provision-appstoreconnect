@@ -130,7 +130,7 @@ func Do(buildURL, buildAPIToken string,
 		log.Printf("- %s", cert.CommonName)
 	}
 
-	certsByType, distrTypes, err := SelectCertificatesAndDistributionTypes(
+	certsByType, distrTypes, err := selectCertificatesAndDistributionTypes(
 		devportalClient.CertificateSource,
 		certs,
 		distributionType,
@@ -144,16 +144,16 @@ func Do(buildURL, buildAPIToken string,
 
 	// Ensure devices
 	var devPortalDeviceIDs []string
-	if DistributionTypeRequiresDeviceList(distrTypes) {
+	if distributionTypeRequiresDeviceList(distrTypes) {
 		var err error
-		devPortalDeviceIDs, err = EnsureTestDevices(devportalClient.DeviceClient, conn.TestDevices, codesignRequirements.Platform)
+		devPortalDeviceIDs, err = ensureTestDevices(devportalClient.DeviceClient, conn.TestDevices, codesignRequirements.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to ensure test devices: %s", err)
 		}
 	}
 
 	// Ensure Profiles
-	codesignSettingsByDistributionType, err := EnsureProfiles(devportalClient.ProfileClient, distrTypes, certsByType, codesignRequirements, devPortalDeviceIDs, minProfileDaysValid)
+	codesignSettingsByDistributionType, err := ensureProfiles(devportalClient.ProfileClient, distrTypes, certsByType, codesignRequirements, devPortalDeviceIDs, minProfileDaysValid)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to ensure profiles: %s", err)
 	}
