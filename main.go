@@ -55,7 +55,7 @@ func main() {
 		failf("%v", err)
 	}
 
-	codesignSettingsByDistributionType, err := autocodesign.Do(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, certURLs, stepConf.DistributionType(), stepConf.SignUITestTargets,
+	codesignSettingsByDistributionType, err := autocodesign.Do(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, certURLs, stepConf.DistributionType(), stepConf.SignUITestTargets,
 		stepConf.VerboseLog, codesignRequirements, stepConf.MinProfileDaysValid, stepConf.KeychainPath, stepConf.KeychainPassword)
 	if err != nil {
 		failf("Automatic code signing failed: %s", err)

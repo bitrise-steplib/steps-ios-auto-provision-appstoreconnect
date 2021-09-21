@@ -49,7 +49,8 @@ type CodesignSettings struct {
 
 // Do ...
 func Do(buildURL, buildAPIToken string,
-	authSources []appleauth.Source, certificateURLs []CertificateFileURL, distributionType DistributionType,
+	authSources []appleauth.Source, authInputs appleauth.Inputs,
+	certificateURLs []CertificateFileURL, distributionType DistributionType,
 	signUITestTargets, verboseLog bool,
 	codesignRequirements CodesignRequirements, minProfileDaysValid int,
 	keychainPath string, keychainPassword stepconf.Secret) (map[DistributionType]CodesignSettings, error) {
@@ -79,7 +80,7 @@ func Do(buildURL, buildAPIToken string,
 		}
 	}
 
-	authConfig, err := appleauth.Select(conn, authSources, appleauth.Inputs{})
+	authConfig, err := appleauth.Select(conn, authSources, authInputs)
 	if err != nil {
 		if conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
 			fmt.Println()
