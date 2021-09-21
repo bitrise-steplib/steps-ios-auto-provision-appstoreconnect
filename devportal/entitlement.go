@@ -11,7 +11,8 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
-const iCloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-identifiers"
+// ICloudIdentifiersEntitlementKey ...
+const ICloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-identifiers"
 
 // DataProtections ...
 var DataProtections = map[string]appstoreconnect.CapabilityOptionKey{
@@ -197,7 +198,7 @@ func (e Entitlement) ICloudContainers() ([]string, error) {
 		return nil, nil
 	}
 
-	containers, err := serialized.Object(e).StringSlice(iCloudIdentifiersEntitlementKey)
+	containers, err := serialized.Object(e).StringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil && !serialized.IsKeyNotFoundError(err) {
 		return nil, err
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 	"howett.net/plist"
 )
 
@@ -305,14 +306,14 @@ func (p *ProjectHelper) targetEntitlements(name, config, bundleID string) (seria
 		return nil, err
 	}
 
-	return resolveEntitlementVariables(Entitlement(entitlements), bundleID)
+	return resolveEntitlementVariables(devportal.Entitlement(entitlements), bundleID)
 }
 
 // resolveEntitlementVariables expands variables in the project entitlements.
 // Entitlement values can contain variables, for example: `iCloud.$(CFBundleIdentifier)`.
 // Expanding iCloud Container values only, as they are compared to the profile values later.
 // Expand CFBundleIdentifier variable only, other variables are not yet supported.
-func resolveEntitlementVariables(entitlements Entitlement, bundleID string) (serialized.Object, error) {
+func resolveEntitlementVariables(entitlements devportal.Entitlement, bundleID string) (serialized.Object, error) {
 	containers, err := entitlements.ICloudContainers()
 	if err != nil {
 		return nil, err
@@ -338,7 +339,7 @@ func resolveEntitlementVariables(entitlements Entitlement, bundleID string) (ser
 		expandedContainers = append(expandedContainers, container)
 	}
 
-	entitlements[iCloudIdentifiersEntitlementKey] = expandedContainers
+	entitlements[devportal.ICloudIdentifiersEntitlementKey] = expandedContainers
 
 	return serialized.Object(entitlements), nil
 }

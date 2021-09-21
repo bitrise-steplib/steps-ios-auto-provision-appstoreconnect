@@ -10,7 +10,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 const (
@@ -278,7 +277,7 @@ func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconn
 }
 
 // CheckBundleIDEntitlements ...
-func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements autoprovision.Entitlement) error {
+func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements devportal.Entitlement) error {
 	entitlementsBytes, err := json.Marshal(projectEntitlements)
 	if err != nil {
 		return err
@@ -302,7 +301,7 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 }
 
 // SyncBundleID ...
-func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, projectEntitlements autoprovision.Entitlement) error {
+func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, projectEntitlements devportal.Entitlement) error {
 	entitlementsBytes, err := json.Marshal(projectEntitlements)
 	if err != nil {
 		return err

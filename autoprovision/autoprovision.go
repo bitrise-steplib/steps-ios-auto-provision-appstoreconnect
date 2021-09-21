@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
 )
 
@@ -86,7 +87,7 @@ func GetCodesignSettingsFromProject(settings ProjectSettings) (CodesignRequireme
 	}, config, nil
 }
 
-func SelectCertificatesAndDistributionTypes(certificateSource CertificateSource, certs []certificateutil.CertificateInfoModel, distribution DistributionType, teamID string, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]APICertificate, []DistributionType, error) {
+func SelectCertificatesAndDistributionTypes(certificateSource devportal.CertificateSource, certs []certificateutil.CertificateInfoModel, distribution DistributionType, teamID string, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]devportal.APICertificate, []DistributionType, error) {
 	certType, ok := CertificateTypeByDistribution[distribution]
 	if !ok {
 		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", distribution))
@@ -126,7 +127,7 @@ func SelectCertificatesAndDistributionTypes(certificateSource CertificateSource,
 	return certsByType, distrTypes, nil
 }
 
-func EnsureTestDevices(deviceClient DeviceClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
+func EnsureTestDevices(deviceClient devportal.DeviceClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
 	var devPortalDeviceIDs []string
 
 	log.Infof("Fetching Apple Developer Portal devices")
@@ -165,13 +166,13 @@ func EnsureTestDevices(deviceClient DeviceClient, testDevices []devportalservice
 }
 
 type CodesignSettings struct {
-	ArchivableTargetProfilesByBundleID map[string]Profile
-	UITestTargetProfilesByBundleID     map[string]Profile
+	ArchivableTargetProfilesByBundleID map[string]devportal.Profile
+	UITestTargetProfilesByBundleID     map[string]devportal.Profile
 	Certificate                        certificateutil.CertificateInfoModel
 }
 
-func EnsureProfiles(profileClient ProfileClient, distrTypes []DistributionType,
-	certsByType map[appstoreconnect.CertificateType][]APICertificate, requirements CodesignRequirements,
+func EnsureProfiles(profileClient devportal.ProfileClient, distrTypes []DistributionType,
+	certsByType map[appstoreconnect.CertificateType][]devportal.APICertificate, requirements CodesignRequirements,
 	devPortalDeviceIDs []string, minProfileDaysValid int) (map[DistributionType]CodesignSettings, error) {
 	// Ensure Profiles
 	codesignSettingsByDistributionType := map[DistributionType]CodesignSettings{}
@@ -204,8 +205,8 @@ func EnsureProfiles(profileClient ProfileClient, distrTypes []DistributionType,
 		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
 		codesignSettings := CodesignSettings{
-			ArchivableTargetProfilesByBundleID: map[string]Profile{},
-			UITestTargetProfilesByBundleID:     map[string]Profile{},
+			ArchivableTargetProfilesByBundleID: map[string]devportal.Profile{},
+			UITestTargetProfilesByBundleID:     map[string]devportal.Profile{},
 			Certificate:                        certs[0].Certificate,
 		}
 

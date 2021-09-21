@@ -7,9 +7,10 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
-func registerMissingTestDevices(client DeviceClient, testDevices []devportalservice.TestDevice, devPortalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
+func registerMissingTestDevices(client devportal.DeviceClient, testDevices []devportalservice.TestDevice, devPortalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
 	if client == nil {
 		return []appstoreconnect.Device{}, fmt.Errorf("the App Store Connect API client not provided")
 	}

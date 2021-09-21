@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
 // ProfileName generates profile name with layout: Bitrise <platform> <distribution type> - (<bundle id>)
@@ -36,7 +37,7 @@ func ProfileName(profileType appstoreconnect.ProfileType, bundleID string) (stri
 	return fmt.Sprintf("%sBitrise %s %s - (%s)", prefix, platform, distribution, bundleID), nil
 }
 
-func checkProfileEntitlements(client ProfileClient, prof Profile, projectEntitlements Entitlement) error {
+func checkProfileEntitlements(client devportal.ProfileClient, prof devportal.Profile, projectEntitlements devportal.Entitlement) error {
 	profileEnts, err := parseRawProfileEntitlements(prof)
 	if err != nil {
 		return err
@@ -49,7 +50,7 @@ func checkProfileEntitlements(client ProfileClient, prof Profile, projectEntitle
 		return fmt.Errorf("failed to check missing containers: %s", err)
 	}
 	if len(missingContainers) > 0 {
-		return NonmatchingProfileError{
+		return devportal.NonmatchingProfileError{
 			Reason: fmt.Sprintf("project uses containers that are missing from the provisioning profile: %v", missingContainers),
 		}
 	}
@@ -62,7 +63,7 @@ func checkProfileEntitlements(client ProfileClient, prof Profile, projectEntitle
 	return client.CheckBundleIDEntitlements(bundleID, projectEntitlements)
 }
 
-func parseRawProfileEntitlements(prof Profile) (serialized.Object, error) {
+func parseRawProfileEntitlements(prof devportal.Profile) (serialized.Object, error) {
 	pkcs, err := profileutil.ProvisioningProfileFromContent(prof.Attributes().ProfileContent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
@@ -116,7 +117,7 @@ func findMissingContainers(projectEnts, profileEnts serialized.Object) ([]string
 func checkProfileCertificates(profileCertificateIDs map[string]bool, certificateIDs []string) error {
 	for _, id := range certificateIDs {
 		if !profileCertificateIDs[id] {
-			return NonmatchingProfileError{
+			return devportal.NonmatchingProfileError{
 				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
 			}
 		}
@@ -127,7 +128,7 @@ func checkProfileCertificates(profileCertificateIDs map[string]bool, certificate
 func checkProfileDevices(profileDeviceIDs map[string]bool, deviceIDs []string) error {
 	for _, id := range deviceIDs {
 		if !profileDeviceIDs[id] {
-			return NonmatchingProfileError{
+			return devportal.NonmatchingProfileError{
 				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
 			}
 		}
@@ -137,7 +138,7 @@ func checkProfileDevices(profileDeviceIDs map[string]bool, deviceIDs []string) e
 }
 
 // IsProfileExpired ...
-func IsProfileExpired(prof Profile, minProfileDaysValid int) bool {
+func IsProfileExpired(prof devportal.Profile, minProfileDaysValid int) bool {
 	relativeExpiryTime := time.Now()
 	if minProfileDaysValid > 0 {
 		relativeExpiryTime = relativeExpiryTime.Add(time.Duration(minProfileDaysValid) * 24 * time.Hour)
@@ -146,9 +147,9 @@ func IsProfileExpired(prof Profile, minProfileDaysValid int) bool {
 }
 
 // CheckProfile ...
-func CheckProfile(client ProfileClient, prof Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+func CheckProfile(client devportal.ProfileClient, prof devportal.Profile, entitlements devportal.Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
 	if IsProfileExpired(prof, minProfileDaysValid) {
-		return NonmatchingProfileError{
+		return devportal.NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),
 		}
 	}
@@ -175,7 +176,7 @@ func CheckProfile(client ProfileClient, prof Profile, entitlements Entitlement, 
 // WriteProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.
 // Xcode uses profiles located in that directory.
 // The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
-func WriteProfile(profile Profile) error {
+func WriteProfile(profile devportal.Profile) error {
 	homeDir := os.Getenv("HOME")
 	profilesDir := path.Join(homeDir, "Library/MobileDevice/Provisioning Profiles")
 	if exists, err := pathutil.IsDirExists(profilesDir); err != nil {

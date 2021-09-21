@@ -10,7 +10,9 @@ import (
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnectclient"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/spaceship"
 )
 
@@ -74,12 +76,12 @@ func Do(buildURL, buildAPIToken string,
 	// create developer portal client
 	fmt.Println()
 	log.Infof("Initializing Developer Portal client")
-	var devportalClient autoprovision.DevportalClient
+	var devportalClient devportal.DevportalClient
 	if authConfig.APIKey != nil {
 		httpClient := appstoreconnect.NewRetryableHTTPClient()
 		client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
 		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
-		devportalClient = autoprovision.NewAPIDevportalClient(client)
+		devportalClient = appstoreconnectclient.NewAPIDevportalClient(client)
 		log.Donef("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if authConfig.AppleID != nil {
 		client, err := spaceship.NewClient(*authConfig.AppleID, codesignRequirements.TeamID)

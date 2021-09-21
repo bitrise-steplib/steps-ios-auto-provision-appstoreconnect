@@ -24,8 +24,6 @@ type APICertificate struct {
 	ID          string
 }
 
-type Device appstoreconnect.Device
-
 // CertificateSource ...
 type CertificateSource interface {
 	QueryCertificateBySerial(*big.Int) (APICertificate, error)

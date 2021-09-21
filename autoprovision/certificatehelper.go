@@ -7,6 +7,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
 // DistributionType ...
@@ -51,7 +52,7 @@ func (e MissingCertificateError) Error() string {
 }
 
 // GetValidCertificates ...
-func GetValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string, isDebugLog bool) (map[appstoreconnect.CertificateType][]APICertificate, error) {
+func GetValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client devportal.CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string, isDebugLog bool) (map[appstoreconnect.CertificateType][]devportal.APICertificate, error) {
 	typeToLocalCerts, err := GetValidLocalCertificates(localCertificates, teamID)
 	if err != nil {
 		return nil, err
@@ -61,7 +62,7 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 
 	for certificateType, required := range requiredCertificateTypes {
 		if required && len(typeToLocalCerts[certificateType]) == 0 {
-			return map[appstoreconnect.CertificateType][]APICertificate{}, MissingCertificateError{certificateType, teamID}
+			return map[appstoreconnect.CertificateType][]devportal.APICertificate{}, MissingCertificateError{certificateType, teamID}
 		}
 	}
 
@@ -72,7 +73,7 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 		}
 	}
 
-	validAPICertificates := map[appstoreconnect.CertificateType][]APICertificate{}
+	validAPICertificates := map[appstoreconnect.CertificateType][]devportal.APICertificate{}
 	for certificateType, validLocalCertificates := range typeToLocalCerts {
 		matchingCertificates, err := MatchLocalToAPICertificates(client, certificateType, validLocalCertificates)
 		if err != nil {
@@ -122,8 +123,8 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 }
 
 // MatchLocalToAPICertificates ...
-func MatchLocalToAPICertificates(client CertificateSource, certificateType appstoreconnect.CertificateType, localCertificates []certificateutil.CertificateInfoModel) ([]APICertificate, error) {
-	var matchingCertificates []APICertificate
+func MatchLocalToAPICertificates(client devportal.CertificateSource, certificateType appstoreconnect.CertificateType, localCertificates []certificateutil.CertificateInfoModel) ([]devportal.APICertificate, error) {
+	var matchingCertificates []devportal.APICertificate
 
 	for _, localCert := range localCertificates {
 		cert, err := client.QueryCertificateBySerial(localCert.Certificate.SerialNumber)
@@ -142,7 +143,7 @@ func MatchLocalToAPICertificates(client CertificateSource, certificateType appst
 }
 
 // LogAllAPICertificates ...
-func LogAllAPICertificates(client CertificateSource, localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel) error {
+func LogAllAPICertificates(client devportal.CertificateSource, localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel) error {
 	certificates, err := client.QueryAllIOSCertificates()
 	if err != nil {
 		return fmt.Errorf("failed to query certificates on Developer Portal: %s", err)

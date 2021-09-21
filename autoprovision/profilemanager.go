@@ -7,11 +7,12 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
 // ProfileManager ...
 type ProfileManager struct {
-	client                      ProfileClient
+	client                      devportal.ProfileClient
 	bundleIDByBundleIDIdentifer map[string]*appstoreconnect.BundleID
 	containersByBundleID        map[string][]string
 }
@@ -36,12 +37,12 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
 
 		// Check if BundleID is sync with the project
-		err := m.client.CheckBundleIDEntitlements(*bundleID, Entitlement(entitlements))
+		err := m.client.CheckBundleIDEntitlements(*bundleID, devportal.Entitlement(entitlements))
 		if err != nil {
-			if mErr, ok := err.(NonmatchingProfileError); ok {
+			if mErr, ok := err.(devportal.NonmatchingProfileError); ok {
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
-				if err := m.client.SyncBundleID(*bundleID, Entitlement(entitlements)); err != nil {
+				if err := m.client.SyncBundleID(*bundleID, devportal.Entitlement(entitlements)); err != nil {
 					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
 				}
 
@@ -59,7 +60,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 	// Create BundleID
 	log.Warnf("  app ID not found, generating...")
 
-	capabilities := Entitlement(entitlements)
+	capabilities := devportal.Entitlement(entitlements)
 
 	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier)
 	if err != nil {
@@ -86,7 +87,7 @@ func (m ProfileManager) EnsureBundleID(bundleIDIdentifier string, entitlements s
 }
 
 // EnsureProfile ...
-func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
+func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*devportal.Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities: %s", entitlements)
@@ -109,9 +110,9 @@ func (m ProfileManager) EnsureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes().ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			err := CheckProfile(m.client, profile, Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
+			err := CheckProfile(m.client, profile, devportal.Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
-				if mErr, ok := err.(NonmatchingProfileError); ok {
+				if mErr, ok := err.(devportal.NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
 				} else {
 					return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
