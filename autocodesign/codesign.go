@@ -201,6 +201,7 @@ func NewProject(projOrWSPath, schemeName, configurationName string) (Project, er
 	}, nil
 }
 
+// MainTargetBundleID ...
 func (p Project) MainTargetBundleID() (string, error) {
 	bundleID, err := p.projHelper.TargetBundleID(p.projHelper.MainTarget.Name, p.projHelper.Configuration)
 	if err != nil {

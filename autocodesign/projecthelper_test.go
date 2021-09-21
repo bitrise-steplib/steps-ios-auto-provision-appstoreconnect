@@ -368,7 +368,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 		}
 		xcProjCases = append(xcProjCases, xcProj)
 
-		projHelp, _, err := NewProjectHelper(
+		projHelp, err := NewProjectHelper(
 			projectCases[i],
 			schemeCase,
 			configCases[i],
@@ -512,7 +512,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		}
 		xcProjCases = append(xcProjCases, xcProj)
 
-		projHelp, _, err := NewProjectHelper(
+		projHelp, err := NewProjectHelper(
 			projectCases[i],
 			schemeCase,
 			configCases[i],
