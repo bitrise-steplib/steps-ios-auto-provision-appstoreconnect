@@ -3,14 +3,10 @@ package autocodesign
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
 	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
@@ -445,35 +441,4 @@ func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serial
 	}
 
 	return true, "", ""
-}
-
-// writeProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.
-// Xcode uses profiles located in that directory.
-// The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
-func writeProfile(profile devportal.Profile) error {
-	homeDir := os.Getenv("HOME")
-	profilesDir := path.Join(homeDir, "Library/MobileDevice/Provisioning Profiles")
-	if exists, err := pathutil.IsDirExists(profilesDir); err != nil {
-		return fmt.Errorf("failed to check directory (%s) for provisioning profiles: %s", profilesDir, err)
-	} else if !exists {
-		if err := os.MkdirAll(profilesDir, 0600); err != nil {
-			return fmt.Errorf("failed to generate directory (%s) for provisioning profiles: %s", profilesDir, err)
-		}
-	}
-
-	var ext string
-	switch profile.Attributes().Platform {
-	case appstoreconnect.IOS:
-		ext = ".mobileprovision"
-	case appstoreconnect.MacOS:
-		ext = ".provisionprofile"
-	default:
-		return fmt.Errorf("failed to write profile to file, unsupported platform: (%s). Supported platforms: %s, %s", profile.Attributes().Platform, appstoreconnect.IOS, appstoreconnect.MacOS)
-	}
-
-	name := path.Join(profilesDir, profile.Attributes().UUID+ext)
-	if err := ioutil.WriteFile(name, profile.Attributes().ProfileContent, 0600); err != nil {
-		return fmt.Errorf("failed to write profile to file: %s", err)
-	}
-	return nil
 }

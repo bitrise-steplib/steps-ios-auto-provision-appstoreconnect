@@ -159,7 +159,7 @@ func Do(buildURL, buildAPIToken string,
 	}
 
 	// Install certificates and profiles
-	if err := InstallCertificatesAndProfiles(codesignSettingsByDistributionType, keychainPath, keychainPassword); err != nil {
+	if err := installCodesigningFiles(codesignSettingsByDistributionType, keychainPath, keychainPassword); err != nil {
 		return nil, fmt.Errorf("Failed to install codesigning files: %s", err)
 	}
 
