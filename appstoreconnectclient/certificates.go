@@ -25,27 +25,27 @@ func NewAPICertificateSource(client *appstoreconnect.Client) devportal.Certifica
 }
 
 // QueryCertificateBySerial ...
-func (s *APICertificateSource) QueryCertificateBySerial(serial *big.Int) (devportal.APICertificate, error) {
+func (s *APICertificateSource) QueryCertificateBySerial(serial *big.Int) (devportal.Certificate, error) {
 	response, err := s.client.Provisioning.FetchCertificate(serial.Text(16))
 	if err != nil {
-		return devportal.APICertificate{}, err
+		return devportal.Certificate{}, err
 	}
 
 	certs, err := parseCertificatesResponse([]appstoreconnect.Certificate{response})
 	if err != nil {
-		return devportal.APICertificate{}, err
+		return devportal.Certificate{}, err
 	}
 	return certs[0], nil
 }
 
 // QueryAllIOSCertificates returns all iOS certificates from App Store Connect API
-func (s *APICertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]devportal.APICertificate, error) {
-	typeToCertificates := map[appstoreconnect.CertificateType][]devportal.APICertificate{}
+func (s *APICertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]devportal.Certificate, error) {
+	typeToCertificates := map[appstoreconnect.CertificateType][]devportal.Certificate{}
 
 	for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.Development, appstoreconnect.IOSDevelopment, appstoreconnect.Distribution, appstoreconnect.IOSDistribution} {
 		certs, err := queryCertificatesByType(s.client, certType)
 		if err != nil {
-			return map[appstoreconnect.CertificateType][]devportal.APICertificate{}, err
+			return map[appstoreconnect.CertificateType][]devportal.Certificate{}, err
 		}
 		typeToCertificates[certType] = certs
 	}
@@ -53,8 +53,8 @@ func (s *APICertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.Ce
 	return typeToCertificates, nil
 }
 
-func parseCertificatesResponse(response []appstoreconnect.Certificate) ([]devportal.APICertificate, error) {
-	var certifacteInfos []devportal.APICertificate
+func parseCertificatesResponse(response []appstoreconnect.Certificate) ([]devportal.Certificate, error) {
+	var certifacteInfos []devportal.Certificate
 	for _, resp := range response {
 		if resp.Type == "certificates" {
 			cert, err := x509.ParseCertificate(resp.Attributes.CertificateContent)
@@ -64,7 +64,7 @@ func parseCertificatesResponse(response []appstoreconnect.Certificate) ([]devpor
 
 			certInfo := certificateutil.NewCertificateInfo(*cert, nil)
 
-			certifacteInfos = append(certifacteInfos, devportal.APICertificate{
+			certifacteInfos = append(certifacteInfos, devportal.Certificate{
 				Certificate: certInfo,
 				ID:          resp.ID,
 			})
@@ -74,7 +74,7 @@ func parseCertificatesResponse(response []appstoreconnect.Certificate) ([]devpor
 	return certifacteInfos, nil
 }
 
-func queryCertificatesByType(client *appstoreconnect.Client, certificateType appstoreconnect.CertificateType) ([]devportal.APICertificate, error) {
+func queryCertificatesByType(client *appstoreconnect.Client, certificateType appstoreconnect.CertificateType) ([]devportal.Certificate, error) {
 	nextPageURL := ""
 	var certificates []appstoreconnect.Certificate
 	for {

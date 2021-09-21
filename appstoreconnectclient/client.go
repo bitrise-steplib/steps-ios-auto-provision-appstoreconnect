@@ -6,8 +6,8 @@ import (
 )
 
 // NewAPIDevportalClient ...
-func NewAPIDevportalClient(client *appstoreconnect.Client) devportal.DevportalClient {
-	return devportal.DevportalClient{
+func NewAPIDevportalClient(client *appstoreconnect.Client) devportal.Client {
+	return devportal.Client{
 		CertificateSource: NewAPICertificateSource(client),
 		DeviceClient:      NewAPIDeviceClient(client),
 		ProfileClient:     NewAPIProfileClient(client),

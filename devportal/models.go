@@ -5,29 +5,28 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/bitrise-io/go-xcode/devportalservice"
-
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
-// DevportalClient ...
-type DevportalClient struct {
+// Client ...
+type Client struct {
 	CertificateSource CertificateSource
 	DeviceClient      DeviceClient
 	ProfileClient     ProfileClient
 }
 
-// APICertificate is certificate present on Apple App Store Connect API, could match a local certificate
-type APICertificate struct {
+// Certificate is certificate present on Apple App Store Connect API, could match a local certificate
+type Certificate struct {
 	Certificate certificateutil.CertificateInfoModel
 	ID          string
 }
 
 // CertificateSource ...
 type CertificateSource interface {
-	QueryCertificateBySerial(*big.Int) (APICertificate, error)
-	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]APICertificate, error)
+	QueryCertificateBySerial(*big.Int) (Certificate, error)
+	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]Certificate, error)
 }
 
 // ProfileClient ...

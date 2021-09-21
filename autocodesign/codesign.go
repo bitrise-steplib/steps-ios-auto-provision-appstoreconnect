@@ -25,6 +25,7 @@ type CertificateFileURL struct {
 	URL, Passphrase string
 }
 
+// Do ...
 func Do(buildURL, buildAPIToken string,
 	authSources []appleauth.Source, certificateURLs []CertificateFileURL, distributionType autoprovision.DistributionType,
 	signUITestTargets, verboseLog bool,
@@ -76,7 +77,7 @@ func Do(buildURL, buildAPIToken string,
 	// create developer portal client
 	fmt.Println()
 	log.Infof("Initializing Developer Portal client")
-	var devportalClient devportal.DevportalClient
+	var devportalClient devportal.Client
 	if authConfig.APIKey != nil {
 		httpClient := appstoreconnect.NewRetryableHTTPClient()
 		client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))

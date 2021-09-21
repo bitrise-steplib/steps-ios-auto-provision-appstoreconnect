@@ -15,7 +15,7 @@ import (
 // CertificateSource ...
 type CertificateSource struct {
 	client       *Client
-	certificates map[appstoreconnect.CertificateType][]devportal.APICertificate
+	certificates map[appstoreconnect.CertificateType][]devportal.Certificate
 }
 
 // NewSpaceshipCertificateSource ...
@@ -26,10 +26,10 @@ func NewSpaceshipCertificateSource(client *Client) devportal.CertificateSource {
 }
 
 // QueryCertificateBySerial ...
-func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (devportal.APICertificate, error) {
+func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (devportal.Certificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
-			return devportal.APICertificate{}, err
+			return devportal.Certificate{}, err
 		}
 	}
 
@@ -40,11 +40,11 @@ func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (devportal
 		}
 	}
 
-	return devportal.APICertificate{}, fmt.Errorf("can not find certificate with serial")
+	return devportal.Certificate{}, fmt.Errorf("can not find certificate with serial")
 }
 
 // QueryAllIOSCertificates ...
-func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]devportal.APICertificate, error) {
+func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]devportal.Certificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
 			return nil, err
@@ -75,7 +75,7 @@ func (s *CertificateSource) downloadAll() error {
 		return err
 	}
 
-	s.certificates = map[appstoreconnect.CertificateType][]devportal.APICertificate{
+	s.certificates = map[appstoreconnect.CertificateType][]devportal.Certificate{
 		appstoreconnect.IOSDevelopment:  devCerts,
 		appstoreconnect.IOSDistribution: distCers,
 	}
@@ -90,7 +90,7 @@ type certificatesResponse struct {
 	} `json:"data"`
 }
 
-func getCertificates(cmd spaceshipCommand) ([]devportal.APICertificate, error) {
+func getCertificates(cmd spaceshipCommand) ([]devportal.Certificate, error) {
 	output, err := runSpaceshipCommand(cmd)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func getCertificates(cmd spaceshipCommand) ([]devportal.APICertificate, error) {
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	var certInfos []devportal.APICertificate
+	var certInfos []devportal.Certificate
 	for _, certInfo := range certificates.Data {
 		pemContent, err := base64.StdEncoding.DecodeString(certInfo.Content)
 		if err != nil {
@@ -113,7 +113,7 @@ func getCertificates(cmd spaceshipCommand) ([]devportal.APICertificate, error) {
 			return nil, err
 		}
 
-		certInfos = append(certInfos, devportal.APICertificate{
+		certInfos = append(certInfos, devportal.Certificate{
 			Certificate: certificateutil.NewCertificateInfo(*cert, nil),
 			ID:          certInfo.ID,
 		})

@@ -42,13 +42,13 @@ var ProfileTypeToDistribution = map[appstoreconnect.ProfileType]DistributionType
 
 // PlatformToProfileTypeByDistribution ...
 var PlatformToProfileTypeByDistribution = map[Platform]map[DistributionType]appstoreconnect.ProfileType{
-	IOS: map[DistributionType]appstoreconnect.ProfileType{
+	IOS: {
 		Development: appstoreconnect.IOSAppDevelopment,
 		AppStore:    appstoreconnect.IOSAppStore,
 		AdHoc:       appstoreconnect.IOSAppAdHoc,
 		Enterprise:  appstoreconnect.IOSAppInHouse,
 	},
-	TVOS: map[DistributionType]appstoreconnect.ProfileType{
+	TVOS: {
 		Development: appstoreconnect.TvOSAppDevelopment,
 		AppStore:    appstoreconnect.TvOSAppStore,
 		AdHoc:       appstoreconnect.TvOSAppAdHoc,

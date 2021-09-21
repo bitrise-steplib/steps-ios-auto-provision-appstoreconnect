@@ -46,8 +46,8 @@ func NewClient(authConfig appleauth.AppleID, teamID string) (*Client, error) {
 }
 
 // NewSpaceshipDevportalClient ...
-func NewSpaceshipDevportalClient(client *Client) devportal.DevportalClient {
-	return devportal.DevportalClient{
+func NewSpaceshipDevportalClient(client *Client) devportal.Client {
+	return devportal.Client{
 		CertificateSource: NewSpaceshipCertificateSource(client),
 		DeviceClient:      NewDeviceClient(client),
 		ProfileClient:     NewSpaceshipProfileClient(client),

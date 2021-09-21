@@ -52,7 +52,7 @@ func (e MissingCertificateError) Error() string {
 }
 
 // GetValidCertificates ...
-func GetValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client devportal.CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string, isDebugLog bool) (map[appstoreconnect.CertificateType][]devportal.APICertificate, error) {
+func GetValidCertificates(localCertificates []certificateutil.CertificateInfoModel, client devportal.CertificateSource, requiredCertificateTypes map[appstoreconnect.CertificateType]bool, teamID string, isDebugLog bool) (map[appstoreconnect.CertificateType][]devportal.Certificate, error) {
 	typeToLocalCerts, err := GetValidLocalCertificates(localCertificates, teamID)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 
 	for certificateType, required := range requiredCertificateTypes {
 		if required && len(typeToLocalCerts[certificateType]) == 0 {
-			return map[appstoreconnect.CertificateType][]devportal.APICertificate{}, MissingCertificateError{certificateType, teamID}
+			return map[appstoreconnect.CertificateType][]devportal.Certificate{}, MissingCertificateError{certificateType, teamID}
 		}
 	}
 
@@ -73,7 +73,7 @@ func GetValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 		}
 	}
 
-	validAPICertificates := map[appstoreconnect.CertificateType][]devportal.APICertificate{}
+	validAPICertificates := map[appstoreconnect.CertificateType][]devportal.Certificate{}
 	for certificateType, validLocalCertificates := range typeToLocalCerts {
 		matchingCertificates, err := MatchLocalToAPICertificates(client, certificateType, validLocalCertificates)
 		if err != nil {
@@ -123,8 +123,8 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 }
 
 // MatchLocalToAPICertificates ...
-func MatchLocalToAPICertificates(client devportal.CertificateSource, certificateType appstoreconnect.CertificateType, localCertificates []certificateutil.CertificateInfoModel) ([]devportal.APICertificate, error) {
-	var matchingCertificates []devportal.APICertificate
+func MatchLocalToAPICertificates(client devportal.CertificateSource, certificateType appstoreconnect.CertificateType, localCertificates []certificateutil.CertificateInfoModel) ([]devportal.Certificate, error) {
+	var matchingCertificates []devportal.Certificate
 
 	for _, localCert := range localCertificates {
 		cert, err := client.QueryCertificateBySerial(localCert.Certificate.SerialNumber)
