@@ -96,7 +96,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, conf, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -104,8 +104,8 @@ func TestNew(t *testing.T) {
 			if projHelp == nil {
 				t.Errorf("New() error = No projectHelper was generated")
 			}
-			if conf != tt.wantConfiguration {
-				t.Errorf("New() got1 = %v, want %v", conf, tt.wantConfiguration)
+			if projHelp.Configuration != tt.wantConfiguration {
+				t.Errorf("New() got1 = %v, want %v", projHelp.Configuration, tt.wantConfiguration)
 			}
 		})
 	}

@@ -190,24 +190,38 @@ type Project struct {
 }
 
 // NewProject ...
-func NewProject(projHelper ProjectHelper) Project {
-	return Project{
-		projHelper: projHelper,
+func NewProject(projOrWSPath, schemeName, configurationName string) (Project, error) {
+	projectHelper, err := NewProjectHelper(projOrWSPath, schemeName, configurationName)
+	if err != nil {
+		return Project{}, err
 	}
+
+	return Project{
+		projHelper: *projectHelper,
+	}, nil
+}
+
+func (p Project) MainTargetBundleID() (string, error) {
+	bundleID, err := p.projHelper.TargetBundleID(p.projHelper.MainTarget.Name, p.projHelper.Configuration)
+	if err != nil {
+		return "", fmt.Errorf("failed to read bundle ID for the main target: %s", err)
+	}
+
+	return bundleID, nil
 }
 
 // GetAppLayoutFromProject ...
-func (p Project) GetAppLayoutFromProject(config string, uiTestTargets bool) (AppLayout, error) {
-	log.Printf("Configuration: %s", config)
+func (p Project) GetAppLayoutFromProject(uiTestTargets bool) (AppLayout, error) {
+	log.Printf("Configuration: %s", p.projHelper.Configuration)
 
-	teamID, err := p.projHelper.ProjectTeamID(config)
+	teamID, err := p.projHelper.ProjectTeamID(p.projHelper.Configuration)
 	if err != nil {
 		return AppLayout{}, fmt.Errorf("failed to read project team ID: %s", err)
 	}
 
 	log.Printf("Project team ID: %s", teamID)
 
-	platform, err := p.projHelper.Platform(config)
+	platform, err := p.projHelper.Platform(p.projHelper.Configuration)
 	if err != nil {
 		return AppLayout{}, fmt.Errorf("Failed to read project platform: %s", err)
 	}
@@ -251,7 +265,7 @@ func (p Project) GetAppLayoutFromProject(config string, uiTestTargets bool) (App
 }
 
 // ForceCodesignAssets ...
-func (p Project) ForceCodesignAssets(config string, distribution DistributionType, codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error {
+func (p Project) ForceCodesignAssets(distribution DistributionType, codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error {
 	fmt.Println()
 	log.Infof("Apply Bitrise managed codesigning on the executable targets")
 	for _, target := range p.projHelper.ArchivableTargets() {
@@ -269,7 +283,7 @@ func (p Project) ForceCodesignAssets(config string, distribution DistributionTyp
 		}
 		teamID := codesignAssets.Certificate.TeamID
 
-		targetBundleID, err := p.projHelper.TargetBundleID(target.Name, config)
+		targetBundleID, err := p.projHelper.TargetBundleID(target.Name, p.projHelper.Configuration)
 		if err != nil {
 			return err
 		}
@@ -282,7 +296,7 @@ func (p Project) ForceCodesignAssets(config string, distribution DistributionTyp
 		log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
 		log.Printf("  certificate: %s", codesignAssets.Certificate.CommonName)
 
-		if err := p.projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignAssets.Certificate.CommonName, profile.Attributes().UUID); err != nil {
+		if err := p.projHelper.XcProj.ForceCodeSign(p.projHelper.Configuration, target.Name, teamID, codesignAssets.Certificate.CommonName, profile.Attributes().UUID); err != nil {
 			return fmt.Errorf("failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
 	}
@@ -297,7 +311,7 @@ func (p Project) ForceCodesignAssets(config string, distribution DistributionTyp
 
 			teamID := devCodesignAssets.Certificate.TeamID
 
-			targetBundleID, err := p.projHelper.TargetBundleID(uiTestTarget.Name, config)
+			targetBundleID, err := p.projHelper.TargetBundleID(uiTestTarget.Name, p.projHelper.Configuration)
 			if err != nil {
 				return err
 			}

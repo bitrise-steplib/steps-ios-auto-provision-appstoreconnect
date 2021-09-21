@@ -32,13 +32,13 @@ type ProjectHelper struct {
 
 // NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
 // Previously in the ruby version the initialize method did the same
-// It returns a new ProjectHelper pointer and a configuration to use.
-func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, string, error) {
+// It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
+func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, error) {
 	// Maybe we should do this checks during the input parsing
 	if exits, err := pathutil.IsPathExists(projOrWSPath); err != nil {
-		return nil, "", err
+		return nil, err
 	} else if !exits {
-		return nil, "", fmt.Errorf("provided path does not exists: %s", projOrWSPath)
+		return nil, fmt.Errorf("provided path does not exists: %s", projOrWSPath)
 	}
 
 	// Get the project and scheme of the provided .xcodeproj or .xcworkspace
@@ -46,12 +46,12 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	// Fetching the scheme from the project based on name is not possible later.
 	xcproj, scheme, err := findBuiltProject(projOrWSPath, schemeName)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to find build project: %s", err)
+		return nil, fmt.Errorf("failed to find build project: %s", err)
 	}
 
 	mainTarget, err := mainTargetOfScheme(xcproj, scheme)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
+		return nil, fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
 
 	dependentTargets := mainTarget.DependentExecutableProductTargets()
@@ -65,20 +65,19 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 
 	conf, err := configuration(configurationName, scheme, xcproj)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	if conf == "" {
-		return nil, "", fmt.Errorf("no configuration provided nor default defined for the scheme's (%s) archive action", schemeName)
+		return nil, fmt.Errorf("no configuration provided nor default defined for the scheme's (%s) archive action", schemeName)
 	}
 
 	return &ProjectHelper{
-			MainTarget:       mainTarget,
-			DependentTargets: dependentTargets,
-			UITestTargets:    uiTestTargets,
-			XcProj:           xcproj,
-			Configuration:    conf,
-		}, conf,
-		nil
+		MainTarget:       mainTarget,
+		DependentTargets: dependentTargets,
+		UITestTargets:    uiTestTargets,
+		XcProj:           xcproj,
+		Configuration:    conf,
+	}, nil
 }
 
 // ArchivableTargets ...

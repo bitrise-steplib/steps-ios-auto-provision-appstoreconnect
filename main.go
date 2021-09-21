@@ -47,15 +47,14 @@ func main() {
 	fmt.Println()
 	log.Infof("Analyzing project")
 
-	projectHelper, config, err := autocodesign.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
+	project, err := autocodesign.NewProject(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
 	if err != nil {
-		failf("%v", err)
+		failf(err.Error())
 	}
 
-	proj := autocodesign.NewProject(*projectHelper)
-	appLayout, err := proj.GetAppLayoutFromProject(config, stepConf.SignUITestTargets)
+	appLayout, err := project.GetAppLayoutFromProject(stepConf.SignUITestTargets)
 	if err != nil {
-		failf("%v", err)
+		failf(err.Error())
 	}
 
 	if stepConf.TeamID != "" {
@@ -64,7 +63,7 @@ func main() {
 
 	manager, err := autocodesign.NewManager(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, appLayout.TeamID)
 	if err != nil {
-		failf("%s", err)
+		failf(err.Error())
 	}
 
 	codesignAssetsByDistributionType, err := manager.AutoCodesign(
@@ -83,7 +82,7 @@ func main() {
 	}
 
 	// Force Codesign settings
-	if err := proj.ForceCodesignAssets(config, stepConf.DistributionType(), codesignAssetsByDistributionType); err != nil {
+	if err := project.ForceCodesignAssets(stepConf.DistributionType(), codesignAssetsByDistributionType); err != nil {
 		failf("Failed to force codesign settings: %s", err)
 	}
 
@@ -100,10 +99,11 @@ func main() {
 	if ok {
 		outputs["BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
-		bundleID, err := projectHelper.TargetBundleID(projectHelper.MainTarget.Name, config)
+		bundleID, err := project.MainTargetBundleID()
 		if err != nil {
-			failf("Failed to read bundle ID for the main target: %s", err)
+			failf(err.Error())
 		}
+
 		profile, ok := settings.ArchivableTargetProfilesByBundleID[bundleID]
 		if !ok {
 			failf("No provisioning profile ensured for the main target")
@@ -120,7 +120,7 @@ func main() {
 
 		outputs["BITRISE_PRODUCTION_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
-		bundleID, err := projectHelper.TargetBundleID(projectHelper.MainTarget.Name, config)
+		bundleID, err := project.MainTargetBundleID()
 		if err != nil {
 			failf(err.Error())
 		}
