@@ -44,36 +44,35 @@ func main() {
 	}
 
 	// Analyzing project
-	projectSettings := autocodesign.ProjectSettings{
-		ProjectPath:       stepConf.ProjectPath,
-		Scheme:            stepConf.Scheme,
-		Configuration:     stepConf.Configuration,
-		SignUITestTargets: stepConf.SignUITestTargets,
-	}
-	codesignRequirements, config, err := autocodesign.GetCodesignSettingsFromProject(projectSettings)
+	fmt.Println()
+	log.Infof("Analyzing project")
+
+	projectHelper, config, err := autocodesign.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
 	if err != nil {
 		failf("%v", err)
 	}
 
-	codesignSettingsByDistributionType, err := autocodesign.Do(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, certURLs, stepConf.DistributionType(), stepConf.SignUITestTargets,
+	proj := autocodesign.NewProject(*projectHelper)
+	codesignRequirements, err := proj.GetCodesignSettingsFromProject(config, stepConf.SignUITestTargets)
+	if err != nil {
+		failf("%v", err)
+	}
+
+	manager := autocodesign.NewManager()
+	codesignSettingsByDistributionType, err := manager.AutoCodesign(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, certURLs, stepConf.DistributionType(), stepConf.SignUITestTargets,
 		stepConf.VerboseLog, codesignRequirements, stepConf.MinProfileDaysValid, stepConf.KeychainPath, stepConf.KeychainPassword)
 	if err != nil {
 		failf("Automatic code signing failed: %s", err)
 	}
 
 	// Force Codesign Settings
-	if err := autocodesign.ForceCodesignSettings(projectSettings, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
+	if err := proj.ForceCodesignSettings(config, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
 		failf("Failed to force codesign settings: %s", err)
 	}
 
 	// Export output
 	fmt.Println()
 	log.Infof("Exporting outputs")
-
-	projHelper, _, err := autocodesign.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
-	if err != nil {
-		failf("Failed to analyze project: %s", err)
-	}
 
 	outputs := map[string]string{
 		"BITRISE_EXPORT_METHOD":  stepConf.Distribution,
@@ -84,7 +83,7 @@ func main() {
 	if ok {
 		outputs["BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
-		bundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+		bundleID, err := projectHelper.TargetBundleID(projectHelper.MainTarget.Name, config)
 		if err != nil {
 			failf("Failed to read bundle ID for the main target: %s", err)
 		}
@@ -104,7 +103,7 @@ func main() {
 
 		outputs["BITRISE_PRODUCTION_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
-		bundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+		bundleID, err := projectHelper.TargetBundleID(projectHelper.MainTarget.Name, config)
 		if err != nil {
 			failf(err.Error())
 		}

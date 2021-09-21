@@ -47,8 +47,15 @@ type CodesignSettings struct {
 	Certificate                        certificateutil.CertificateInfoModel
 }
 
-// Do ...
-func Do(buildURL, buildAPIToken string,
+type Manager struct {
+}
+
+func NewManager() Manager {
+	return Manager{}
+}
+
+// AutoCodesign ...
+func (m Manager) AutoCodesign(buildURL, buildAPIToken string,
 	authSources []appleauth.Source, authInputs appleauth.Inputs,
 	certificateURLs []CertificateFileURL, distributionType DistributionType,
 	signUITestTargets, verboseLog bool,
@@ -167,57 +174,59 @@ func Do(buildURL, buildAPIToken string,
 	return codesignSettingsByDistributionType, nil
 }
 
-// GetCodesignSettingsFromProject ...
-func GetCodesignSettingsFromProject(settings ProjectSettings) (CodesignRequirements, string, error) {
-	fmt.Println()
-	log.Infof("Analyzing project")
+type Project struct {
+	projHelper ProjectHelper
+}
 
-	projHelper, config, err := NewProjectHelper(settings.ProjectPath, settings.Scheme, settings.Configuration)
-	if err != nil {
-		return CodesignRequirements{}, "", fmt.Errorf("failed to analyze project: %s", err)
+func NewProject(projHelper ProjectHelper) Project {
+	return Project{
+		projHelper: projHelper,
 	}
+}
 
+// GetCodesignSettingsFromProject ...
+func (p Project) GetCodesignSettingsFromProject(config string, uiTestTargets bool) (CodesignRequirements, error) {
 	log.Printf("Configuration: %s", config)
 
-	teamID, err := projHelper.ProjectTeamID(config)
+	teamID, err := p.projHelper.ProjectTeamID(config)
 	if err != nil {
-		return CodesignRequirements{}, "", fmt.Errorf("failed to read project team ID: %s", err)
+		return CodesignRequirements{}, fmt.Errorf("failed to read project team ID: %s", err)
 	}
 
 	log.Printf("Project team ID: %s", teamID)
 
-	platform, err := projHelper.Platform(config)
+	platform, err := p.projHelper.Platform(config)
 	if err != nil {
-		return CodesignRequirements{}, "", fmt.Errorf("Failed to read project platform: %s", err)
+		return CodesignRequirements{}, fmt.Errorf("Failed to read project platform: %s", err)
 	}
 
 	log.Printf("Platform: %s", platform)
 
 	log.Printf("Application and App Extension targets:")
-	for _, target := range projHelper.ArchivableTargets() {
+	for _, target := range p.projHelper.ArchivableTargets() {
 		log.Printf("- %s", target.Name)
 	}
 
-	archivableTargetBundleIDToEntitlements, err := projHelper.ArchivableTargetBundleIDToEntitlements()
+	archivableTargetBundleIDToEntitlements, err := p.projHelper.ArchivableTargetBundleIDToEntitlements()
 	if err != nil {
-		return CodesignRequirements{}, "", fmt.Errorf("failed to read archivable targets' entitlements: %s", err)
+		return CodesignRequirements{}, fmt.Errorf("failed to read archivable targets' entitlements: %s", err)
 	}
 
 	if ok, entitlement, bundleID := CanGenerateProfileWithEntitlements(archivableTargetBundleIDToEntitlements); !ok {
 		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
-		return CodesignRequirements{}, "", fmt.Errorf("please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead")
+		return CodesignRequirements{}, fmt.Errorf("please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead")
 	}
 
 	var uiTestTargetBundleIDs []string
-	if settings.SignUITestTargets {
+	if uiTestTargets {
 		log.Printf("UITest targets:")
-		for _, target := range projHelper.UITestTargets {
+		for _, target := range p.projHelper.UITestTargets {
 			log.Printf("- %s", target.Name)
 		}
 
-		uiTestTargetBundleIDs, err = projHelper.UITestTargetBundleIDs()
+		uiTestTargetBundleIDs, err = p.projHelper.UITestTargetBundleIDs()
 		if err != nil {
-			return CodesignRequirements{}, "", fmt.Errorf("Failed to read UITest targets' entitlements: %s", err)
+			return CodesignRequirements{}, fmt.Errorf("Failed to read UITest targets' entitlements: %s", err)
 		}
 	}
 
@@ -226,19 +235,14 @@ func GetCodesignSettingsFromProject(settings ProjectSettings) (CodesignRequireme
 		Platform:                               platform,
 		ArchivableTargetBundleIDToEntitlements: archivableTargetBundleIDToEntitlements,
 		UITestTargetBundleIDs:                  uiTestTargetBundleIDs,
-	}, config, nil
+	}, nil
 }
 
 // ForceCodesignSettings ...
-func ForceCodesignSettings(projectSettings ProjectSettings, distribution DistributionType, codesignSettingsByDistributionType map[DistributionType]CodesignSettings) error {
-	projHelper, config, err := NewProjectHelper(projectSettings.ProjectPath, projectSettings.Scheme, projectSettings.Configuration)
-	if err != nil {
-		return fmt.Errorf("failed to analyze project: %s", err)
-	}
-
+func (p Project) ForceCodesignSettings(config string, distribution DistributionType, codesignSettingsByDistributionType map[DistributionType]CodesignSettings) error {
 	fmt.Println()
 	log.Infof("Apply Bitrise managed codesigning on the executable targets")
-	for _, target := range projHelper.ArchivableTargets() {
+	for _, target := range p.projHelper.ArchivableTargets() {
 		fmt.Println()
 		log.Infof("  Target: %s", target.Name)
 
@@ -253,7 +257,7 @@ func ForceCodesignSettings(projectSettings ProjectSettings, distribution Distrib
 		}
 		teamID := codesignSettings.Certificate.TeamID
 
-		targetBundleID, err := projHelper.TargetBundleID(target.Name, config)
+		targetBundleID, err := p.projHelper.TargetBundleID(target.Name, config)
 		if err != nil {
 			return err
 		}
@@ -266,7 +270,7 @@ func ForceCodesignSettings(projectSettings ProjectSettings, distribution Distrib
 		log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
 		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
-		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
+		if err := p.projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
 			return fmt.Errorf("failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
 	}
@@ -275,13 +279,13 @@ func ForceCodesignSettings(projectSettings ProjectSettings, distribution Distrib
 	if isDevelopmentAvailable && len(devCodesignSettings.UITestTargetProfilesByBundleID) != 0 {
 		fmt.Println()
 		log.Infof("Apply Bitrise managed codesigning on the UITest targets")
-		for _, uiTestTarget := range projHelper.UITestTargets {
+		for _, uiTestTarget := range p.projHelper.UITestTargets {
 			fmt.Println()
 			log.Infof("  Target: %s", uiTestTarget.Name)
 
 			teamID := devCodesignSettings.Certificate.TeamID
 
-			targetBundleID, err := projHelper.TargetBundleID(uiTestTarget.Name, config)
+			targetBundleID, err := p.projHelper.TargetBundleID(uiTestTarget.Name, config)
 			if err != nil {
 				return err
 			}
@@ -295,14 +299,14 @@ func ForceCodesignSettings(projectSettings ProjectSettings, distribution Distrib
 			log.Printf("  certificate: %s", devCodesignSettings.Certificate.CommonName)
 
 			for _, c := range uiTestTarget.BuildConfigurationList.BuildConfigurations {
-				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, devCodesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
+				if err := p.projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, devCodesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
 					return fmt.Errorf("failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
 				}
 			}
 		}
 	}
 
-	if err := projHelper.XcProj.Save(); err != nil {
+	if err := p.projHelper.XcProj.Save(); err != nil {
 		return fmt.Errorf("failed to save project: %s", err)
 	}
 
