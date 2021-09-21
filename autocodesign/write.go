@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
@@ -14,25 +13,25 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
 )
 
-func installCodesigningFiles(codesignSettingsByDistributionType map[DistributionType]CodesignSettings, keychainPath string, keychainPassword stepconf.Secret) error {
+func installCodesigningFiles(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets, keychainCredentials KeychainCredentials) error {
 	fmt.Println()
 	log.Infof("Install certificates and profiles")
 
-	kc, err := keychain.New(keychainPath, keychainPassword)
+	kc, err := keychain.New(keychainCredentials.Path, keychainCredentials.Password)
 	if err != nil {
 		return fmt.Errorf("failed to initialize keychain: %s", err)
 	}
 
 	i := 0
-	for _, codesignSettings := range codesignSettingsByDistributionType {
-		log.Printf("certificate: %s", codesignSettings.Certificate.CommonName)
+	for _, codesignAssets := range codesignAssetsByDistributionType {
+		log.Printf("certificate: %s", codesignAssets.Certificate.CommonName)
 
-		if err := kc.InstallCertificate(codesignSettings.Certificate, ""); err != nil {
+		if err := kc.InstallCertificate(codesignAssets.Certificate, ""); err != nil {
 			return fmt.Errorf("failed to install certificate: %s", err)
 		}
 
 		log.Printf("profiles:")
-		for _, profile := range codesignSettings.ArchivableTargetProfilesByBundleID {
+		for _, profile := range codesignAssets.ArchivableTargetProfilesByBundleID {
 			log.Printf("- %s", profile.Attributes().Name)
 
 			if err := writeProfile(profile); err != nil {
@@ -40,7 +39,7 @@ func installCodesigningFiles(codesignSettingsByDistributionType map[Distribution
 			}
 		}
 
-		for _, profile := range codesignSettings.UITestTargetProfilesByBundleID {
+		for _, profile := range codesignAssets.UITestTargetProfilesByBundleID {
 			log.Printf("- %s", profile.Attributes().Name)
 
 			if err := writeProfile(profile); err != nil {
@@ -48,7 +47,7 @@ func installCodesigningFiles(codesignSettingsByDistributionType map[Distribution
 			}
 		}
 
-		if i < len(codesignSettingsByDistributionType)-1 {
+		if i < len(codesignAssetsByDistributionType)-1 {
 			fmt.Println()
 		}
 		i++

@@ -67,14 +67,23 @@ func main() {
 		failf("%s", err)
 	}
 
-	codesignSettingsByDistributionType, err := manager.AutoCodesign(certURLs, stepConf.DistributionType(),
-		stepConf.VerboseLog, codesignRequirements, stepConf.MinProfileDaysValid, stepConf.KeychainPath, stepConf.KeychainPassword)
+	codesignAssetsByDistributionType, err := manager.AutoCodesign(
+		stepConf.DistributionType(),
+		codesignRequirements,
+		certURLs,
+		stepConf.MinProfileDaysValid,
+		autocodesign.KeychainCredentials{
+			Path:     stepConf.KeychainPath,
+			Password: stepConf.KeychainPassword,
+		},
+		stepConf.VerboseLog,
+	)
 	if err != nil {
 		failf("Automatic code signing failed: %s", err)
 	}
 
-	// Force Codesign Settings
-	if err := proj.ForceCodesignSettings(config, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
+	// Force Codesign settings
+	if err := proj.ForceCodesignAssets(config, stepConf.DistributionType(), codesignAssetsByDistributionType); err != nil {
 		failf("Failed to force codesign settings: %s", err)
 	}
 
@@ -87,7 +96,7 @@ func main() {
 		"BITRISE_DEVELOPER_TEAM": codesignRequirements.TeamID,
 	}
 
-	settings, ok := codesignSettingsByDistributionType[autocodesign.Development]
+	settings, ok := codesignAssetsByDistributionType[autocodesign.Development]
 	if ok {
 		outputs["BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
@@ -104,7 +113,7 @@ func main() {
 	}
 
 	if stepConf.DistributionType() != autocodesign.Development {
-		settings, ok := codesignSettingsByDistributionType[stepConf.DistributionType()]
+		settings, ok := codesignAssetsByDistributionType[stepConf.DistributionType()]
 		if !ok {
 			failf("No codesign settings ensured for the selected distribution type: %s", stepConf.DistributionType())
 		}

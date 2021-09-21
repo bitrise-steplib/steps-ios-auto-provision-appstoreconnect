@@ -14,10 +14,10 @@ import (
 )
 
 func ensureProfiles(profileClient devportal.ProfileClient, distrTypes []DistributionType,
-	certsByType map[appstoreconnect.CertificateType][]devportal.Certificate, requirements CodesignRequirements,
-	devPortalDeviceIDs []string, minProfileDaysValid int) (map[DistributionType]CodesignSettings, error) {
+	certsByType map[appstoreconnect.CertificateType][]devportal.Certificate, app AppLayout,
+	devPortalDeviceIDs []string, minProfileDaysValid int) (map[DistributionType]AppCodesignAssets, error) {
 	// Ensure Profiles
-	codesignSettingsByDistributionType := map[DistributionType]CodesignSettings{}
+	codesignAssetsByDistributionType := map[DistributionType]AppCodesignAssets{}
 
 	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
 
@@ -46,7 +46,7 @@ func ensureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 		}
 		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
-		codesignSettings := CodesignSettings{
+		codesignAssets := AppCodesignAssets{
 			ArchivableTargetProfilesByBundleID: map[string]devportal.Profile{},
 			UITestTargetProfilesByBundleID:     map[string]devportal.Profile{},
 			Certificate:                        certs[0].Certificate,
@@ -57,14 +57,14 @@ func ensureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 			certIDs = append(certIDs, cert.ID)
 		}
 
-		platformProfileTypes, ok := PlatformToProfileTypeByDistribution[requirements.Platform]
+		platformProfileTypes, ok := PlatformToProfileTypeByDistribution[app.Platform]
 		if !ok {
-			return nil, fmt.Errorf("no profiles for platform: %s", requirements.Platform)
+			return nil, fmt.Errorf("no profiles for platform: %s", app.Platform)
 		}
 
 		profileType := platformProfileTypes[distrType]
 
-		for bundleIDIdentifier, entitlements := range requirements.ArchivableTargetBundleIDToEntitlements {
+		for bundleIDIdentifier, entitlements := range app.ArchivableTargetBundleIDToEntitlements {
 			var profileDeviceIDs []string
 			if distributionTypeRequiresDeviceList([]DistributionType{distrType}) {
 				profileDeviceIDs = devPortalDeviceIDs
@@ -74,14 +74,14 @@ func ensureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 			if err != nil {
 				return nil, err
 			}
-			codesignSettings.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+			codesignAssets.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
 
 		}
 
-		if len(requirements.UITestTargetBundleIDs) > 0 && distrType == Development {
+		if len(app.UITestTargetBundleIDs) > 0 && distrType == Development {
 			// Capabilities are not supported for UITest targets.
 			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
-			for _, bundleIDIdentifier := range requirements.UITestTargetBundleIDs {
+			for _, bundleIDIdentifier := range app.UITestTargetBundleIDs {
 				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
 				if err != nil {
 					return nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
@@ -92,11 +92,11 @@ func ensureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 				if err != nil {
 					return nil, err
 				}
-				codesignSettings.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+				codesignAssets.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
 			}
 		}
 
-		codesignSettingsByDistributionType[distrType] = codesignSettings
+		codesignAssetsByDistributionType[distrType] = codesignAssets
 	}
 
 	if len(containersByBundleID) > 0 {
@@ -114,7 +114,7 @@ func ensureProfiles(profileClient devportal.ProfileClient, distrTypes []Distribu
 		return nil, errors.New("you have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list")
 	}
 
-	return codesignSettingsByDistributionType, nil
+	return codesignAssetsByDistributionType, nil
 }
 
 type profileManager struct {
