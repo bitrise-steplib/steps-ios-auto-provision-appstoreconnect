@@ -13,5 +13,3 @@ func createWildcardBundleID(bundleID string) (string, error) {
 
 	return bundleID[:idx] + ".*", nil
 }
-
-// To be moved

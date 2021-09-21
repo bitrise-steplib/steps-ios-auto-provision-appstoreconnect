@@ -5,25 +5,26 @@ import (
 
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 	"github.com/stretchr/testify/require"
 )
 
 func TestICloudContainers(t *testing.T) {
 	tests := []struct {
 		name                string
-		projectEntitlements autoprovision.Entitlement
+		projectEntitlements devportal.Entitlement
 		want                []string
 		errHandler          func(require.TestingT, error, ...interface{})
 	}{
 		{
 			name:                "no containers",
-			projectEntitlements: autoprovision.Entitlement(map[string]interface{}{}),
+			projectEntitlements: devportal.Entitlement(map[string]interface{}{}),
 			want:                nil,
 			errHandler:          require.NoError,
 		},
 		{
 			name: "no containers - CloudDocuments",
-			projectEntitlements: autoprovision.Entitlement(map[string]interface{}{
+			projectEntitlements: devportal.Entitlement(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudDocuments",
 				},
@@ -33,7 +34,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "no containers - CloudKit",
-			projectEntitlements: autoprovision.Entitlement(map[string]interface{}{
+			projectEntitlements: devportal.Entitlement(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 				},
@@ -43,7 +44,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "no containers - CloudKit and CloudDocuments",
-			projectEntitlements: autoprovision.Entitlement(map[string]interface{}{
+			projectEntitlements: devportal.Entitlement(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 					"CloudDocuments",
@@ -54,7 +55,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "has containers - CloudDocuments",
-			projectEntitlements: autoprovision.Entitlement(map[string]interface{}{
+			projectEntitlements: devportal.Entitlement(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudDocuments",
 				},
@@ -67,7 +68,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "has containers - CloudKit",
-			projectEntitlements: autoprovision.Entitlement(map[string]interface{}{
+			projectEntitlements: devportal.Entitlement(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 				},
@@ -80,7 +81,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "has containers - CloudKit and CloudDocuments",
-			projectEntitlements: autoprovision.Entitlement(map[string]interface{}{
+			projectEntitlements: devportal.Entitlement(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 					"CloudDocuments",

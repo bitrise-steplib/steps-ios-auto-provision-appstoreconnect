@@ -6,6 +6,7 @@ import (
 
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -203,7 +204,7 @@ func (m MockProfile) BundleID() (appstoreconnect.BundleID, error) {
 
 func Test_IsProfileExpired(t *testing.T) {
 	tests := []struct {
-		prof                Profile
+		prof                devportal.Profile
 		minProfileDaysValid int
 		name                string
 		want                bool

@@ -1,4 +1,4 @@
-package main
+package autoprovision
 
 import (
 	"fmt"
@@ -7,7 +7,8 @@ import (
 
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnectclient"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -18,11 +19,11 @@ func Test_registerMissingDevices_alreadyRegistered(t *testing.T) {
 	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
 	args := struct {
-		client           autoprovision.DeviceClient
+		client           devportal.DeviceClient
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
 	}{
-		client: autoprovision.NewAPIDeviceClient(successClient),
+		client: appstoreconnectclient.NewAPIDeviceClient(successClient),
 		bitriseDevices: []devportalservice.TestDevice{{
 			DeviceID:   "71153a920968f2842d360",
 			DeviceType: "ios",
@@ -61,11 +62,11 @@ func Test_registerMissingDevices_newDevice(t *testing.T) {
 	successClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
 	args := struct {
-		client           autoprovision.DeviceClient
+		client           devportal.DeviceClient
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
 	}{
-		client: autoprovision.NewAPIDeviceClient(successClient),
+		client: appstoreconnectclient.NewAPIDeviceClient(successClient),
 		bitriseDevices: []devportalservice.TestDevice{{
 			DeviceID:   "71153a920968f2842d360",
 			DeviceType: "ios",
@@ -97,11 +98,11 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 	failureClient := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
 
 	args := struct {
-		client           autoprovision.DeviceClient
+		client           devportal.DeviceClient
 		bitriseDevices   []devportalservice.TestDevice
 		devportalDevices []appstoreconnect.Device
 	}{
-		client: autoprovision.NewAPIDeviceClient(failureClient),
+		client: appstoreconnectclient.NewAPIDeviceClient(failureClient),
 		bitriseDevices: []devportalservice.TestDevice{
 			{
 				DeviceID:   "invalid-udid",
@@ -129,30 +130,30 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 
 func Test_listRelevantDevPortalDevices_filtersDevicesForPlatform(t *testing.T) {
 	tests := []struct {
-		platform      autoprovision.Platform
+		platform      Platform
 		deviceClass   appstoreconnect.DeviceClass
 		devicesLength int
 	}{
-		{platform: autoprovision.IOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 1},
-		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Ipad, devicesLength: 1},
-		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Iphone, devicesLength: 1},
-		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Ipod, devicesLength: 1},
-		{platform: autoprovision.IOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
-		{platform: autoprovision.IOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+		{platform: IOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.Ipad, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.Iphone, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.Ipod, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
+		{platform: IOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
 
-		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
-		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
-		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
-		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
-		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 1},
-		{platform: autoprovision.TVOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 1},
+		{platform: TVOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
 
-		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
-		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
-		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
-		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
-		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
-		{platform: autoprovision.MacOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
 	}
 
 	for _, tt := range tests {

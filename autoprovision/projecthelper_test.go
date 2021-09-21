@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -600,7 +601,7 @@ func TestProjectHelper_targetEntitlements(t *testing.T) {
 
 func Test_resolveEntitlementVariables(t *testing.T) {
 	type args struct {
-		entitlements Entitlement
+		entitlements devportal.Entitlement
 		bundleID     string
 	}
 	tests := []struct {
