@@ -63,7 +63,7 @@ func main() {
 	}
 
 	manager := autocodesign.NewManager()
-	codesignSettingsByDistributionType, err := manager.AutoCodesign(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, certURLs, stepConf.DistributionType(), stepConf.SignUITestTargets,
+	codesignSettingsByDistributionType, err := manager.AutoCodesign(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, certURLs, stepConf.DistributionType(),
 		stepConf.VerboseLog, codesignRequirements, stepConf.MinProfileDaysValid, stepConf.KeychainPath, stepConf.KeychainPassword)
 	if err != nil {
 		failf("Automatic code signing failed: %s", err)

@@ -26,6 +26,7 @@ type CertificateFileURL struct {
 	URL, Passphrase string
 }
 
+// Remove
 // ProjectSettings ...
 type ProjectSettings struct {
 	ProjectPath, Scheme, Configuration string
@@ -55,11 +56,17 @@ func NewManager() Manager {
 }
 
 // AutoCodesign ...
-func (m Manager) AutoCodesign(buildURL, buildAPIToken string,
+func (m Manager) AutoCodesign(
+	// auth
+	buildURL, buildAPIToken string,
 	authSources []appleauth.Source, authInputs appleauth.Inputs,
-	certificateURLs []CertificateFileURL, distributionType DistributionType,
-	signUITestTargets, verboseLog bool,
+
+	certificateURLs []CertificateFileURL,
+	distributionType DistributionType,
+
+	verboseLog bool,
 	codesignRequirements CodesignRequirements, minProfileDaysValid int,
+	// write
 	keychainPath string, keychainPassword stepconf.Secret) (map[DistributionType]CodesignSettings, error) {
 
 	fmt.Println()
@@ -138,6 +145,7 @@ func (m Manager) AutoCodesign(buildURL, buildAPIToken string,
 		log.Printf("- %s", cert.CommonName)
 	}
 
+	signUITestTargets := len(codesignRequirements.UITestTargetBundleIDs) > 0
 	certsByType, distrTypes, err := selectCertificatesAndDistributionTypes(
 		devportalClient.CertificateSource,
 		certs,
