@@ -49,26 +49,11 @@ type CodesignSettings struct {
 }
 
 type Manager struct {
+	devportalClient devportal.Client
+	testDevices     []devportalservice.TestDevice
 }
 
-func NewManager() Manager {
-	return Manager{}
-}
-
-// AutoCodesign ...
-func (m Manager) AutoCodesign(
-	// auth
-	buildURL, buildAPIToken string,
-	authSources []appleauth.Source, authInputs appleauth.Inputs,
-
-	certificateURLs []CertificateFileURL,
-	distributionType DistributionType,
-
-	verboseLog bool,
-	codesignRequirements CodesignRequirements, minProfileDaysValid int,
-	// write
-	keychainPath string, keychainPassword stepconf.Secret) (map[DistributionType]CodesignSettings, error) {
-
+func NewManager(buildURL, buildAPIToken string, authSources []appleauth.Source, authInputs appleauth.Inputs, teamID string) (Manager, error) {
 	fmt.Println()
 	log.Infof("Fetching Apple service connection")
 	connectionProvider := devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), buildURL, buildAPIToken)
@@ -77,14 +62,14 @@ func (m Manager) AutoCodesign(
 		if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
 			fmt.Println()
 			log.Warnf("Unauthorized to query Bitrise Apple service connection. This happens by design, with a public app's PR build, to protect secrets.")
-			return nil, err
+			return Manager{}, err
 		}
 
 		fmt.Println()
 		log.Errorf("Failed to activate Bitrise Apple service connection")
 		log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 
-		return nil, err
+		return Manager{}, err
 	}
 
 	if len(conn.DuplicatedTestDevices) != 0 {
@@ -100,7 +85,7 @@ func (m Manager) AutoCodesign(
 			fmt.Println()
 			log.Warnf("%s", notConnected)
 		}
-		return nil, fmt.Errorf("could not configure Apple service authentication: %v", err)
+		return Manager{}, fmt.Errorf("could not configure Apple service authentication: %v", err)
 	}
 
 	if authConfig.APIKey != nil {
@@ -122,13 +107,29 @@ func (m Manager) AutoCodesign(
 		devportalClient = appstoreconnectclient.NewAPIDevportalClient(client)
 		log.Donef("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if authConfig.AppleID != nil {
-		client, err := spaceship.NewClient(*authConfig.AppleID, codesignRequirements.TeamID)
+		client, err := spaceship.NewClient(*authConfig.AppleID, teamID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to initialize Apple ID client: %v", err)
+			return Manager{}, fmt.Errorf("failed to initialize Apple ID client: %v", err)
 		}
 		devportalClient = spaceship.NewSpaceshipDevportalClient(client)
 		log.Donef("Apple ID client created")
 	}
+
+	return Manager{
+		devportalClient: devportalClient,
+		testDevices:     conn.TestDevices,
+	}, nil
+}
+
+// AutoCodesign ...
+func (m Manager) AutoCodesign(
+	certificateURLs []CertificateFileURL,
+	distributionType DistributionType,
+
+	verboseLog bool,
+	codesignRequirements CodesignRequirements, minProfileDaysValid int,
+	// write
+	keychainPath string, keychainPassword stepconf.Secret) (map[DistributionType]CodesignSettings, error) {
 
 	// Downloading certificates
 	fmt.Println()
@@ -147,7 +148,7 @@ func (m Manager) AutoCodesign(
 
 	signUITestTargets := len(codesignRequirements.UITestTargetBundleIDs) > 0
 	certsByType, distrTypes, err := selectCertificatesAndDistributionTypes(
-		devportalClient.CertificateSource,
+		m.devportalClient.CertificateSource,
 		certs,
 		distributionType,
 		codesignRequirements.TeamID,
@@ -162,14 +163,14 @@ func (m Manager) AutoCodesign(
 	var devPortalDeviceIDs []string
 	if distributionTypeRequiresDeviceList(distrTypes) {
 		var err error
-		devPortalDeviceIDs, err = ensureTestDevices(devportalClient.DeviceClient, conn.TestDevices, codesignRequirements.Platform)
+		devPortalDeviceIDs, err = ensureTestDevices(m.devportalClient.DeviceClient, m.testDevices, codesignRequirements.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to ensure test devices: %s", err)
 		}
 	}
 
 	// Ensure Profiles
-	codesignSettingsByDistributionType, err := ensureProfiles(devportalClient.ProfileClient, distrTypes, certsByType, codesignRequirements, devPortalDeviceIDs, minProfileDaysValid)
+	codesignSettingsByDistributionType, err := ensureProfiles(m.devportalClient.ProfileClient, distrTypes, certsByType, codesignRequirements, devPortalDeviceIDs, minProfileDaysValid)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to ensure profiles: %s", err)
 	}

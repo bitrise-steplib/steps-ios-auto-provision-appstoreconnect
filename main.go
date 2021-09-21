@@ -62,8 +62,12 @@ func main() {
 		codesignRequirements.TeamID = stepConf.TeamID
 	}
 
-	manager := autocodesign.NewManager()
-	codesignSettingsByDistributionType, err := manager.AutoCodesign(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, certURLs, stepConf.DistributionType(),
+	manager, err := autocodesign.NewManager(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, codesignRequirements.TeamID)
+	if err != nil {
+		failf("%s", err)
+	}
+
+	codesignSettingsByDistributionType, err := manager.AutoCodesign(certURLs, stepConf.DistributionType(),
 		stepConf.VerboseLog, codesignRequirements, stepConf.MinProfileDaysValid, stepConf.KeychainPath, stepConf.KeychainPassword)
 	if err != nil {
 		failf("Automatic code signing failed: %s", err)
