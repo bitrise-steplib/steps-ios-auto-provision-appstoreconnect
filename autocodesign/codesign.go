@@ -211,8 +211,8 @@ func (p Project) MainTargetBundleID() (string, error) {
 	return bundleID, nil
 }
 
-// GetAppLayoutFromProject ...
-func (p Project) GetAppLayoutFromProject(uiTestTargets bool) (AppLayout, error) {
+// GetAppLayout ...
+func (p Project) GetAppLayout(uiTestTargets bool) (AppLayout, error) {
 	log.Printf("Configuration: %s", p.projHelper.Configuration)
 
 	teamID, err := p.projHelper.ProjectTeamID(p.projHelper.Configuration)

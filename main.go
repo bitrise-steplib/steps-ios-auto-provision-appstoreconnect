@@ -52,7 +52,7 @@ func main() {
 		failf(err.Error())
 	}
 
-	appLayout, err := project.GetAppLayoutFromProject(stepConf.SignUITestTargets)
+	appLayout, err := project.GetAppLayout(stepConf.SignUITestTargets)
 	if err != nil {
 		failf(err.Error())
 	}
@@ -103,7 +103,6 @@ func main() {
 		if err != nil {
 			failf(err.Error())
 		}
-
 		profile, ok := settings.ArchivableTargetProfilesByBundleID[bundleID]
 		if !ok {
 			failf("No provisioning profile ensured for the main target")
