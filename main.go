@@ -53,23 +53,23 @@ func main() {
 	}
 
 	proj := autocodesign.NewProject(*projectHelper)
-	codesignRequirements, err := proj.GetCodesignSettingsFromProject(config, stepConf.SignUITestTargets)
+	appLayout, err := proj.GetAppLayoutFromProject(config, stepConf.SignUITestTargets)
 	if err != nil {
 		failf("%v", err)
 	}
 
 	if stepConf.TeamID != "" {
-		codesignRequirements.TeamID = stepConf.TeamID
+		appLayout.TeamID = stepConf.TeamID
 	}
 
-	manager, err := autocodesign.NewManager(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, codesignRequirements.TeamID)
+	manager, err := autocodesign.NewManager(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, appLayout.TeamID)
 	if err != nil {
 		failf("%s", err)
 	}
 
 	codesignAssetsByDistributionType, err := manager.AutoCodesign(
 		stepConf.DistributionType(),
-		codesignRequirements,
+		appLayout,
 		certURLs,
 		stepConf.MinProfileDaysValid,
 		autocodesign.KeychainCredentials{
@@ -93,7 +93,7 @@ func main() {
 
 	outputs := map[string]string{
 		"BITRISE_EXPORT_METHOD":  stepConf.Distribution,
-		"BITRISE_DEVELOPER_TEAM": codesignRequirements.TeamID,
+		"BITRISE_DEVELOPER_TEAM": appLayout.TeamID,
 	}
 
 	settings, ok := codesignAssetsByDistributionType[autocodesign.Development]

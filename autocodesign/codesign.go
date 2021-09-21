@@ -184,18 +184,20 @@ func (m Manager) AutoCodesign(
 	return codesignAssetsByDistributionType, nil
 }
 
+// Project ...
 type Project struct {
 	projHelper ProjectHelper
 }
 
+// NewProject ...
 func NewProject(projHelper ProjectHelper) Project {
 	return Project{
 		projHelper: projHelper,
 	}
 }
 
-// GetCodesignSettingsFromProject ...
-func (p Project) GetCodesignSettingsFromProject(config string, uiTestTargets bool) (AppLayout, error) {
+// GetAppLayoutFromProject ...
+func (p Project) GetAppLayoutFromProject(config string, uiTestTargets bool) (AppLayout, error) {
 	log.Printf("Configuration: %s", config)
 
 	teamID, err := p.projHelper.ProjectTeamID(config)
