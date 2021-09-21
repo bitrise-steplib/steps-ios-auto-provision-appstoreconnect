@@ -58,6 +58,10 @@ func main() {
 		failf("%v", err)
 	}
 
+	if stepConf.TeamID != "" {
+		codesignRequirements.TeamID = stepConf.TeamID
+	}
+
 	manager := autocodesign.NewManager()
 	codesignSettingsByDistributionType, err := manager.AutoCodesign(stepConf.BuildURL, stepConf.BuildAPIToken, authSources, authInputs, certURLs, stepConf.DistributionType(), stepConf.SignUITestTargets,
 		stepConf.VerboseLog, codesignRequirements, stepConf.MinProfileDaysValid, stepConf.KeychainPath, stepConf.KeychainPassword)
