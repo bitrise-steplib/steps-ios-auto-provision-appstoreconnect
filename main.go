@@ -9,7 +9,6 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autocodesign"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 func failf(format string, args ...interface{}) {
@@ -45,13 +44,13 @@ func main() {
 	}
 
 	// Analyzing project
-	projectSettings := autoprovision.ProjectSettings{
+	projectSettings := autocodesign.ProjectSettings{
 		ProjectPath:       stepConf.ProjectPath,
 		Scheme:            stepConf.Scheme,
 		Configuration:     stepConf.Configuration,
 		SignUITestTargets: stepConf.SignUITestTargets,
 	}
-	codesignRequirements, config, err := autoprovision.GetCodesignSettingsFromProject(projectSettings)
+	codesignRequirements, config, err := autocodesign.GetCodesignSettingsFromProject(projectSettings)
 	if err != nil {
 		failf("%v", err)
 	}
@@ -63,7 +62,7 @@ func main() {
 	}
 
 	// Force Codesign Settings
-	if err := autoprovision.ForceCodesignSettings(projectSettings, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
+	if err := autocodesign.ForceCodesignSettings(projectSettings, stepConf.DistributionType(), codesignSettingsByDistributionType); err != nil {
 		failf("Failed to force codesign settings: %s", err)
 	}
 
@@ -71,7 +70,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Exporting outputs")
 
-	projHelper, _, err := autoprovision.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
+	projHelper, _, err := autocodesign.NewProjectHelper(stepConf.ProjectPath, stepConf.Scheme, stepConf.Configuration)
 	if err != nil {
 		failf("Failed to analyze project: %s", err)
 	}
@@ -81,7 +80,7 @@ func main() {
 		"BITRISE_DEVELOPER_TEAM": codesignRequirements.TeamID,
 	}
 
-	settings, ok := codesignSettingsByDistributionType[autoprovision.Development]
+	settings, ok := codesignSettingsByDistributionType[autocodesign.Development]
 	if ok {
 		outputs["BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
@@ -97,7 +96,7 @@ func main() {
 		outputs["BITRISE_DEVELOPMENT_PROFILE"] = profile.Attributes().UUID
 	}
 
-	if stepConf.DistributionType() != autoprovision.Development {
+	if stepConf.DistributionType() != autocodesign.Development {
 		settings, ok := codesignSettingsByDistributionType[stepConf.DistributionType()]
 		if !ok {
 			failf("No codesign settings ensured for the selected distribution type: %s", stepConf.DistributionType())

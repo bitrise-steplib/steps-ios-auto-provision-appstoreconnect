@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
-
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
 // CertificateSource ...

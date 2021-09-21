@@ -1,4 +1,4 @@
-package autoprovision
+package autocodesign
 
 import (
 	"errors"
@@ -9,6 +9,45 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
+
+// EnsureTestDevices ...
+func EnsureTestDevices(deviceClient devportal.DeviceClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
+	var devPortalDeviceIDs []string
+
+	log.Infof("Fetching Apple Developer Portal devices")
+	// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
+	devPortalDevices, err := deviceClient.ListDevices("", appstoreconnect.IOSDevice)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch devices: %s", err)
+	}
+
+	log.Printf("%d devices are registered on the Apple Developer Portal", len(devPortalDevices))
+	for _, devPortalDevice := range devPortalDevices {
+		log.Debugf("- %s, %s, UDID (%s), ID (%s)", devPortalDevice.Attributes.Name, devPortalDevice.Attributes.DeviceClass, devPortalDevice.Attributes.UDID, devPortalDevice.ID)
+	}
+
+	if len(testDevices) != 0 {
+		fmt.Println()
+		log.Infof("Checking if %d Bitrise test device(s) are registered on Developer Portal", len(testDevices))
+		for _, d := range testDevices {
+			log.Debugf("- %s, %s, UDID (%s), added at %s", d.Title, d.DeviceType, d.DeviceID, d.UpdatedAt)
+		}
+
+		newDevPortalDevices, err := registerMissingTestDevices(deviceClient, testDevices, devPortalDevices)
+		if err != nil {
+			return nil, fmt.Errorf("failed to register Bitrise Test device on Apple Developer Portal: %s", err)
+		}
+		devPortalDevices = append(devPortalDevices, newDevPortalDevices...)
+	}
+
+	devPortalDevices = filterDevPortalDevices(devPortalDevices, platform)
+
+	for _, devPortalDevice := range devPortalDevices {
+		devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
+	}
+
+	return devPortalDeviceIDs, nil
+}
 
 func registerMissingTestDevices(client devportal.DeviceClient, testDevices []devportalservice.TestDevice, devPortalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
 	if client == nil {
@@ -79,14 +118,4 @@ func filterDevPortalDevices(devPortalDevices []appstoreconnect.Device, platform 
 	}
 
 	return filteredDevices
-}
-
-// DistributionTypeRequiresDeviceList ...
-func DistributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
-	for _, distrType := range distrTypes {
-		if distrType == Development || distrType == AdHoc {
-			return true
-		}
-	}
-	return false
 }

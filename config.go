@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autocodesign"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 // Config holds the step inputs
@@ -40,8 +39,8 @@ type Config struct {
 }
 
 // DistributionType ...
-func (c Config) DistributionType() autoprovision.DistributionType {
-	return autoprovision.DistributionType(c.Distribution)
+func (c Config) DistributionType() autocodesign.DistributionType {
+	return autocodesign.DistributionType(c.Distribution)
 }
 
 // ValidateCertificates validates if the number of certificate URLs matches those of passphrases

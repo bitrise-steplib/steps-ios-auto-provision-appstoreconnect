@@ -1,8 +1,25 @@
-package autoprovision
+package autocodesign
 
-import (
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+import "github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+
+// DistributionType ...
+type DistributionType string
+
+// DistributionTypes ...
+var (
+	Development DistributionType = "development"
+	AppStore    DistributionType = "app-store"
+	AdHoc       DistributionType = "ad-hoc"
+	Enterprise  DistributionType = "enterprise"
 )
+
+// CertificateTypeByDistribution ...
+var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.CertificateType{
+	Development: appstoreconnect.IOSDevelopment,
+	AppStore:    appstoreconnect.IOSDistribution,
+	AdHoc:       appstoreconnect.IOSDistribution,
+	Enterprise:  appstoreconnect.IOSDistribution,
+}
 
 // Platform ...
 type Platform string

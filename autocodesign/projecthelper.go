@@ -1,4 +1,4 @@
-package autoprovision
+package autocodesign
 
 import (
 	"fmt"

@@ -12,7 +12,6 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 // downloadCertificates downloads and parses a list of p12 files
@@ -29,7 +28,7 @@ func downloadCertificates(URLs []CertificateFileURL) ([]certificateutil.Certific
 		if err != nil {
 			return nil, err
 		}
-		log.Debugf("Codesign identities included:\n%s", autoprovision.CertsToString(p12CertInfos))
+		log.Debugf("Codesign identities included:\n%s", CertsToString(p12CertInfos))
 
 		certInfos = append(certInfos, p12CertInfos...)
 	}

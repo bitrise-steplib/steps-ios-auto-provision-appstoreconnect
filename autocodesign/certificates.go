@@ -1,4 +1,4 @@
-package autoprovision
+package autocodesign
 
 import (
 	"fmt"
@@ -10,45 +10,45 @@ import (
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
-// DistributionType ...
-type DistributionType string
+// SelectCertificatesAndDistributionTypes ...
+func SelectCertificatesAndDistributionTypes(certificateSource devportal.CertificateSource, certs []certificateutil.CertificateInfoModel, distribution DistributionType, teamID string, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]devportal.Certificate, []DistributionType, error) {
+	certType, ok := CertificateTypeByDistribution[distribution]
+	if !ok {
+		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", distribution))
+	}
 
-// DistributionTypes ...
-var (
-	Development DistributionType = "development"
-	AppStore    DistributionType = "app-store"
-	AdHoc       DistributionType = "ad-hoc"
-	Enterprise  DistributionType = "enterprise"
-)
+	distrTypes := []DistributionType{distribution}
+	requiredCertTypes := map[appstoreconnect.CertificateType]bool{certType: true}
+	if distribution != Development {
+		distrTypes = append(distrTypes, Development)
 
-// CertificateTypeByDistribution ...
-var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.CertificateType{
-	Development: appstoreconnect.IOSDevelopment,
-	AppStore:    appstoreconnect.IOSDistribution,
-	AdHoc:       appstoreconnect.IOSDistribution,
-	Enterprise:  appstoreconnect.IOSDistribution,
-}
-
-// CertsToString ...
-func CertsToString(certs []certificateutil.CertificateInfoModel) (s string) {
-	for i, cert := range certs {
-		s += "- "
-		s += cert.String()
-		if i < len(certs)-1 {
-			s += "\n"
+		if signUITestTargets {
+			log.Warnf("UITest target requires development code signing in addition to the specified %s code signing", distribution)
+			requiredCertTypes[appstoreconnect.IOSDevelopment] = true
+		} else {
+			requiredCertTypes[appstoreconnect.IOSDevelopment] = false
 		}
 	}
-	return
-}
 
-// MissingCertificateError ...
-type MissingCertificateError struct {
-	Type   appstoreconnect.CertificateType
-	TeamID string
-}
+	certsByType, err := GetValidCertificates(certs, certificateSource, requiredCertTypes, teamID, verboseLog)
+	if err != nil {
+		if missingCertErr, ok := err.(MissingCertificateError); ok {
+			log.Errorf(err.Error())
+			log.Warnf("Maybe you forgot to provide a(n) %s type certificate.", missingCertErr.Type)
+			log.Warnf("Upload a %s type certificate (.p12) on the Code Signing tab of the Workflow Editor.", missingCertErr.Type)
 
-func (e MissingCertificateError) Error() string {
-	return fmt.Sprintf("no valid %s type certificates uploaded with Team ID (%s)\n ", e.Type, e.TeamID)
+			return nil, nil, fmt.Errorf("") // Move out
+		}
+		return nil, nil, fmt.Errorf("failed to get valid certificates: %s", err)
+	}
+
+	if len(certsByType) == 1 && distribution != Development {
+		// remove development distribution if there is no development certificate uploaded
+		distrTypes = []DistributionType{distribution}
+	}
+	log.Printf("ensuring codesigning files for distribution types: %s", distrTypes)
+
+	return certsByType, distrTypes, nil
 }
 
 // GetValidCertificates ...
@@ -207,4 +207,16 @@ func isDistributionCertificate(cert certificateutil.CertificateInfoModel) bool {
 	// Apple certificate types: https://help.apple.com/xcode/mac/current/#/dev80c6204ec)
 	return strings.HasPrefix(strings.ToLower(cert.CommonName), strings.ToLower("iPhone Distribution")) ||
 		strings.HasPrefix(strings.ToLower(cert.CommonName), strings.ToLower("Apple Distribution"))
+}
+
+// CertsToString ...
+func CertsToString(certs []certificateutil.CertificateInfoModel) (s string) {
+	for i, cert := range certs {
+		s += "- "
+		s += cert.String()
+		if i < len(certs)-1 {
+			s += "\n"
+		}
+	}
+	return
 }
