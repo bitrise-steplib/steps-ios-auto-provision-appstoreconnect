@@ -9,7 +9,6 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
@@ -33,86 +32,81 @@ func main() {
 
 	log.SetEnableDebugLog(cfg.VerboseLog)
 
-	// Creating AppstoreConnectAPI client
-	fmt.Println()
-	log.Infof("Creating AppstoreConnectAPI client")
-
-	authInputs := appleauth.Inputs{
-		APIIssuer:  cfg.APIIssuer,
-		APIKeyPath: string(cfg.APIKeyPath),
-	}
-	if err := authInputs.Validate(); err != nil {
-		failf("Issue with authentication related inputs: %v", err)
+	certURLs, err := cfg.CertificateFileURLs()
+	if err != nil {
+		failf("Failed to convert certificate URLs: %s", err)
 	}
 
-	authSources, err := parseAuthSources(cfg.BitriseConnection)
+	authClientType, err := parseAuthSources(cfg.BitriseConnection)
 	if err != nil {
 		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
 	}
 
-	/////////
+	//
+	// Auto codesign
 	f := devportalclient.NewClientFactory()
 	connection, err := f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
 	if err != nil {
-		panic(err)
+		failf(err.Error())
 	}
 
-	devPortalClient, err := f.CreateClient(devportalclient.AppleIDClient, "teamID", connection)
+	devPortalClient, err := f.CreateClient(authClientType, cfg.TeamID, connection)
 	if err != nil {
-		panic(err)
+		failf(err.Error())
 	}
 
-	keychain, err := keychain.New("kc path", "kc password", command.NewFactory(env.NewRepository()))
+	keychain, err := keychain.New(cfg.KeychainPath, cfg.KeychainPassword, command.NewFactory(env.NewRepository()))
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize keychain: %s", err))
 	}
 
-	certDownloader := certdownloder.NewDownloader(nil)
+	certDownloader := certdownloder.NewDownloader(certURLs)
 	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
 
 	// Analyzing project
 	fmt.Println()
 	log.Infof("Analyzing project")
-	project, err := projectmanager.NewProject("path", "scheme", "config")
+	project, err := projectmanager.NewProject(cfg.ProjectPath, cfg.Scheme, cfg.Configuration)
 	if err != nil {
-		panic(err.Error())
+		failf(err.Error())
 	}
 
 	appLayout, err := project.GetAppLayout(true)
 	if err != nil {
-		panic(err.Error())
+		failf(err.Error())
 	}
 
-	distribution := autocodesign.Development
+	distribution := cfg.DistributionType()
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:       distribution,
 		BitriseTestDevices:     connection.TestDevices,
-		MinProfileValidityDays: 0,
-		VerboseLog:             true,
+		MinProfileValidityDays: cfg.MinProfileDaysValid,
+		VerboseLog:             cfg.VerboseLog,
 	})
 	if err != nil {
-		panic(fmt.Sprintf("Automatic code signing failed: %s", err))
+		failf(fmt.Sprintf("Automatic code signing failed: %s", err))
 	}
 
 	if err := project.ForceCodesignAssets(distribution, codesignAssetsByDistributionType); err != nil {
-		panic(fmt.Sprintf("Failed to force codesign settings: %s", err))
+		failf(fmt.Sprintf("Failed to force codesign settings: %s", err))
 	}
-	/////////
 
+	//
 	// Export output
 	fmt.Println()
 	log.Infof("Exporting outputs")
 
+	teamID := codesignAssetsByDistributionType[distribution].Certificate.TeamID
 	outputs := map[string]string{
-		"BITRISE_EXPORT_METHOD":  stepConf.Distribution,
+		"BITRISE_EXPORT_METHOD":  cfg.Distribution,
 		"BITRISE_DEVELOPER_TEAM": teamID,
 	}
 
-	settings, ok := codesignSettingsByDistributionType[autoprovision.Development]
+	settings, ok := codesignAssetsByDistributionType[autocodesign.Development]
 	if ok {
 		outputs["BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
-		bundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+		bundleID, err := project.MainTargetBundleID()
 		if err != nil {
 			failf("Failed to read bundle ID for the main target: %s", err)
 		}
@@ -124,15 +118,15 @@ func main() {
 		outputs["BITRISE_DEVELOPMENT_PROFILE"] = profile.Attributes().UUID
 	}
 
-	if stepConf.DistributionType() != autoprovision.Development {
-		settings, ok := codesignSettingsByDistributionType[stepConf.DistributionType()]
+	if distribution != autocodesign.Development {
+		settings, ok := codesignAssetsByDistributionType[distribution]
 		if !ok {
-			failf("No codesign settings ensured for the selected distribution type: %s", stepConf.DistributionType())
+			failf("No codesign settings ensured for the selected distribution type: %s", distribution)
 		}
 
 		outputs["BITRISE_PRODUCTION_CODESIGN_IDENTITY"] = settings.Certificate.CommonName
 
-		bundleID, err := projHelper.TargetBundleID(projHelper.MainTarget.Name, config)
+		bundleID, err := project.MainTargetBundleID()
 		if err != nil {
 			failf(err.Error())
 		}
@@ -150,5 +144,4 @@ func main() {
 			failf("Failed to export %s=%s: %s", k, v, err)
 		}
 	}
-
 }

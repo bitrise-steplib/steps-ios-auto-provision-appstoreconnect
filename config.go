@@ -4,17 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bitrise-io/go-xcode/autocodesign"
-
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/sliceutil"
-	"github.com/bitrise-io/go-xcode/appleauth"
+	"github.com/bitrise-io/go-xcode/autocodesign"
+	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 )
-
-// CertificateFileURL contains a p12 file URL and passphrase
-type CertificateFileURL struct {
-	URL, Passphrase string
-}
 
 // Config holds the step inputs
 type Config struct {
@@ -62,15 +57,15 @@ func (c Config) ValidateCertificates() ([]string, []string, error) {
 }
 
 // CertificateFileURLs returns an array of p12 file URLs and passphrases
-func (c Config) CertificateFileURLs() ([]CertificateFileURL, error) {
+func (c Config) CertificateFileURLs() ([]certdownloder.CertificateFileURL, error) {
 	pfxURLs, passphrases, err := c.ValidateCertificates()
 	if err != nil {
 		return nil, err
 	}
 
-	files := make([]CertificateFileURL, len(pfxURLs))
+	files := make([]certdownloder.CertificateFileURL, len(pfxURLs))
 	for i, pfxURL := range pfxURLs {
-		files[i] = CertificateFileURL{
+		files[i] = certdownloder.CertificateFileURL{
 			URL:        pfxURL,
 			Passphrase: passphrases[i],
 		}
@@ -84,26 +79,17 @@ func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 	return sliceutil.CleanWhitespace(strings.Split(list, sep), omitEmpty)
 }
 
-func parseAuthSources(bitriseConnection string) ([]appleauth.Source, error) {
+func parseAuthSources(bitriseConnection string) (devportalclient.ClientType, error) {
 	switch bitriseConnection {
 	case "automatic":
-		return []appleauth.Source{
-			&appleauth.ConnectionAPIKeySource{},
-			&appleauth.InputAPIKeySource{},
-		}, nil
+		return devportalclient.APIKeyClient, nil
 	case "api_key":
-		return []appleauth.Source{
-			&appleauth.ConnectionAPIKeySource{},
-		}, nil
+		return devportalclient.APIKeyClient, nil
 	case "apple_id", "apple-id", "enterprise_with_apple_id", "enterprise-with-apple-id":
-		return []appleauth.Source{
-			&appleauth.ConnectionAppleIDFastlaneSource{},
-		}, nil
+		return devportalclient.AppleIDClient, nil
 	case "off":
-		return []appleauth.Source{
-			&appleauth.InputAPIKeySource{},
-		}, nil
+		return devportalclient.APIKeyClient, nil
 	default:
-		return nil, fmt.Errorf("invalid connection input: %s", bitriseConnection)
+		return devportalclient.APIKeyClient, fmt.Errorf("invalid connection input: %s", bitriseConnection)
 	}
 }
