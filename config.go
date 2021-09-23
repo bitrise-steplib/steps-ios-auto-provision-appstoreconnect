@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bitrise-io/go-xcode/autocodesign"
+
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/autoprovision"
 )
 
 // CertificateFileURL contains a p12 file URL and passphrase
@@ -44,8 +45,8 @@ type Config struct {
 }
 
 // DistributionType ...
-func (c Config) DistributionType() autoprovision.DistributionType {
-	return autoprovision.DistributionType(c.Distribution)
+func (c Config) DistributionType() autocodesign.DistributionType {
+	return autocodesign.DistributionType(c.Distribution)
 }
 
 // ValidateCertificates validates if the number of certificate URLs matches those of passphrases
