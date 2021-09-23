@@ -7,7 +7,7 @@ import (
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
+	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 )
 
@@ -57,15 +57,15 @@ func (c Config) ValidateCertificates() ([]string, []string, error) {
 }
 
 // CertificateFileURLs returns an array of p12 file URLs and passphrases
-func (c Config) CertificateFileURLs() ([]certdownloder.CertificateFileURL, error) {
+func (c Config) CertificateFileURLs() ([]certdownloader.CertificateFileURL, error) {
 	pfxURLs, passphrases, err := c.ValidateCertificates()
 	if err != nil {
 		return nil, err
 	}
 
-	files := make([]certdownloder.CertificateFileURL, len(pfxURLs))
+	files := make([]certdownloader.CertificateFileURL, len(pfxURLs))
 	for i, pfxURL := range pfxURLs {
-		files[i] = certdownloder.CertificateFileURL{
+		files[i] = certdownloader.CertificateFileURL{
 			URL:        pfxURL,
 			Passphrase: passphrases[i],
 		}

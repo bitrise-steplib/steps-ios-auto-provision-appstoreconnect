@@ -22,11 +22,11 @@ github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/pretty
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-xcode v0.0.0-20210923134549-4b5a69a39ece
+# github.com/bitrise-io/go-xcode v0.0.0-20210923161521-fe2b6073053e
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/autocodesign
-github.com/bitrise-io/go-xcode/autocodesign/certdownloder
+github.com/bitrise-io/go-xcode/autocodesign/certdownloader
 github.com/bitrise-io/go-xcode/autocodesign/codesignasset
 github.com/bitrise-io/go-xcode/autocodesign/devportalclient
 github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect

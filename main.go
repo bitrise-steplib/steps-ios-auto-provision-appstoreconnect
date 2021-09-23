@@ -10,7 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
+	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
@@ -42,6 +42,11 @@ func main() {
 		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
 	}
 
+	if cfg.BuildURL == "" {
+		fmt.Println()
+		failf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
+	}
+
 	//
 	// Auto codesign
 	f := devportalclient.NewClientFactory()
@@ -57,10 +62,10 @@ func main() {
 
 	keychain, err := keychain.New(cfg.KeychainPath, cfg.KeychainPassword, command.NewFactory(env.NewRepository()))
 	if err != nil {
-		panic(fmt.Sprintf("failed to initialize keychain: %s", err))
+		failf(fmt.Sprintf("failed to initialize keychain: %s", err))
 	}
 
-	certDownloader := certdownloder.NewDownloader(certURLs)
+	certDownloader := certdownloader.NewDownloader(certURLs)
 	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
 
 	// Analyzing project
