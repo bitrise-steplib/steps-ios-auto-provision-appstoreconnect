@@ -11,8 +11,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
-// AppIDName ...
-func AppIDName(bundleID string) string {
+func appIDName(bundleID string) string {
 	prefix := ""
 	if strings.HasSuffix(bundleID, ".*") {
 		prefix = "Wildcard "
@@ -177,7 +176,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements s
 
 	capabilities := Entitlement(entitlements)
 
-	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier)
+	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier, appIDName(bundleIDIdentifier))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
 	}
@@ -438,17 +437,4 @@ func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement
 		return err
 	}
 	return checkProfileDevices(profileDeviceIDs, deviceIDs)
-}
-
-// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
-func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
-	for bundleID, entitlements := range entitlementsByBundleID {
-		for entitlementKey, value := range entitlements {
-			if (Entitlement{entitlementKey: value}).IsProfileAttached() {
-				return false, entitlementKey, bundleID
-			}
-		}
-	}
-
-	return true, "", ""
 }
