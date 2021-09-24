@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -89,6 +90,20 @@ func main() {
 		VerboseLog:             cfg.VerboseLog,
 	})
 	if err != nil {
+		var detailedErr *autocodesign.DetailedError
+		if errors.As(err, &detailedErr) {
+			fmt.Println()
+			log.Errorf(detailedErr.Title)
+			if detailedErr.Description != "" {
+				log.Warnf(detailedErr.Description)
+			}
+			if detailedErr.Reccomendation != "" {
+				fmt.Println()
+				log.Errorf(detailedErr.Reccomendation)
+			}
+
+			failf("")
+		}
 		failf(fmt.Sprintf("Automatic code signing failed: %s", err))
 	}
 
