@@ -31,13 +31,13 @@ func (_m *MockDevPortalClient) CheckBundleIDEntitlements(bundleID appstoreconnec
 	return r0
 }
 
-// CreateBundleID provides a mock function with given fields: bundleIDIdentifier
-func (_m *MockDevPortalClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	ret := _m.Called(bundleIDIdentifier)
+// CreateBundleID provides a mock function with given fields: bundleIDIdentifier, appIDName
+func (_m *MockDevPortalClient) CreateBundleID(bundleIDIdentifier string, appIDName string) (*appstoreconnect.BundleID, error) {
+	ret := _m.Called(bundleIDIdentifier, appIDName)
 
 	var r0 *appstoreconnect.BundleID
-	if rf, ok := ret.Get(0).(func(string) *appstoreconnect.BundleID); ok {
-		r0 = rf(bundleIDIdentifier)
+	if rf, ok := ret.Get(0).(func(string, string) *appstoreconnect.BundleID); ok {
+		r0 = rf(bundleIDIdentifier, appIDName)
 	} else {
 		if ret.Get(0) != nil {
 			r0, ok = ret.Get(0).(*appstoreconnect.BundleID)
@@ -47,8 +47,8 @@ func (_m *MockDevPortalClient) CreateBundleID(bundleIDIdentifier string) (*appst
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(bundleIDIdentifier)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(bundleIDIdentifier, appIDName)
 	} else {
 		r1 = ret.Error(1)
 	}
