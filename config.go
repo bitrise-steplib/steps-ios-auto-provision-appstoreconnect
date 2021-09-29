@@ -17,15 +17,17 @@ type CertificateFileURL struct {
 
 // Config holds the step inputs
 type Config struct {
-	BitriseConnection string          `env:"connection,opt[automatic,api_key,off]"`
+	BitriseConnection string          `env:"connection,opt[automatic,api_key,off,enterprise-with-apple-id,apple_id]"`
 	APIKeyPath        stepconf.Secret `env:"api_key_path"`
 	APIIssuer         string          `env:"api_issuer"`
+	// Apple ID
+	TeamID string `env:"apple_id_team_id"`
 
-	ProjectPath       string `env:"project_path,dir"`
-	Scheme            string `env:"scheme,required"`
-	Configuration     string `env:"configuration"`
-	SignUITestTargets bool   `env:"sign_uitest_targets,opt[yes,no]"`
-	RegisterTestDevices bool `env:"register_test_devices,opt[yes,no]"`
+	ProjectPath         string `env:"project_path,dir"`
+	Scheme              string `env:"scheme,required"`
+	Configuration       string `env:"configuration"`
+	SignUITestTargets   bool   `env:"sign_uitest_targets,opt[yes,no]"`
+	RegisterTestDevices bool   `env:"register_test_devices,opt[yes,no]"`
 
 	Distribution        string `env:"distribution_type,opt[development,app-store,ad-hoc,enterprise]"`
 	MinProfileDaysValid int    `env:"min_profile_days_valid"`
@@ -91,6 +93,10 @@ func parseAuthSources(bitriseConnection string) ([]appleauth.Source, error) {
 	case "api_key":
 		return []appleauth.Source{
 			&appleauth.ConnectionAPIKeySource{},
+		}, nil
+	case "apple_id", "enterprise-with-apple-id":
+		return []appleauth.Source{
+			&appleauth.ConnectionAppleIDFastlaneSource{},
 		}, nil
 	case "off":
 		return []appleauth.Source{

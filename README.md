@@ -7,7 +7,8 @@ Automatically manages your iOS Provisioning Profiles for your Xcode project.
 <details>
 <summary>Description</summary>
 
-The Step uses the official [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests). 
+The Step uses the official [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests). The Step can obtain the API connection information in 2 ways:
+It can use either the Bitrise Apple Developer connection selected under the **Team** tab for the application, or you can provide the information to the Step using Step's input variables.
 The Steps performs the following:
 - It generates, updates and downloads the provisioning profiles needed for your iOS project.
 - It verifies if your project is registered with the App Store Connect. If it was not, the Step registers your project.
@@ -59,9 +60,10 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 | Key | Description | Flags | Default |
 | --- | --- | --- | --- |
-| `connection` | The input determines the method used for Apple Service authentication. By default, the Bitrise Apple Developer connection based on API key is used and other authentication-related Step inputs are ignored.  You can either use the established Bitrise Apple Developer connection or you can tell the Step to only use the Step inputs for authentication. - `automatic`: Use the Apple Developer connection based on API key. Step inputs are only used as a fallback. - `api_key`: Use the Apple Developer connection based on API key authentication. Authentication-related Step inputs are ignored. - `off`: Do not use any already configured Apple Developer Connection. Only authentication-related Step inputs are considered. | required | `automatic` |
+| `connection` | This input variable allows you to specify how the Step determines the API connection to use. - `automatic`: The Step can use either method: It will attempt to use the Bitrise Apple Developer connection first. If this is not available, it will use the Step input variables. - `api_key`: The Step will only use the Bitrise Apple Developer connection. It will not use the Step input variables. - `off`: The Step will only use the Step input variables. It will not use the Bitrise Apple Developer connection. - `enterprise-with-apple-id`: [Bitrise Apple Service connection with an Apple Developer Enterpsie account.](https://devcenter.bitrise.io/getting-started/connecting-to-services/connecting-to-an-apple-service-with-apple-id/) - `apple-id`: [Bitrise Apple Service connection with Apple ID.](https://devcenter.bitrise.io/getting-started/connecting-to-services/connecting-to-an-apple-service-with-apple-id/) | required | `automatic` |
 | `api_key_path` | Specify the path in an URL format where your API key is stored.  For example: `https://URL/TO/AuthKey_[KEY_ID].p8` or `file:///PATH/TO/AuthKey_[KEY_ID].p8`. **NOTE:** The Step will only recognize the API key if the filename includes the  `KEY_ID` value as shown on the examples above.  You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the Environment Variable for the file here.  For example: `$BITRISEIO_MYKEY_URL` | sensitive |  |
 | `api_issuer` | Issuer ID. Required if **API Key URL** (`api_key_path`) is specified. |  |  |
+| `apple_id_team_id` | Needed if the are multiple Developer Portal teams active when using Bitrise Apple Service connection with Apple ID. |  |  |
 | `distribution_type` | Describes how Xcode should sign your project. | required | `development` |
 | `project_path` | The path where the `.xcodeproj` / `.xcworkspace` is located. | required | `$BITRISE_PROJECT_PATH` |
 | `scheme` | The scheme selects the main Application Target of the project.  The step will manage the codesign settings of the main Application and related executable (Application and App Extension) targets. | required | `$BITRISE_SCHEME` |

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -28,36 +28,7 @@ func findDevPortalDevice(testDevice devportalservice.TestDevice, devPortalDevice
 	return nil
 }
 
-func registerTestDeviceOnDevPortal(client *appstoreconnect.Client, testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
-	// The API seems to recognize existing devices even with different casing and '-' separator removed.
-	// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.
-	// Did not fully validate the ability to add devices with changed casing (or '-' removed) via the API, so passing the UDID through unchanged.
-	req := appstoreconnect.DeviceCreateRequest{
-		Data: appstoreconnect.DeviceCreateRequestData{
-			Attributes: appstoreconnect.DeviceCreateRequestDataAttributes{
-				Name:     "Bitrise test device",
-				Platform: appstoreconnect.IOS,
-				UDID:     testDevice.DeviceID,
-			},
-			Type: "devices",
-		},
-	}
-
-	registeredDevice, err := client.Provisioning.RegisterNewDevice(req)
-	if err != nil {
-		rerr, ok := err.(*appstoreconnect.ErrorResponse)
-		if ok && rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
-			log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", err)
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return &registeredDevice.Data, nil
-}
-
-func registerMissingTestDevices(client *appstoreconnect.Client, testDevices []devportalservice.TestDevice, devPortalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
+func registerMissingTestDevices(client autoprovision.DeviceClient, testDevices []devportalservice.TestDevice, devPortalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {
 	if client == nil {
 		return []appstoreconnect.Device{}, fmt.Errorf("the App Store Connect API client not provided")
 	}
@@ -74,8 +45,14 @@ func registerMissingTestDevices(client *appstoreconnect.Client, testDevices []de
 		}
 
 		log.Printf("registering device")
-		newDevPortalDevice, err := registerTestDeviceOnDevPortal(client, testDevice)
+		newDevPortalDevice, err := client.RegisterDevice(testDevice)
 		if err != nil {
+			var registrationError appstoreconnect.DeviceRegistrationError
+			if errors.As(err, &registrationError) {
+				log.Warnf("Failed to register device (can be caused by invalid UDID or trying to register a Mac device): %s", registrationError.Reason)
+				return nil, nil
+			}
+
 			return nil, err
 		}
 
