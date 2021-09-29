@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -10,12 +9,14 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
+	"github.com/bitrise-io/go-xcode/devportalservice"
 )
 
 func failf(format string, args ...interface{}) {
@@ -33,7 +34,7 @@ func main() {
 
 	log.SetEnableDebugLog(cfg.VerboseLog)
 
-	certURLs, err := cfg.CertificateFileURLs()
+	certsWithPrivateKey, err := cfg.Certificates()
 	if err != nil {
 		failf("Failed to convert certificate URLs: %s", err)
 	}
@@ -66,7 +67,7 @@ func main() {
 		failf(fmt.Sprintf("failed to initialize keychain: %s", err))
 	}
 
-	certDownloader := certdownloader.NewDownloader(certURLs)
+	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
 	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
 
 	// Analyzing project
@@ -83,19 +84,17 @@ func main() {
 	}
 
 	distribution := cfg.DistributionType()
+	var testDevices []devportalservice.TestDevice
+	if cfg.RegisterTestDevices {
+		testDevices = connection.TestDevices
+	}
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:       distribution,
-		BitriseTestDevices:     connection.TestDevices,
+		BitriseTestDevices:     testDevices,
 		MinProfileValidityDays: cfg.MinProfileDaysValid,
 		VerboseLog:             cfg.VerboseLog,
 	})
 	if err != nil {
-		var detailedErr *autocodesign.DetailedError
-		if errors.As(err, &detailedErr) {
-			fmt.Println()
-			failf(err.Error())
-		}
-
 		failf(fmt.Sprintf("Automatic code signing failed: %s", err))
 	}
 

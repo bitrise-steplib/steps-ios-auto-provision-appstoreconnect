@@ -1,3 +1,8 @@
+// Package projectmanager parses and edits an Xcode project.
+//
+// Use cases:
+//  1. Get codesigning related information, needed to fetch or recreate certificates and provisioning profiles
+//  2. Apply codesigning settings in the projects
 package projectmanager
 
 import (
@@ -5,7 +10,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
 // Project ...
@@ -84,7 +88,7 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 	return autocodesign.AppLayout{
 		TeamID:                                 teamID,
 		Platform:                               platform,
-		ArchivableTargetBundleIDToEntitlements: archivableTargetBundleIDToEntitlements,
+		EntitlementsByArchivableTargetBundleID: archivableTargetBundleIDToEntitlements,
 		UITestTargetBundleIDs:                  uiTestTargetBundleIDs,
 	}, nil
 }
@@ -165,7 +169,7 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 }
 
 // CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
-func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
+func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]autocodesign.Entitlements) (ok bool, badEntitlement string, badBundleID string) {
 	for bundleID, entitlements := range entitlementsByBundleID {
 		for entitlementKey, value := range entitlements {
 			if (autocodesign.Entitlement{entitlementKey: value}).IsProfileAttached() {

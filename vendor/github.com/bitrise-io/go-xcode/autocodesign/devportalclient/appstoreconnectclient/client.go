@@ -1,3 +1,6 @@
+// Package appstoreconnectclient implements autocodesign.DevPortalClient, using an API key as the authentication method.
+//
+// It depends on appstoreconnect package.
 package appstoreconnectclient
 
 import (
@@ -12,8 +15,8 @@ type Client struct {
 	*ProfileClient
 }
 
-// NewAPIDevportalClient ...
-func NewAPIDevportalClient(client *appstoreconnect.Client) autocodesign.DevPortalClient {
+// NewAPIDevPortalClient ...
+func NewAPIDevPortalClient(client *appstoreconnect.Client) autocodesign.DevPortalClient {
 	return Client{
 		CertificateSource: NewCertificateSource(client),
 		DeviceClient:      NewDeviceClient(client),

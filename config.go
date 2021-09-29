@@ -56,16 +56,16 @@ func (c Config) ValidateCertificates() ([]string, []string, error) {
 	return pfxURLs, passphrases, nil
 }
 
-// CertificateFileURLs returns an array of p12 file URLs and passphrases
-func (c Config) CertificateFileURLs() ([]certdownloader.CertificateFileURL, error) {
+// Certificates returns an array of p12 file URLs and passphrases
+func (c Config) Certificates() ([]certdownloader.CertificateAndPassphrase, error) {
 	pfxURLs, passphrases, err := c.ValidateCertificates()
 	if err != nil {
 		return nil, err
 	}
 
-	files := make([]certdownloader.CertificateFileURL, len(pfxURLs))
+	files := make([]certdownloader.CertificateAndPassphrase, len(pfxURLs))
 	for i, pfxURL := range pfxURLs {
-		files[i] = certdownloader.CertificateFileURL{
+		files[i] = certdownloader.CertificateAndPassphrase{
 			URL:        pfxURL,
 			Passphrase: passphrases[i],
 		}

@@ -34,7 +34,6 @@ type ProjectHelper struct {
 // Previously in the ruby version the initialize method did the same
 // It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
 func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, error) {
-	// Maybe we should do this checks during the input parsing
 	if exits, err := pathutil.IsPathExists(projOrWSPath); err != nil {
 		return nil, err
 	} else if !exits {
@@ -86,8 +85,8 @@ func (p *ProjectHelper) ArchivableTargets() []xcodeproj.Target {
 }
 
 // ArchivableTargetBundleIDToEntitlements ...
-func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]serialized.Object, error) {
-	entitlementsByBundleID := map[string]serialized.Object{}
+func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]autocodesign.Entitlements, error) {
+	entitlementsByBundleID := map[string]autocodesign.Entitlements{}
 
 	for _, target := range p.ArchivableTargets() {
 		bundleID, err := p.TargetBundleID(target.Name, p.Configuration)
@@ -299,27 +298,27 @@ func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 	return resolved, nil
 }
 
-func (p *ProjectHelper) targetEntitlements(name, config, bundleID string) (serialized.Object, error) {
+func (p *ProjectHelper) targetEntitlements(name, config, bundleID string) (autocodesign.Entitlements, error) {
 	entitlements, err := p.XcProj.TargetCodeSignEntitlements(name, config)
 	if err != nil && !serialized.IsKeyNotFoundError(err) {
 		return nil, err
 	}
 
-	return resolveEntitlementVariables(autocodesign.Entitlement(entitlements), bundleID)
+	return resolveEntitlementVariables(autocodesign.Entitlements(entitlements), bundleID)
 }
 
 // resolveEntitlementVariables expands variables in the project entitlements.
 // Entitlement values can contain variables, for example: `iCloud.$(CFBundleIdentifier)`.
 // Expanding iCloud Container values only, as they are compared to the profile values later.
 // Expand CFBundleIdentifier variable only, other variables are not yet supported.
-func resolveEntitlementVariables(entitlements autocodesign.Entitlement, bundleID string) (serialized.Object, error) {
+func resolveEntitlementVariables(entitlements autocodesign.Entitlements, bundleID string) (autocodesign.Entitlements, error) {
 	containers, err := entitlements.ICloudContainers()
 	if err != nil {
 		return nil, err
 	}
 
 	if len(containers) == 0 {
-		return serialized.Object(entitlements), nil
+		return entitlements, nil
 	}
 
 	var expandedContainers []interface{}
@@ -340,18 +339,7 @@ func resolveEntitlementVariables(entitlements autocodesign.Entitlement, bundleID
 
 	entitlements[autocodesign.ICloudIdentifiersEntitlementKey] = expandedContainers
 
-	return serialized.Object(entitlements), nil
-}
-
-// 'iPhone Developer' should match to 'iPhone Developer: Bitrise Bot (ABCD)'
-func codesignIdentitesMatch(identity1, identity2 string) bool {
-	if strings.Contains(strings.ToLower(identity1), strings.ToLower(identity2)) {
-		return true
-	}
-	if strings.Contains(strings.ToLower(identity2), strings.ToLower(identity1)) {
-		return true
-	}
-	return false
+	return entitlements, nil
 }
 
 func expandTargetSetting(value string, buildSettings serialized.Object) (string, error) {

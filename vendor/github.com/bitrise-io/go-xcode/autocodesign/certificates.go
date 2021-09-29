@@ -35,7 +35,7 @@ func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, c
 				ErrorMessage:   "",
 				Title:          fmt.Sprintf("No valid %s type certificates uploaded with Team ID (%s) ", missingCertErr.Type, missingCertErr.TeamID),
 				Description:    fmt.Sprintf("Maybe you forgot to provide a(n) %s type certificate.", missingCertErr.Type),
-				Reccomendation: fmt.Sprintf("Upload a %s type certificate (.p12) on the Code Signing tab of the Workflow Editor.", missingCertErr.Type),
+				Recommendation: fmt.Sprintf("Upload a %s type certificate (.p12) on the Code Signing tab of the Workflow Editor.", missingCertErr.Type),
 			}
 		}
 		return nil, nil, fmt.Errorf("failed to get valid certificates: %s", err)
@@ -66,14 +66,14 @@ func getValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 
 	// only for debugging
 	if isDebugLog {
-		if err := logAllAPICertificates(client, typeToLocalCerts); err != nil {
+		if err := logAllAPICertificates(client); err != nil {
 			log.Debugf("Failed to log all Developer Portal certificates: %s", err)
 		}
 	}
 
 	validAPICertificates := map[appstoreconnect.CertificateType][]Certificate{}
 	for certificateType, validLocalCertificates := range typeToLocalCerts {
-		matchingCertificates, err := matchLocalToAPICertificates(client, certificateType, validLocalCertificates)
+		matchingCertificates, err := matchLocalToAPICertificates(client, validLocalCertificates)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +81,7 @@ func getValidCertificates(localCertificates []certificateutil.CertificateInfoMod
 		if len(matchingCertificates) > 0 {
 			log.Debugf("Certificates type %s has matches on Developer Portal:", certificateType)
 			for _, cert := range matchingCertificates {
-				log.Debugf("- %s", cert.Certificate)
+				log.Debugf("- %s", cert.CertificateInfo)
 			}
 		}
 
@@ -121,16 +121,16 @@ func getValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 }
 
 // matchLocalToAPICertificates ...
-func matchLocalToAPICertificates(client DevPortalClient, certificateType appstoreconnect.CertificateType, localCertificates []certificateutil.CertificateInfoModel) ([]Certificate, error) {
+func matchLocalToAPICertificates(client DevPortalClient, localCertificates []certificateutil.CertificateInfoModel) ([]Certificate, error) {
 	var matchingCertificates []Certificate
 
 	for _, localCert := range localCertificates {
-		cert, err := client.QueryCertificateBySerial(localCert.Certificate.SerialNumber)
+		cert, err := client.QueryCertificateBySerial(*localCert.Certificate.SerialNumber)
 		if err != nil {
 			log.Warnf("Certificate (%s) not found on Developer Portal: %s", localCert, err)
 			continue
 		}
-		cert.Certificate = localCert
+		cert.CertificateInfo = localCert
 
 		log.Debugf("Certificate (%s) found with ID: %s", localCert, cert.ID)
 
@@ -141,7 +141,7 @@ func matchLocalToAPICertificates(client DevPortalClient, certificateType appstor
 }
 
 // logAllAPICertificates ...
-func logAllAPICertificates(client DevPortalClient, localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel) error {
+func logAllAPICertificates(client DevPortalClient) error {
 	certificates, err := client.QueryAllIOSCertificates()
 	if err != nil {
 		return fmt.Errorf("failed to query certificates on Developer Portal: %s", err)
@@ -150,7 +150,7 @@ func logAllAPICertificates(client DevPortalClient, localCertificates map[appstor
 	for certType, certs := range certificates {
 		log.Debugf("Developer Portal %s certificates:", certType)
 		for _, cert := range certs {
-			log.Debugf("- %s", cert.Certificate)
+			log.Debugf("- %s", cert.CertificateInfo)
 		}
 	}
 
