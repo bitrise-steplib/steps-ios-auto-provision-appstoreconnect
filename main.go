@@ -648,7 +648,7 @@ func main() {
 		log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
 		log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
-		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
+		if err := projHelper.XcProj.ForceCodeSign(config, target.Name, teamID, codesignSettings.Certificate.SHA1Fingerprint, profile.Attributes().UUID); err != nil {
 			failf("Failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
 	}
@@ -682,7 +682,7 @@ func main() {
 			log.Printf("  certificate: %s", codesignSettings.Certificate.CommonName)
 
 			for _, c := range uiTestTarget.BuildConfigurationList.BuildConfigurations {
-				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, codesignSettings.Certificate.CommonName, profile.Attributes().UUID); err != nil {
+				if err := projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, codesignSettings.Certificate.SHA1Fingerprint, profile.Attributes().UUID); err != nil {
 					failf("Failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
 				}
 			}
