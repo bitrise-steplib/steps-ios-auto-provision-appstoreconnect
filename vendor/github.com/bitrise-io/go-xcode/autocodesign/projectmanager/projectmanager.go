@@ -17,14 +17,15 @@ type Project struct {
 	projHelper ProjectHelper
 }
 
-type ProjectParams struct {
+// InitParams ...
+type InitParams struct {
 	ProjectOrWorkspacePath string
 	SchemeName             string
 	ConfigurationName      string
 }
 
 // NewProject ...
-func NewProject(params ProjectParams) (Project, error) {
+func NewProject(params InitParams) (Project, error) {
 	projectHelper, err := NewProjectHelper(params.ProjectOrWorkspacePath, params.SchemeName, params.ConfigurationName)
 	if err != nil {
 		return Project{}, err

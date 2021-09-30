@@ -73,7 +73,7 @@ func main() {
 	// Analyzing project
 	fmt.Println()
 	log.Infof("Analyzing project")
-	project, err := projectmanager.NewProject(projectmanager.ProjectParams{
+	project, err := projectmanager.NewProject(projectmanager.InitParams{
 		ProjectOrWorkspacePath: cfg.ProjectPath,
 		SchemeName:             cfg.Scheme,
 		ConfigurationName:      cfg.Configuration,
