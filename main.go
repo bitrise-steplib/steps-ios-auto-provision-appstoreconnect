@@ -84,7 +84,7 @@ func main() {
 		appLayout.TeamID = cfg.TeamID
 	}
 
-	devPortalClient, err := createClient(authSources, authInputs, appLayout.TeamID, connection, cfg.VerboseLog)
+	devPortalClient, err := createClient(authSources, authInputs, appLayout.TeamID, connection)
 	if err != nil {
 		failf(err.Error())
 	}
