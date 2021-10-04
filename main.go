@@ -63,19 +63,6 @@ func main() {
 		}
 	}
 
-	devPortalClient, err := createClient(authSources, authInputs, cfg.TeamID, connection, cfg.VerboseLog)
-	if err != nil {
-		failf(err.Error())
-	}
-
-	keychain, err := keychain.New(cfg.KeychainPath, cfg.KeychainPassword, command.NewFactory(env.NewRepository()))
-	if err != nil {
-		failf(fmt.Sprintf("failed to initialize keychain: %s", err))
-	}
-
-	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
-
 	// Analyzing project
 	fmt.Println()
 	log.Infof("Analyzing project")
@@ -92,6 +79,23 @@ func main() {
 	if err != nil {
 		failf(err.Error())
 	}
+
+	if cfg.TeamID != "" {
+		appLayout.TeamID = cfg.TeamID
+	}
+
+	devPortalClient, err := createClient(authSources, authInputs, appLayout.TeamID, connection, cfg.VerboseLog)
+	if err != nil {
+		failf(err.Error())
+	}
+
+	keychain, err := keychain.New(cfg.KeychainPath, cfg.KeychainPassword, command.NewFactory(env.NewRepository()))
+	if err != nil {
+		failf(fmt.Sprintf("failed to initialize keychain: %s", err))
+	}
+
+	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
 
 	distribution := cfg.DistributionType()
 	var testDevices []devportalservice.TestDevice
