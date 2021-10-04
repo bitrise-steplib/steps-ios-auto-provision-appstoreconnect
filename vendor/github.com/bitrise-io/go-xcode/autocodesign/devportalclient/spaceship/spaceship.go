@@ -169,8 +169,8 @@ func prepareSpaceship() (string, error) {
 		Dir: targetDir,
 	})
 	for _, cmd := range cmds {
-		log.Donef("$ %s", cmd.PrintableCommandArgs())
 		fmt.Println()
+		log.Donef("$ %s", cmd.PrintableCommandArgs())
 
 		output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
@@ -193,7 +193,7 @@ func prepareSpaceship() (string, error) {
 	output, err := bundleInstallCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			return "", fmt.Errorf("Bundle install failed: %s", output)
+			return "", fmt.Errorf("bundle install failed: %s", output)
 		}
 
 		return "", fmt.Errorf("running command failed: %s", err)
