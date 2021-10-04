@@ -6,9 +6,9 @@ import (
 
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
-	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 )
 
 // Config holds the step inputs
@@ -79,17 +79,26 @@ func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 	return sliceutil.CleanWhitespace(strings.Split(list, sep), omitEmpty)
 }
 
-func parseAuthSources(bitriseConnection string) (devportalclient.ClientType, error) {
+func parseAuthSources(bitriseConnection string) ([]appleauth.Source, error) {
 	switch bitriseConnection {
 	case "automatic":
-		return devportalclient.APIKeyClient, nil
+		return []appleauth.Source{
+			&appleauth.ConnectionAPIKeySource{},
+			&appleauth.InputAPIKeySource{},
+		}, nil
 	case "api_key":
-		return devportalclient.APIKeyClient, nil
+		return []appleauth.Source{
+			&appleauth.ConnectionAPIKeySource{},
+		}, nil
 	case "apple_id", "apple-id", "enterprise_with_apple_id", "enterprise-with-apple-id":
-		return devportalclient.AppleIDClient, nil
+		return []appleauth.Source{
+			&appleauth.ConnectionAppleIDFastlaneSource{},
+		}, nil
 	case "off":
-		return devportalclient.APIKeyClient, nil
+		return []appleauth.Source{
+			&appleauth.InputAPIKeySource{},
+		}, nil
 	default:
-		return devportalclient.APIKeyClient, fmt.Errorf("invalid connection input: %s", bitriseConnection)
+		return nil, fmt.Errorf("invalid connection input: %s", bitriseConnection)
 	}
 }

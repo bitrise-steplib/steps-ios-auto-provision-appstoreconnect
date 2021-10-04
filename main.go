@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
@@ -39,25 +40,30 @@ func main() {
 		failf("Failed to convert certificate URLs: %s", err)
 	}
 
-	authClientType, err := parseAuthSources(cfg.BitriseConnection)
+	authInputs := appleauth.Inputs{
+		APIIssuer:  cfg.APIIssuer,
+		APIKeyPath: string(cfg.APIKeyPath),
+	}
+	if err := authInputs.Validate(); err != nil {
+		failf("Issue with authentication related inputs: %v", err)
+	}
+
+	authSources, err := parseAuthSources(cfg.BitriseConnection)
 	if err != nil {
 		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
 	}
 
-	if cfg.BuildURL == "" {
-		fmt.Println()
-		failf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
+	var connection devportalservice.AppleDeveloperConnection
+	if cfg.BuildURL != "" {
+		f := devportalclient.NewClientFactory()
+		var err error
+
+		if connection, err = f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken); err != nil {
+			failf(err.Error())
+		}
 	}
 
-	//
-	// Auto codesign
-	f := devportalclient.NewClientFactory()
-	connection, err := f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
-	if err != nil {
-		failf(err.Error())
-	}
-
-	devPortalClient, err := f.CreateClient(authClientType, cfg.TeamID, connection)
+	devPortalClient, err := createClient(authSources, authInputs, cfg.TeamID, connection, cfg.VerboseLog)
 	if err != nil {
 		failf(err.Error())
 	}

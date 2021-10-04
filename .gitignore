@@ -4,3 +4,4 @@ _tmp/
 apple_developer_portal_data*.json
 .idea
 .bundle
+steps-ios-auto-provision-appstoreconnect
