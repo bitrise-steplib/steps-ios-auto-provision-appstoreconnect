@@ -16,7 +16,7 @@ const notConnected = `Bitrise Apple service connection not found.
 Most likely because there is no configured Bitrise Apple service connection.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 
-func createClient(authSources []appleauth.Source, authInputs appleauth.Inputs, teamID string, conn devportalservice.AppleDeveloperConnection, verboseLog bool) (autocodesign.DevPortalClient, error) {
+func createClient(authSources []appleauth.Source, authInputs appleauth.Inputs, teamID string, conn devportalservice.AppleDeveloperConnection) (autocodesign.DevPortalClient, error) {
 	authConfig, err := appleauth.Select(&conn, authSources, authInputs)
 	if err != nil {
 		if conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
@@ -41,7 +41,7 @@ func createClient(authSources []appleauth.Source, authInputs appleauth.Inputs, t
 	if authConfig.APIKey != nil {
 		httpClient := appstoreconnect.NewRetryableHTTPClient()
 		client := appstoreconnect.NewClient(httpClient, authConfig.APIKey.KeyID, authConfig.APIKey.IssuerID, []byte(authConfig.APIKey.PrivateKey))
-		client.EnableDebugLogs = verboseLog // Set client debug logs including HTTP call debug logs
+		client.EnableDebugLogs = false // Disable client debug logs including HTTP call debug logs
 		devportalClient = appstoreconnectclient.NewAPIDevPortalClient(client)
 		log.Donef("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if authConfig.AppleID != nil {
