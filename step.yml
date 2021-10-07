@@ -69,14 +69,14 @@ inputs:
         - `api_key`: The Step will only use the Bitrise Apple Developer connection. It will not use the Step input variables.
         - `off`: The Step will only use the Step input variables. It will not use the Bitrise Apple Developer connection.
         - `enterprise-with-apple-id`: [Bitrise Apple Service connection with an Apple Developer Enterpsie account.](https://devcenter.bitrise.io/getting-started/connecting-to-services/connecting-to-an-apple-service-with-apple-id/)
-        - `apple-id`: [Bitrise Apple Service connection with Apple ID.](https://devcenter.bitrise.io/getting-started/connecting-to-services/connecting-to-an-apple-service-with-apple-id/)
+        - `apple_id`: [Bitrise Apple Service connection with Apple ID.](https://devcenter.bitrise.io/getting-started/connecting-to-services/connecting-to-an-apple-service-with-apple-id/)
       is_required: true
       value_options:
       - "automatic"
       - "api_key"
       - "off"
       - "enterprise-with-apple-id"
-      - "apple-id"
+      - "apple_id"
   - api_key_path: ""
     opts:
       title: "API Key URL"
