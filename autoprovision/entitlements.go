@@ -106,7 +106,7 @@ func (e Entitlement) AppearsOnDeveloperPortal() bool {
 	entKey := serialized.Object(e).Keys()[0]
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
-	return ok && capType != appstoreconnect.Ignored && capType != appstoreconnect.ProfileAttachedEntitlement
+	return ok && capType != appstoreconnect.Ignored && capType != appstoreconnect.ProfileAttachedEntitlement && capType != appstoreconnect.ParentApplicationIdentifiers
 }
 
 // Equal ...
