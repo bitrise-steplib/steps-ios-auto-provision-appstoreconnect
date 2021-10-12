@@ -50,10 +50,10 @@ workflows:
     after_run:
     - _run
     - _check_outputs
-    - _check_xcode_build_for_test
+    - _check_xcode_archive
     - _run_with_apple_id
     - _check_outputs
-    - _check_xcode_build_for_test
+    - _check_xcode_archive
 
   test_xcode13_uitest_signing:
     before_run:
