@@ -37,7 +37,7 @@ workflows:
   utility_test_appclip:
     envs:
     - TEST_APP_URL: https://github.com/bitrise-io/Fruta.git
-    - TEST_APP_BRANCH: update-sample
+    - TEST_APP_BRANCH: master
     - BITRISE_PROJECT_PATH: Fruta.xcodeproj
     - BITRISE_SCHEME: Fruta iOS
     - SIGN_UITEST_TARGET: "no"
