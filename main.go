@@ -80,7 +80,7 @@ func main() {
 	isRunningOnBitrise := cfg.BuildURL != "" && cfg.BuildAPIToken != ""
 
 	switch {
-	case cfg.BitriseConnection != "off" && isRunningOnBitrise:
+	case cfg.BitriseConnection != "off" && !isRunningOnBitrise:
 		fmt.Println()
 		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
 	case cfg.BitriseConnection != "off":
