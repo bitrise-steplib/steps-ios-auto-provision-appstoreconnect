@@ -19,7 +19,7 @@ Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-step
 func createClient(authSources []appleauth.Source, authInputs appleauth.Inputs, teamID string, conn *devportalservice.AppleDeveloperConnection) (autocodesign.DevPortalClient, error) {
 	authConfig, err := appleauth.Select(conn, authSources, authInputs)
 	if err != nil {
-		if conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
+		if conn == nil || (conn.APIKeyConnection == nil && conn.AppleIDConnection == nil) {
 			fmt.Println()
 			log.Warnf("%s", notConnected)
 		}
