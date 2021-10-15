@@ -26,6 +26,7 @@ func failf(format string, args ...interface{}) {
 }
 
 func main() {
+	// Parse and validate inputs
 	var cfg Config
 	parser := stepconf.NewInputParser(env.NewRepository())
 	if err := parser.Parse(&cfg); err != nil {
@@ -48,22 +49,7 @@ func main() {
 		failf("Issue with authentication related inputs: %v", err)
 	}
 
-	authSources, err := parseAuthSources(cfg.BitriseConnection)
-	if err != nil {
-		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
-	}
-
-	var connection devportalservice.AppleDeveloperConnection
-	if cfg.BuildURL != "" {
-		f := devportalclient.NewClientFactory()
-		var err error
-
-		if connection, err = f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken); err != nil {
-			failf(err.Error())
-		}
-	}
-
-	// Analyzing project
+	// Analyze project
 	fmt.Println()
 	log.Infof("Analyzing project")
 	project, err := projectmanager.NewProject(projectmanager.InitParams{
@@ -80,8 +66,31 @@ func main() {
 		failf(err.Error())
 	}
 
+	// Create Apple developer Portal client
 	if cfg.TeamID != "" {
 		appLayout.TeamID = cfg.TeamID
+	}
+
+	authSources, err := parseAuthSources(cfg.BitriseConnection)
+	if err != nil {
+		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
+	}
+
+	var connection *devportalservice.AppleDeveloperConnection
+	isRunningOnBitrise := cfg.BuildURL != "" && cfg.BuildAPIToken != ""
+
+	switch {
+	case cfg.BitriseConnection != "off" && isRunningOnBitrise:
+		fmt.Println()
+		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
+	case cfg.BitriseConnection != "off":
+		f := devportalclient.NewClientFactory()
+		c, err := f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
+		if err != nil {
+			failf(err.Error())
+		}
+
+		connection = &c
 	}
 
 	devPortalClient, err := createClient(authSources, authInputs, appLayout.TeamID, connection)
@@ -89,6 +98,7 @@ func main() {
 		failf(err.Error())
 	}
 
+	// Create codesign manager
 	keychain, err := keychain.New(cfg.KeychainPath, cfg.KeychainPassword, command.NewFactory(env.NewRepository()))
 	if err != nil {
 		failf(fmt.Sprintf("failed to initialize keychain: %s", err))
@@ -97,6 +107,7 @@ func main() {
 	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
 	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
 
+	// Auto codesign
 	distribution := cfg.DistributionType()
 	var testDevices []devportalservice.TestDevice
 	if cfg.RegisterTestDevices {
@@ -116,7 +127,6 @@ func main() {
 		failf(fmt.Sprintf("Failed to force codesign settings: %s", err))
 	}
 
-	//
 	// Export output
 	fmt.Println()
 	log.Infof("Exporting outputs")

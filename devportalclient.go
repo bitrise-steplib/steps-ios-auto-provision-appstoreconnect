@@ -16,8 +16,8 @@ const notConnected = `Bitrise Apple service connection not found.
 Most likely because there is no configured Bitrise Apple service connection.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 
-func createClient(authSources []appleauth.Source, authInputs appleauth.Inputs, teamID string, conn devportalservice.AppleDeveloperConnection) (autocodesign.DevPortalClient, error) {
-	authConfig, err := appleauth.Select(&conn, authSources, authInputs)
+func createClient(authSources []appleauth.Source, authInputs appleauth.Inputs, teamID string, conn *devportalservice.AppleDeveloperConnection) (autocodesign.DevPortalClient, error) {
+	authConfig, err := appleauth.Select(conn, authSources, authInputs)
 	if err != nil {
 		if conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
 			fmt.Println()
