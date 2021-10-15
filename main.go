@@ -110,7 +110,7 @@ func main() {
 	// Auto codesign
 	distribution := cfg.DistributionType()
 	var testDevices []devportalservice.TestDevice
-	if cfg.RegisterTestDevices {
+	if cfg.RegisterTestDevices && connection != nil {
 		testDevices = connection.TestDevices
 	}
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
