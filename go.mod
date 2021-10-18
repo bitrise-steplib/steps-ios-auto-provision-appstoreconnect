@@ -5,5 +5,9 @@ go 1.16
 require (
 	github.com/bitrise-io/go-steputils v0.0.0-20210929162140-866a65a1e14a
 	github.com/bitrise-io/go-utils v0.0.0-20211008161027-fa11986847a0
+<<<<<<< HEAD
 	github.com/bitrise-io/go-xcode v0.0.0-20211015142240-1e5f5728d544
+=======
+	github.com/bitrise-io/go-xcode v0.0.0-20211015073356-447d135b8934
+>>>>>>> master
 )

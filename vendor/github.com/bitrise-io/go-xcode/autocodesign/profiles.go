@@ -146,10 +146,13 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 		}
 	}
 
+<<<<<<< HEAD
 	if bundleID == nil && isAppClip(entitlements) {
 		return nil, ErrAppClipAppID{}
 	}
 
+=======
+>>>>>>> master
 	if bundleID != nil {
 		log.Printf("  app ID found: %s", bundleID.Attributes.Name)
 
@@ -159,10 +162,13 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 		err := m.client.CheckBundleIDEntitlements(*bundleID, entitlements)
 		if err != nil {
 			if mErr, ok := err.(NonmatchingProfileError); ok {
+<<<<<<< HEAD
 				if isAppClip(entitlements) && hasSignInWithAppleEntitlement(entitlements) {
 					return nil, ErrAppClipAppIDWithAppleSigning{}
 				}
 
+=======
+>>>>>>> master
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
 				if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
@@ -252,7 +258,11 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 	// Search for BundleID
 	bundleID, err := m.ensureBundleID(bundleIDIdentifier, entitlements)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to ensure application identifier for %s: %w", bundleIDIdentifier, err)
+=======
+		return nil, err
+>>>>>>> master
 	}
 
 	// Create Bitrise managed Profile
@@ -268,6 +278,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 	return &profile, nil
 }
 
+<<<<<<< HEAD
 func isAppClip(entitlements Entitlements) bool {
 	for key := range entitlements {
 		if key == appstoreconnect.ParentApplicationIdentifierEntitlementKey {
@@ -286,6 +297,8 @@ func hasSignInWithAppleEntitlement(entitlements Entitlements) bool {
 	return false
 }
 
+=======
+>>>>>>> master
 func distributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
 	for _, distrType := range distrTypes {
 		if distrType == Development || distrType == AdHoc {

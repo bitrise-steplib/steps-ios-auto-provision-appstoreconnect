@@ -1,7 +1,10 @@
 package main
 
 import (
+<<<<<<< HEAD
 	"errors"
+=======
+>>>>>>> master
 	"fmt"
 	"os"
 
@@ -92,6 +95,7 @@ func main() {
 		}
 
 		connection = &c
+<<<<<<< HEAD
 	}
 
 	devPortalClient, err := createClient(authSources, authInputs, appLayout.TeamID, connection)
@@ -134,6 +138,40 @@ func main() {
 		failf(fmt.Sprintf("Automatic code signing failed: %s", err))
 	}
 
+=======
+	}
+
+	devPortalClient, err := createClient(authSources, authInputs, appLayout.TeamID, connection)
+	if err != nil {
+		failf(err.Error())
+	}
+
+	// Create codesign manager
+	keychain, err := keychain.New(cfg.KeychainPath, cfg.KeychainPassword, command.NewFactory(env.NewRepository()))
+	if err != nil {
+		failf(fmt.Sprintf("failed to initialize keychain: %s", err))
+	}
+
+	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
+
+	// Auto codesign
+	distribution := cfg.DistributionType()
+	var testDevices []devportalservice.TestDevice
+	if cfg.RegisterTestDevices && connection != nil {
+		testDevices = connection.TestDevices
+	}
+	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
+		DistributionType:       distribution,
+		BitriseTestDevices:     testDevices,
+		MinProfileValidityDays: cfg.MinProfileDaysValid,
+		VerboseLog:             cfg.VerboseLog,
+	})
+	if err != nil {
+		failf(fmt.Sprintf("Automatic code signing failed: %s", err))
+	}
+
+>>>>>>> master
 	if err := project.ForceCodesignAssets(distribution, codesignAssetsByDistributionType); err != nil {
 		failf(fmt.Sprintf("Failed to force codesign settings: %s", err))
 	}

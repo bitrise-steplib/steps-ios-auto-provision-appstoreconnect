@@ -53,6 +53,7 @@ type NonmatchingProfileError struct {
 func (e NonmatchingProfileError) Error() string {
 	return fmt.Sprintf("provisioning profile does not match requirements: %s", e.Reason)
 }
+<<<<<<< HEAD
 
 // ErrAppClipAppID ...
 type ErrAppClipAppID struct {
@@ -71,3 +72,5 @@ type ErrAppClipAppIDWithAppleSigning struct {
 func (ErrAppClipAppIDWithAppleSigning) Error() string {
 	return "can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability"
 }
+=======
+>>>>>>> master
