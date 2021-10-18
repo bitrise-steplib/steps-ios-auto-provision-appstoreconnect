@@ -82,11 +82,7 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	// does not appear on developer portal
 	"com.apple.developer.icloud-container-identifiers":   Ignored,
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
-<<<<<<< HEAD:vendor/github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect/capabilities.go
 	ParentApplicationIdentifierEntitlementKey:            Ignored,
-=======
-	"com.apple.developer.parent-application-identifiers": Ignored,
->>>>>>> master:appstoreconnect/capabilities.go
 	// These are entitlements not supported via the API and this step,
 	// profile needs to be manually generated on Apple Developer Portal.
 	"com.apple.developer.contacts.notes":         ProfileAttachedEntitlement,
