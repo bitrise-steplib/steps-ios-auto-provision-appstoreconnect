@@ -126,7 +126,6 @@ func main() {
 			log.Warnf("Can't create Application Identifier for App Clip targets.")
 			log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
 		case errors.As(err, &autocodesign.ErrAppClipAppIDWithAppleSigning{}):
-			//  "can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability"
 			log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
 			log.Warnf("Please configure Capabilities on  Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
 		}
