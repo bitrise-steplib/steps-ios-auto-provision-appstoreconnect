@@ -61,7 +61,7 @@ func main() {
 		failf(err.Error())
 	}
 
-	appLayout, err := project.GetAppLayout(true)
+	appLayout, err := project.GetAppLayout(cfg.SignUITestTargets)
 	if err != nil {
 		failf(err.Error())
 	}
