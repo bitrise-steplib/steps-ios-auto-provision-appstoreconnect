@@ -202,8 +202,8 @@ workflows:
 
   utility_test_tvos:
     envs:
-    - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-tvos-swift.git
-    - TEST_APP_BRANCH: master
+    - TEST_APP_URL: https://github.com/ofalvai/sample-apps-tvos-swift.git
+    - TEST_APP_BRANCH: new-build-system
     - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
     - BITRISE_SCHEME: NPO Live
     - BITRISE_CONFIGURATION:
