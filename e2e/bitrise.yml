@@ -171,7 +171,7 @@ workflows:
 
   test_entitlements:
     envs:
-    - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-ios-multi-target.git
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-ios-multi-target.git
     - TEST_APP_BRANCH: entitlements
     - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
     - BITRISE_SCHEME: code-sign-test
@@ -195,7 +195,7 @@ workflows:
     steps:
     - bitrise-run:
         run_if: |-
-          {{ getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-13.0.x" }}
+          {{ getenv "BITRISEIO_STACK_ID" | eq "osx-xcode-12.5.x" }}
         inputs:
         - workflow_id: utility_test_tvos
         - bitrise_config_path: ./e2e/bitrise.yml
@@ -203,7 +203,7 @@ workflows:
   utility_test_tvos:
     envs:
     - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-tvos-swift.git
-    - TEST_APP_BRANCH: xcode-13
+    - TEST_APP_BRANCH: master
     - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
     - BITRISE_SCHEME: NPO Live
     - BITRISE_CONFIGURATION:
@@ -226,15 +226,15 @@ workflows:
     steps:
     - bitrise-run:
         run_if: |-
-          {{ getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-13.0.x" }}
+          {{ getenv "BITRISEIO_STACK_ID" | eq "osx-xcode-12.5.x" }}
         inputs:
         - workflow_id: utility_test_tvos_development
         - bitrise_config_path: ./e2e/bitrise.yml
 
   utility_test_tvos_development:
     envs:
-    - TEST_APP_URL: https://github.com/ofalvai/sample-apps-tvos-swift.git
-    - TEST_APP_BRANCH: new-build-system
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-tvos-swift.git
+    - TEST_APP_BRANCH: master
     - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
     - BITRISE_SCHEME: NPO Live
     - BITRISE_CONFIGURATION:
