@@ -3,15 +3,15 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
-    # Shared test configs
-    - BITRISE_KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
-    # Shared test secrets
-    - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
-    - BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
-    - BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
-    - BITFALL_APPSTORECONNECT_API_KEY_URL: $BITFALL_APPSTORECONNECT_API_KEY_URL
-    - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
-    - BITRISE_APPLE_TEAM_ID : $BITRISE_APPLE_TEAM_ID
+  # Shared test configs
+  - BITRISE_KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
+  # Shared test secrets
+  - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
+  - BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
+  - BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
+  - BITFALL_APPSTORECONNECT_API_KEY_URL: $BITFALL_APPSTORECONNECT_API_KEY_URL
+  - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+  - BITRISE_APPLE_TEAM_ID: $BITRISE_APPLE_TEAM_ID
 
 workflows:
   # Preconditions: the sample project's (https://github.com/bitrise-io/Fruta.git) App Clip target
@@ -34,7 +34,8 @@ workflows:
             fi
             envman add --key XCODE_MAJOR_VERSION_AT_LEAST_13 --value "true"
     - bitrise-run:
-        run_if: '{{enveq "XCODE_MAJOR_VERSION_AT_LEAST_13" "true"}}'
+        run_if: |-
+          {{ enveq "XCODE_MAJOR_VERSION_AT_LEAST_13" "true" }}
         inputs:
         - workflow_id: utility_test_appclip
         - bitrise_config_path: ./e2e/bitrise.yml
@@ -62,196 +63,201 @@ workflows:
 
   test_xcode13_uitest_signing:
     before_run:
-      - _expose_xcode_version
+    - _expose_xcode_version
     steps:
     - script:
         inputs:
-          - content: |-
-              #!/bin/env bash
-              set -e
-              if [[ ${XCODE_MAJOR_VERSION} -lt 11 ]]; then
-                echo "This test case requires Xcode >= 11, skipping..."
-                exit 0
-              fi
-              envman add --key XCODE_MAJOR_VERSION_AT_LEAST_11 --value "true"
+        - content: |-
+            #!/bin/env bash
+            set -e
+            if [[ ${XCODE_MAJOR_VERSION} -lt 11 ]]; then
+              echo "This test case requires Xcode >= 11, skipping..."
+              exit 0
+            fi
+            envman add --key XCODE_MAJOR_VERSION_AT_LEAST_11 --value "true"
     - bitrise-run:
-        run_if: '{{enveq "XCODE_MAJOR_VERSION_AT_LEAST_11" "true"}}'
+        run_if: |-
+          {{ enveq "XCODE_MAJOR_VERSION_AT_LEAST_11" "true" }}
         inputs:
-          - workflow_id: utility_test_xcode13_uitest_signing
-          - bitrise_config_path: ./e2e/bitrise.yml
+        - workflow_id: utility_test_xcode13_uitest_signing
+        - bitrise_config_path: ./e2e/bitrise.yml
 
   utility_test_xcode13_uitest_signing:
     envs:
-      - TEST_APP_URL: https://github.com/bitrise-io/sample-xcode-13-empty.git
-      - TEST_APP_BRANCH: main
-      - BITRISE_PROJECT_PATH: "sample-xcode-13-empty.xcodeproj"
-      - BITRISE_SCHEME: sample-xcode-13-empty
-      - BITRISE_CONFIGURATION: Debug
-      - SIGN_UITEST_TARGET: "yes"
-      - REGISTER_TEST_DEVICES: "yes"
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: development
-      - CONNECTION: "off"
-      - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-xcode-13-empty.git
+    - TEST_APP_BRANCH: main
+    - BITRISE_PROJECT_PATH: sample-xcode-13-empty.xcodeproj
+    - BITRISE_SCHEME: sample-xcode-13-empty
+    - BITRISE_CONFIGURATION: Debug
+    - SIGN_UITEST_TARGET: "yes"
+    - REGISTER_TEST_DEVICES: "yes"
+    - INSTALL_PODS: "false"
+    - DISTRIBUTION_TYPE: development
+    - CONNECTION: "off"
+    - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
+    - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-      - _run
-      - _check_outputs
-      - _check_xcode_build_for_test
-      - _run_with_apple_id
-      - _check_outputs
-      - _check_xcode_build_for_test
+    - _run
+    - _check_outputs
+    - _check_xcode_build_for_test
+    - _run_with_apple_id
+    - _check_outputs
+    - _check_xcode_build_for_test
 
   test_uitest_signing:
     before_run:
-      - _expose_xcode_version
+    - _expose_xcode_version
     steps:
     - script:
         inputs:
-          - content: |-
-              #!/bin/env bash
-              set -e
-              if [[ ${XCODE_MAJOR_VERSION} -lt 11 ]]; then
-                echo "This test case requires Xcode >= 11, skipping..."
-                exit 0
-              fi
-              envman add --key XCODE_MAJOR_VERSION_AT_LEAST_11 --value "true"
+        - content: |-
+            #!/bin/env bash
+            set -e
+            if [[ ${XCODE_MAJOR_VERSION} -lt 11 ]]; then
+              echo "This test case requires Xcode >= 11, skipping..."
+              exit 0
+            fi
+            envman add --key XCODE_MAJOR_VERSION_AT_LEAST_11 --value "true"
     - bitrise-run:
-        run_if: '{{enveq "XCODE_MAJOR_VERSION_AT_LEAST_11" "true"}}'
+        run_if: |-
+          {{ enveq "XCODE_MAJOR_VERSION_AT_LEAST_11" "true" }}
         inputs:
         - workflow_id: utility_test_uitest_signing
         - bitrise_config_path: ./e2e/bitrise.yml
 
   utility_test_uitest_signing:
     envs:
-      - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
-      - TEST_APP_BRANCH: master
-      - BITRISE_PROJECT_PATH: "sample-apps-fastlane-test.xcodeproj"
-      - BITRISE_SCHEME: sample-apps-fastlane-test
-      - BITRISE_CONFIGURATION: Debug
-      - SIGN_UITEST_TARGET: "yes"
-      - REGISTER_TEST_DEVICES: "yes"
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: development
-      - CONNECTION: "off"
-      - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-fastlane-test.git
+    - TEST_APP_BRANCH: master
+    - BITRISE_PROJECT_PATH: sample-apps-fastlane-test.xcodeproj
+    - BITRISE_SCHEME: sample-apps-fastlane-test
+    - BITRISE_CONFIGURATION: Debug
+    - SIGN_UITEST_TARGET: "yes"
+    - REGISTER_TEST_DEVICES: "yes"
+    - INSTALL_PODS: "false"
+    - DISTRIBUTION_TYPE: development
+    - CONNECTION: "off"
+    - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
+    - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-      - _run
-      - _check_outputs
-      - _check_xcode_build_for_test
-      - _run_with_apple_id
-      - _check_outputs
-      - _check_xcode_build_for_test
+    - _run
+    - _check_outputs
+    - _check_xcode_build_for_test
+    - _run_with_apple_id
+    - _check_outputs
+    - _check_xcode_build_for_test
 
   test_bundle_id:
     envs:
-      - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-ios-simple-objc.git
-      - TEST_APP_BRANCH: bundle_id
-      - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
-      - BITRISE_SCHEME: ios-simple-objc
-      - BITRISE_CONFIGURATION: Release
-      - SIGN_UITEST_TARGET: "no"
-      - REGISTER_TEST_DEVICES: "yes"
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: ad-hoc
-      - CONNECTION: "off"
-      - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
-      - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+    - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-ios-simple-objc.git
+    - TEST_APP_BRANCH: bundle_id
+    - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
+    - BITRISE_SCHEME: ios-simple-objc
+    - BITRISE_CONFIGURATION: Release
+    - SIGN_UITEST_TARGET: "no"
+    - REGISTER_TEST_DEVICES: "yes"
+    - INSTALL_PODS: "false"
+    - DISTRIBUTION_TYPE: ad-hoc
+    - CONNECTION: "off"
+    - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
+    - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-      - _run
-      - _check_outputs
-      - _check_xcode_archive
-      - _run_with_apple_id
-      - _check_outputs
-      - _check_xcode_archive
+    - _run
+    - _check_outputs
+    - _check_xcode_archive
+    - _run_with_apple_id
+    - _check_outputs
+    - _check_xcode_archive
 
   test_entitlements:
     envs:
-      - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-ios-multi-target.git
-      - TEST_APP_BRANCH: entitlements
-      - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
-      - BITRISE_SCHEME: code-sign-test
-      - BITRISE_CONFIGURATION:
-      - SIGN_UITEST_TARGET: "no"
-      - REGISTER_TEST_DEVICES: "yes"
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: app-store
-      - CONNECTION: "automatic"
-      - API_KEY_PATH:
-      - API_ISSUER:
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-ios-multi-target.git
+    - TEST_APP_BRANCH: entitlements
+    - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
+    - BITRISE_SCHEME: code-sign-test
+    - BITRISE_CONFIGURATION:
+    - SIGN_UITEST_TARGET: "no"
+    - REGISTER_TEST_DEVICES: "yes"
+    - INSTALL_PODS: "false"
+    - DISTRIBUTION_TYPE: app-store
+    - CONNECTION: automatic
+    - API_KEY_PATH:
+    - API_ISSUER:
     after_run:
-      - _run
-      - _check_outputs
-      - _check_xcode_archive
-      - _run_with_apple_id
-      - _check_outputs
-      - _check_xcode_archive
+    - _run
+    - _check_outputs
+    - _check_xcode_archive
+    - _run_with_apple_id
+    - _check_outputs
+    - _check_xcode_archive
 
   test_tvos:
     steps:
     - bitrise-run:
-        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-13.0.x"}}'
+        run_if: |-
+          {{ getenv "BITRISEIO_STACK_ID" | eq "osx-xcode-12.5.x" }}
         inputs:
         - workflow_id: utility_test_tvos
         - bitrise_config_path: ./e2e/bitrise.yml
 
   utility_test_tvos:
     envs:
-      - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-tvos-swift.git
-      - TEST_APP_BRANCH: master
-      - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
-      - BITRISE_SCHEME: NPO Live
-      - BITRISE_CONFIGURATION:
-      - SIGN_UITEST_TARGET: "no"
-      - REGISTER_TEST_DEVICES: "yes"
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: app-store
-      - CONNECTION: "automatic"
-      - API_KEY_PATH:
-      - API_ISSUER:
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-tvos-swift.git
+    - TEST_APP_BRANCH: master
+    - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
+    - BITRISE_SCHEME: NPO Live
+    - BITRISE_CONFIGURATION:
+    - SIGN_UITEST_TARGET: "no"
+    - REGISTER_TEST_DEVICES: "yes"
+    - INSTALL_PODS: "false"
+    - DISTRIBUTION_TYPE: app-store
+    - CONNECTION: automatic
+    - API_KEY_PATH:
+    - API_ISSUER:
     after_run:
-      - _run
-      - _check_outputs
-      - _check_xcode_archive
-      - _run_with_apple_id
-      - _check_outputs
-      - _check_xcode_archive
+    - _run
+    - _check_outputs
+    - _check_xcode_archive
+    - _run_with_apple_id
+    - _check_outputs
+    - _check_xcode_archive
 
   test_tvos_development:
     steps:
     - bitrise-run:
-        run_if: '{{getenv "BITRISEIO_STACK_ID" | ne "osx-xcode-13.0.x"}}'
+        run_if: |-
+          {{ getenv "BITRISEIO_STACK_ID" | eq "osx-xcode-12.5.x" }}
         inputs:
         - workflow_id: utility_test_tvos_development
         - bitrise_config_path: ./e2e/bitrise.yml
 
   utility_test_tvos_development:
     envs:
-      - TEST_APP_URL: https://github.com/bitrise-samples/sample-apps-tvos-swift.git
-      - TEST_APP_BRANCH: master
-      - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
-      - BITRISE_SCHEME: NPO Live
-      - BITRISE_CONFIGURATION:
-      - SIGN_UITEST_TARGET: "no"
-      - REGISTER_TEST_DEVICES: "yes"
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: development
-      - CONNECTION: "automatic"
-      - API_KEY_PATH:
-      - API_ISSUER:
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-tvos-swift.git
+    - TEST_APP_BRANCH: master
+    - BITRISE_PROJECT_PATH: NPO Live.xcworkspace
+    - BITRISE_SCHEME: NPO Live
+    - BITRISE_CONFIGURATION:
+    - SIGN_UITEST_TARGET: "no"
+    - REGISTER_TEST_DEVICES: "yes"
+    - INSTALL_PODS: "false"
+    - DISTRIBUTION_TYPE: development
+    - CONNECTION: automatic
+    - API_KEY_PATH:
+    - API_ISSUER:
     after_run:
-      - _run
-      - _check_outputs
-      - _check_xcode_archive
-      - _run_with_apple_id
-      - _check_outputs
-      - _check_xcode_archive
+    - _run
+    - _check_outputs
+    - _check_xcode_archive
+    - _run_with_apple_id
+    - _check_outputs
+    - _check_xcode_archive
 
   test_new_certificates:
     steps:
     - bitrise-run:
-        run_if: '{{enveq "BITRISEIO_STACK_ID" "osx-xcode-12.5.x"}}'
+        run_if: |-
+          {{ enveq "BITRISEIO_STACK_ID" "osx-xcode-12.5.x" }}
         inputs:
         - workflow_id: utility_test_new_certificates
         - bitrise_config_path: ./e2e/bitrise.yml
@@ -261,132 +267,133 @@ workflows:
     description: |-
       This workflow requires Xcode 11 stack or above to run.
     envs:
-      - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-ios-simple-objc.git
-      - TEST_APP_BRANCH: new-certificates
-      - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
-      - BITRISE_SCHEME: ios-simple-objc
-      - BITRISE_CONFIGURATION: Release
-      - SIGN_UITEST_TARGET: "no"
-      - REGISTER_TEST_DEVICES: "yes"
-      - INSTALL_PODS: "false"
-      - DISTRIBUTION_TYPE: app-store
-      - CONNECTION: "automatic"
-      - API_KEY_PATH:
-      - API_ISSUER:
+    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-ios-simple-objc.git
+    - TEST_APP_BRANCH: new-certificates
+    - BITRISE_PROJECT_PATH: ios-simple-objc/ios-simple-objc.xcodeproj
+    - BITRISE_SCHEME: ios-simple-objc
+    - BITRISE_CONFIGURATION: Release
+    - SIGN_UITEST_TARGET: "no"
+    - REGISTER_TEST_DEVICES: "yes"
+    - INSTALL_PODS: "false"
+    - DISTRIBUTION_TYPE: app-store
+    - CONNECTION: automatic
+    - API_KEY_PATH:
+    - API_ISSUER:
     after_run:
-      - _run
-      - _check_outputs
-      - _check_xcode_archive
-      - _run_with_apple_id
-      - _check_outputs
-      - _check_xcode_archive
+    - _run
+    - _check_outputs
+    - _check_xcode_archive
+    - _run_with_apple_id
+    - _check_outputs
+    - _check_xcode_archive
 
   _run:
     steps:
-      - script:
-          inputs:
-            - content: |-
-                #!/bin/bash
-                set -ex
-                rm -rf "./_tmp"
-                mkdir -p "./_tmp"
-      - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
-          inputs:
-            - repository_url: $TEST_APP_URL
-            - branch: $TEST_APP_BRANCH
-            - clone_into_dir: "./_tmp"
-      - cocoapods-install:
-          run_if: '{{enveq "INSTALL_PODS" "true"}}'
-          title: CocoaPods install
-      - path::./:
-          title: Step Test
-          run_if: "true"
-          inputs:
-            - connection: $CONNECTION
-            - api_key_path: $API_KEY_PATH
-            - api_issuer: $API_ISSUER
-            - apple_id_team_id: $BITRISE_APPLE_TEAM_ID
-            - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
-            - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
-            - distribution_type: $DISTRIBUTION_TYPE
-            - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
-            - scheme: $BITRISE_SCHEME
-            - configuration: $BITRISE_CONFIGURATION
-            - sign_uitest_targets: $SIGN_UITEST_TARGET
-            - register_test_devices: $REGISTER_TEST_DEVICES
-            - keychain_path: $BITRISE_KEYCHAIN_PATH
-            - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
-            - verbose_log: "yes"
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            rm -rf "./_tmp"
+            mkdir -p "./_tmp"
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
+        inputs:
+        - repository_url: $TEST_APP_URL
+        - branch: $TEST_APP_BRANCH
+        - clone_into_dir: ./_tmp
+    - cocoapods-install:
+        run_if: |-
+          {{ enveq "INSTALL_PODS" "true" }}
+        title: CocoaPods install
+    - path::./:
+        title: Step Test
+        run_if: "true"
+        inputs:
+        - connection: $CONNECTION
+        - api_key_path: $API_KEY_PATH
+        - api_issuer: $API_ISSUER
+        - apple_id_team_id: $BITRISE_APPLE_TEAM_ID
+        - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
+        - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
+        - distribution_type: $DISTRIBUTION_TYPE
+        - project_path: ./_tmp/$BITRISE_PROJECT_PATH
+        - scheme: $BITRISE_SCHEME
+        - configuration: $BITRISE_CONFIGURATION
+        - sign_uitest_targets: $SIGN_UITEST_TARGET
+        - register_test_devices: $REGISTER_TEST_DEVICES
+        - keychain_path: $BITRISE_KEYCHAIN_PATH
+        - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
+        - verbose_log: "yes"
 
   _run_with_apple_id:
     steps:
-      - script:
-          inputs:
-            - content: envman add --key CONNECTION --value apple_id
+    - script:
+        inputs:
+        - content: envman add --key CONNECTION --value apple_id
     after_run:
-      - _run
+    - _run
 
   _check_outputs:
     steps:
-      - script:
-          title: Output test
-          inputs:
-            - content: |-
-                #!/bin/bash
-                set -e
-                echo "BITRISE_EXPORT_METHOD: $BITRISE_EXPORT_METHOD"
-                echo "BITRISE_DEVELOPER_TEAM: $BITRISE_DEVELOPER_TEAM"
-                echo "BITRISE_DEVELOPMENT_CODESIGN_IDENTITY: $BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"
-                echo "BITRISE_DEVELOPMENT_PROFILE: $BITRISE_DEVELOPMENT_PROFILE"
-                echo "BITRISE_PRODUCTION_CODESIGN_IDENTITY: $BITRISE_PRODUCTION_CODESIGN_IDENTITY"
-                echo "BITRISE_PRODUCTION_PROFILE: $BITRISE_PRODUCTION_PROFILE"
+    - script:
+        title: Output test
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -e
+            echo "BITRISE_EXPORT_METHOD: $BITRISE_EXPORT_METHOD"
+            echo "BITRISE_DEVELOPER_TEAM: $BITRISE_DEVELOPER_TEAM"
+            echo "BITRISE_DEVELOPMENT_CODESIGN_IDENTITY: $BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"
+            echo "BITRISE_DEVELOPMENT_PROFILE: $BITRISE_DEVELOPMENT_PROFILE"
+            echo "BITRISE_PRODUCTION_CODESIGN_IDENTITY: $BITRISE_PRODUCTION_CODESIGN_IDENTITY"
+            echo "BITRISE_PRODUCTION_PROFILE: $BITRISE_PRODUCTION_PROFILE"
 
-                if [ "$BITRISE_EXPORT_METHOD" != "$DISTRIBUTION_TYPE" ]; then exit 1; fi
+            if [ "$BITRISE_EXPORT_METHOD" != "$DISTRIBUTION_TYPE" ]; then exit 1; fi
 
   _check_xcode_archive:
     steps:
-      - xcode-archive:
-          title: Xcode archive
-          inputs:
-            - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
-            - scheme: $BITRISE_SCHEME
-            - configuration: $BITRISE_CONFIGURATION
-            - export_method: $DISTRIBUTION_TYPE
-            - output_tool: xcodebuild
-      - deploy-to-bitrise-io:
-          inputs:
-            - notify_user_groups: none
+    - xcode-archive:
+        title: Xcode archive
+        inputs:
+        - project_path: ./_tmp/$BITRISE_PROJECT_PATH
+        - scheme: $BITRISE_SCHEME
+        - configuration: $BITRISE_CONFIGURATION
+        - distribution_method: $DISTRIBUTION_TYPE
+        - log_formatter: xcodebuild
+    - deploy-to-bitrise-io:
+        inputs:
+        - notify_user_groups: none
 
   _check_xcode_build_for_test:
     steps:
-      - xcode-build-for-test@0:
-          inputs:
-            - project_path: "./_tmp/$BITRISE_PROJECT_PATH"
-            - scheme: $BITRISE_SCHEME
-            - configuration: Debug
-            - output_tool: xcodebuild
-      - deploy-to-bitrise-io:
-          inputs:
-            - notify_user_groups: none
+    - xcode-build-for-test@0:
+        inputs:
+        - project_path: ./_tmp/$BITRISE_PROJECT_PATH
+        - scheme: $BITRISE_SCHEME
+        - configuration: Debug
+        - output_tool: xcodebuild
+    - deploy-to-bitrise-io:
+        inputs:
+        - notify_user_groups: none
 
   _expose_xcode_version:
     steps:
-      - script:
-          title: Expose Xcode major version
-          inputs:
-            - content: |-
-                #!/bin/env bash
-                set -e
-                if [[ ! -z "$XCODE_MAJOR_VERSION" ]]; then
-                  echo "Xcode major version already exposed: $XCODE_MAJOR_VERSION"
-                  exit 0
-                fi
-                version=`xcodebuild -version`
-                regex="Xcode ([0-9]*)."
-                if [[ ! $version =~ $regex ]]; then
-                  echo "Failed to determine Xcode major version"
-                  exit 1
-                fi
-                xcode_major_version=${BASH_REMATCH[1]}
-                echo "Xcode major version: $xcode_major_version"
-                envman add --key XCODE_MAJOR_VERSION --value $xcode_major_version
+    - script:
+        title: Expose Xcode major version
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -e
+            if [[ ! -z "$XCODE_MAJOR_VERSION" ]]; then
+              echo "Xcode major version already exposed: $XCODE_MAJOR_VERSION"
+              exit 0
+            fi
+            version=`xcodebuild -version`
+            regex="Xcode ([0-9]*)."
+            if [[ ! $version =~ $regex ]]; then
+              echo "Failed to determine Xcode major version"
+              exit 1
+            fi
+            xcode_major_version=${BASH_REMATCH[1]}
+            echo "Xcode major version: $xcode_major_version"
+            envman add --key XCODE_MAJOR_VERSION --value $xcode_major_version
