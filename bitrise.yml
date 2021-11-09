@@ -8,6 +8,43 @@ workflows:
 
   e2e:
     steps:
+    - script:
+        title: Expose Xcode major version
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -e
+            if [[ ! -z "$XCODE_MAJOR_VERSION" ]]; then
+              echo "Xcode major version already exposed: $XCODE_MAJOR_VERSION"
+              exit 0
+            fi
+            version=`xcodebuild -version`
+            regex="Xcode ([0-9]*)."
+            if [[ ! $version =~ $regex ]]; then
+              echo "Failed to determine Xcode major version"
+              exit 1
+            fi
+            xcode_major_version=${BASH_REMATCH[1]}
+            echo "Xcode major version: $xcode_major_version"
+            envman add --key XCODE_MAJOR_VERSION --value $xcode_major_version
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -e
+            if [[ ${XCODE_MAJOR_VERSION} -lt 13 ]]; then
+              echo "This test case requires Xcode >= 13, skipping..."
+              exit 0
+            fi
+            envman add --key XCODE_MAJOR_VERSION_AT_LEAST_13 --value "true"
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        run_if: |-
+          {{ enveq "XCODE_MAJOR_VERSION_AT_LEAST_13" "true" }}
+        inputs:
+        - workflow: e2e
+
+  utility_e2e:
+    steps:
     - git::https://github.com/bitrise-steplib/steps-check.git:
         inputs:
         - workflow: e2e

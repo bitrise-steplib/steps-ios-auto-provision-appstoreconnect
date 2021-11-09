@@ -305,25 +305,33 @@ workflows:
         run_if: |-
           {{ enveq "INSTALL_PODS" "true" }}
         title: CocoaPods install
-    - path::./:
-        title: Step Test
-        run_if: "true"
+    - certificate-and-profile-installer:
         inputs:
-        - connection: $CONNECTION
-        - api_key_path: $API_KEY_PATH
-        - api_issuer: $API_ISSUER
-        - apple_id_team_id: $BITRISE_APPLE_TEAM_ID
-        - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
-        - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
-        - distribution_type: $DISTRIBUTION_TYPE
-        - project_path: ./_tmp/$BITRISE_PROJECT_PATH
-        - scheme: $BITRISE_SCHEME
-        - configuration: $BITRISE_CONFIGURATION
-        - sign_uitest_targets: $SIGN_UITEST_TARGET
-        - register_test_devices: $REGISTER_TEST_DEVICES
+        - certificate_url: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
+        - certificate_passphrase: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
+        - provisioning_profile_url:
+        - install_defaults: "no"
         - keychain_path: $BITRISE_KEYCHAIN_PATH
         - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
-        - verbose_log: "yes"
+    # - path::./:
+    #     title: Step Test
+    #     run_if: "true"
+    #     inputs:
+    #     - connection: $CONNECTION
+    #     - api_key_path: $API_KEY_PATH
+    #     - api_issuer: $API_ISSUER
+    #     - apple_id_team_id: $BITRISE_APPLE_TEAM_ID
+    #     - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
+    #     - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
+    #     - distribution_type: $DISTRIBUTION_TYPE
+    #     - project_path: ./_tmp/$BITRISE_PROJECT_PATH
+    #     - scheme: $BITRISE_SCHEME
+    #     - configuration: $BITRISE_CONFIGURATION
+    #     - sign_uitest_targets: $SIGN_UITEST_TARGET
+    #     - register_test_devices: $REGISTER_TEST_DEVICES
+    #     - keychain_path: $BITRISE_KEYCHAIN_PATH
+    #     - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
+    #     - verbose_log: "yes"
 
   _run_with_apple_id:
     steps:
@@ -341,18 +349,18 @@ workflows:
         - content: |-
             #!/bin/bash
             set -e
-            echo "BITRISE_EXPORT_METHOD: $BITRISE_EXPORT_METHOD"
-            echo "BITRISE_DEVELOPER_TEAM: $BITRISE_DEVELOPER_TEAM"
-            echo "BITRISE_DEVELOPMENT_CODESIGN_IDENTITY: $BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"
-            echo "BITRISE_DEVELOPMENT_PROFILE: $BITRISE_DEVELOPMENT_PROFILE"
-            echo "BITRISE_PRODUCTION_CODESIGN_IDENTITY: $BITRISE_PRODUCTION_CODESIGN_IDENTITY"
-            echo "BITRISE_PRODUCTION_PROFILE: $BITRISE_PRODUCTION_PROFILE"
+            # echo "BITRISE_EXPORT_METHOD: $BITRISE_EXPORT_METHOD"
+            # echo "BITRISE_DEVELOPER_TEAM: $BITRISE_DEVELOPER_TEAM"
+            # echo "BITRISE_DEVELOPMENT_CODESIGN_IDENTITY: $BITRISE_DEVELOPMENT_CODESIGN_IDENTITY"
+            # echo "BITRISE_DEVELOPMENT_PROFILE: $BITRISE_DEVELOPMENT_PROFILE"
+            # echo "BITRISE_PRODUCTION_CODESIGN_IDENTITY: $BITRISE_PRODUCTION_CODESIGN_IDENTITY"
+            # echo "BITRISE_PRODUCTION_PROFILE: $BITRISE_PRODUCTION_PROFILE"
 
-            if [ "$BITRISE_EXPORT_METHOD" != "$DISTRIBUTION_TYPE" ]; then exit 1; fi
+            # if [ "$BITRISE_EXPORT_METHOD" != "$DISTRIBUTION_TYPE" ]; then exit 1; fi
 
   _check_xcode_archive:
     steps:
-    - xcode-archive:
+    - git::https://github.com/bitrise-steplib/steps-xcode-archive.git@laszlopusok/mob-230-xcode-archive-step-integrate-the:
         title: Xcode archive
         inputs:
         - project_path: ./_tmp/$BITRISE_PROJECT_PATH
@@ -365,16 +373,16 @@ workflows:
         - notify_user_groups: none
 
   _check_xcode_build_for_test:
-    steps:
-    - xcode-build-for-test@0:
-        inputs:
-        - project_path: ./_tmp/$BITRISE_PROJECT_PATH
-        - scheme: $BITRISE_SCHEME
-        - configuration: Debug
-        - output_tool: xcodebuild
-    - deploy-to-bitrise-io:
-        inputs:
-        - notify_user_groups: none
+    steps: {}
+    # - xcode-build-for-test@0:
+    #     inputs:
+    #     - project_path: ./_tmp/$BITRISE_PROJECT_PATH
+    #     - scheme: $BITRISE_SCHEME
+    #     - configuration: Debug
+    #     - output_tool: xcodebuild
+    # - deploy-to-bitrise-io:
+    #     inputs:
+    #     - notify_user_groups: none
 
   _expose_xcode_version:
     steps:
