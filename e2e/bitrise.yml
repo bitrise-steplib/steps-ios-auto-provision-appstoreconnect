@@ -313,25 +313,25 @@ workflows:
         - install_defaults: "no"
         - keychain_path: $BITRISE_KEYCHAIN_PATH
         - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
-    # - path::./:
-    #     title: Step Test
-    #     run_if: "true"
-    #     inputs:
-    #     - connection: $CONNECTION
-    #     - api_key_path: $API_KEY_PATH
-    #     - api_issuer: $API_ISSUER
-    #     - apple_id_team_id: $BITRISE_APPLE_TEAM_ID
-    #     - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
-    #     - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
-    #     - distribution_type: $DISTRIBUTION_TYPE
-    #     - project_path: ./_tmp/$BITRISE_PROJECT_PATH
-    #     - scheme: $BITRISE_SCHEME
-    #     - configuration: $BITRISE_CONFIGURATION
-    #     - sign_uitest_targets: $SIGN_UITEST_TARGET
-    #     - register_test_devices: $REGISTER_TEST_DEVICES
-    #     - keychain_path: $BITRISE_KEYCHAIN_PATH
-    #     - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
-    #     - verbose_log: "yes"
+        # - path::./:
+        #     title: Step Test
+        #     run_if: "true"
+        #     inputs:
+        #     - connection: $CONNECTION
+        #     - api_key_path: $API_KEY_PATH
+        #     - api_issuer: $API_ISSUER
+        #     - apple_id_team_id: $BITRISE_APPLE_TEAM_ID
+        #     - certificate_urls: $BITFALL_APPLE_IOS_CERTIFICATE_URL_LIST
+        #     - passphrases: $BITFALL_APPLE_IOS_CERTIFICATE_PASSPHRASE_LIST
+        #     - distribution_type: $DISTRIBUTION_TYPE
+        #     - project_path: ./_tmp/$BITRISE_PROJECT_PATH
+        #     - scheme: $BITRISE_SCHEME
+        #     - configuration: $BITRISE_CONFIGURATION
+        #     - sign_uitest_targets: $SIGN_UITEST_TARGET
+        #     - register_test_devices: $REGISTER_TEST_DEVICES
+        #     - keychain_path: $BITRISE_KEYCHAIN_PATH
+        #     - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
+        #     - verbose_log: "yes"
 
   _run_with_apple_id:
     steps:
@@ -373,7 +373,7 @@ workflows:
         - notify_user_groups: none
 
   _check_xcode_build_for_test:
-    steps: {}
+    steps: []
     # - xcode-build-for-test@0:
     #     inputs:
     #     - project_path: ./_tmp/$BITRISE_PROJECT_PATH
