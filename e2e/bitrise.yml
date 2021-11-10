@@ -171,27 +171,27 @@ workflows:
     - _check_outputs
     - _check_xcode_archive
 
-  test_entitlements:
-    envs:
-    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-ios-multi-target.git
-    - TEST_APP_BRANCH: entitlements
-    - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
-    - BITRISE_SCHEME: code-sign-test
-    - BITRISE_CONFIGURATION:
-    - SIGN_UITEST_TARGET: "no"
-    - REGISTER_TEST_DEVICES: "yes"
-    - INSTALL_PODS: "false"
-    - DISTRIBUTION_TYPE: app-store
-    - CONNECTION: automatic
-    - API_KEY_PATH:
-    - API_ISSUER:
-    after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_archive
-    - _run_with_apple_id
-    - _check_outputs
-    - _check_xcode_archive
+  #  test_entitlements:
+  #    envs:
+  #    - TEST_APP_URL: https://github.com/bitrise-io/sample-apps-ios-multi-target.git
+  #    - TEST_APP_BRANCH: entitlements
+  #    - BITRISE_PROJECT_PATH: code-sign-test.xcodeproj
+  #    - BITRISE_SCHEME: code-sign-test
+  #    - BITRISE_CONFIGURATION:
+  #    - SIGN_UITEST_TARGET: "no"
+  #    - REGISTER_TEST_DEVICES: "yes"
+  #    - INSTALL_PODS: "false"
+  #    - DISTRIBUTION_TYPE: app-store
+  #    - CONNECTION: automatic
+  #    - API_KEY_PATH:
+  #    - API_ISSUER:
+  #    after_run:
+  #    - _run
+  #    - _check_outputs
+  #    - _check_xcode_archive
+  #    - _run_with_apple_id
+  #    - _check_outputs
+  #    - _check_xcode_archive
 
   test_tvos:
     steps:
