@@ -97,9 +97,9 @@ workflows:
     - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
     - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-    - _run
-    - _check_outputs
-    - _check_xcode_build_for_test
+    # - _run
+    # - _check_outputs
+    # - _check_xcode_build_for_test
     - _run_with_apple_id
     - _check_outputs
     - _check_xcode_build_for_test
