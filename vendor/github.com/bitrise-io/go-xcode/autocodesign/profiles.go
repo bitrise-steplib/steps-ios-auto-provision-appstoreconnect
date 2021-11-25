@@ -1,6 +1,7 @@
 package autocodesign
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -229,7 +230,7 @@ func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.Profi
 			return err, true
 		}
 
-		return nil, true
+		return nil, false
 	}); err != nil {
 		return nil, err
 	}
@@ -244,11 +245,10 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 
 	// Search for Bitrise managed Profile
 	name := profileName(profileType, bundleIDIdentifier)
-	var profile Profile = nil
-	// profile, err := m.client.FindProfile(name, profileType)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to find profile: %s", err)
-	// }
+	profile, err := m.client.FindProfile(name, profileType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find profile: %s", err)
+	}
 
 	if profile == nil {
 		log.Warnf("  profile does not exist, generating...")
@@ -257,7 +257,12 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes().ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			err := checkProfile(m.client, profile, entitlements, deviceIDs, certIDs, minProfileDaysValid)
+			err2 := checkProfile(m.client, profile, entitlements, deviceIDs, certIDs, minProfileDaysValid)
+			if err2 != nil {
+				log.Warnf("%s", err2)
+			}
+
+			err = errors.New("fsdfsfsd")
 			if err != nil {
 				if mErr, ok := err.(NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
