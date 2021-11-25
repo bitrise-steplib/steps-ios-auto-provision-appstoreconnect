@@ -1,7 +1,6 @@
 package autocodesign
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -262,7 +261,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 				log.Warnf("%s", err2)
 			}
 
-			err = errors.New("fsdfsfsd")
+			err = NonmatchingProfileError{Reason: "sfsd"}
 			if err != nil {
 				if mErr, ok := err.(NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
