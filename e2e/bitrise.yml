@@ -54,12 +54,12 @@ workflows:
     - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
     - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-    # - _run
-    # - _check_outputs
-    # - _check_xcode_archive
-    - _run_with_apple_id
+    - _run
     - _check_outputs
     - _check_xcode_archive
+    # - _run_with_apple_id
+    # - _check_outputs
+    # - _check_xcode_archive
 
   test_xcode13_uitest_signing:
     before_run:
@@ -97,12 +97,12 @@ workflows:
     - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
     - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-    # - _run
-    # - _check_outputs
-    # - _check_xcode_build_for_test
-    - _run_with_apple_id
+    - _run
     - _check_outputs
     - _check_xcode_build_for_test
+    # - _run_with_apple_id
+    # - _check_outputs
+    # - _check_xcode_build_for_test
 
   test_uitest_signing:
     before_run:
@@ -140,12 +140,12 @@ workflows:
     - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
     - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-    # - _run
-    # - _check_outputs
-    # - _check_xcode_build_for_test
-    - _run_with_apple_id
+    - _run
     - _check_outputs
     - _check_xcode_build_for_test
+    # - _run_with_apple_id
+    # - _check_outputs
+    # - _check_xcode_build_for_test
 
   test_bundle_id:
     envs:
@@ -162,12 +162,12 @@ workflows:
     - API_KEY_PATH: $BITFALL_APPSTORECONNECT_API_KEY_URL
     - API_ISSUER: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
     after_run:
-    # - _run
-    # - _check_outputs
-    # - _check_xcode_archive
-    - _run_with_apple_id
+    - _run
     - _check_outputs
     - _check_xcode_archive
+    # - _run_with_apple_id
+    # - _check_outputs
+    # - _check_xcode_archive
 
   test_entitlements:
     envs:
@@ -184,12 +184,12 @@ workflows:
     - API_KEY_PATH:
     - API_ISSUER:
     after_run:
-    # - _run
-    # - _check_outputs
-    # - _check_xcode_archive
-    - _run_with_apple_id
+    - _run
     - _check_outputs
     - _check_xcode_archive
+    # - _run_with_apple_id
+    # - _check_outputs
+    # - _check_xcode_archive
 
   test_tvos:
     steps:
@@ -215,12 +215,12 @@ workflows:
     - API_KEY_PATH:
     - API_ISSUER:
     after_run:
-    # - _run
-    # - _check_outputs
-    # - _check_xcode_archive
-    - _run_with_apple_id
+    - _run
     - _check_outputs
     - _check_xcode_archive
+    # - _run_with_apple_id
+    # - _check_outputs
+    # - _check_xcode_archive
 
   test_tvos_development:
     steps:
@@ -246,12 +246,12 @@ workflows:
     - API_KEY_PATH:
     - API_ISSUER:
     after_run:
-    # - _run
-    # - _check_outputs
-    # - _check_xcode_archive
-    - _run_with_apple_id
+    - _run
     - _check_outputs
     - _check_xcode_archive
+    # - _run_with_apple_id
+    # - _check_outputs
+    # - _check_xcode_archive
 
   test_new_certificates:
     steps:
