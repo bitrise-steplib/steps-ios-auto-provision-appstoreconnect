@@ -212,10 +212,13 @@ func (p *ProjectHelper) targetTeamID(targatName, config string) (string, error) 
 func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Object, error) {
 	targetCache, ok := p.buildSettingsCache[name]
 	if ok {
+		log.Debugf("Build settings cache hit for key: %s", name)
 		confCache, ok := targetCache[conf]
 		if ok {
 			return confCache, nil
 		}
+	} else {
+		log.Debugf("Build settings cache miss for key: %s", name)
 	}
 
 	settings, err := p.XcProj.TargetBuildSettings(name, conf)
