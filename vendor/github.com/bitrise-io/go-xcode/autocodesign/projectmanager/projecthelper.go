@@ -216,6 +216,8 @@ func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Objec
 		confCache, ok := targetCache[conf]
 		if ok {
 			return confCache, nil
+		} else {
+			log.Debugf("Build settings cache hit for key %s, but miss for config key %s", name, conf)
 		}
 	} else {
 		log.Debugf("Build settings cache miss for key: %s", name)
