@@ -121,10 +121,10 @@ func parseBuildSettings(out string) (serialized.Object, error) {
 func (c ShowBuildSettingsCommandModel) RunAndReturnSettings() (serialized.Object, error) {
 	cmd := c.Command(nil)
 	start := time.Now()
-	log.Debugf("[%s] $ %s", start.String(), cmd.PrintableCommandArgs())
+	log.Debugf("$ %s", cmd.PrintableCommandArgs())
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	duration := time.Since(start)
-	log.Debugf("Command took %", duration.String())
+	log.Debugf("Command took %s", duration.String())
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
 			return nil, fmt.Errorf("%s command failed: output: %s", cmd.PrintableCommandArgs(), out)
