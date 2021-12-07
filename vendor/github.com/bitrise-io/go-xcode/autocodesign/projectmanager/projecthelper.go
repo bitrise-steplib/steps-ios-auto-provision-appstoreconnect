@@ -1,6 +1,7 @@
 package projectmanager
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -195,10 +196,10 @@ func (p *ProjectHelper) ProjectTeamID(config string) (string, error) {
 	return teamID, nil
 }
 
-func (p *ProjectHelper) targetTeamID(targatName, config string) (string, error) {
-	settings, err := p.targetBuildSettings(targatName, config)
+func (p *ProjectHelper) targetTeamID(targetName, config string) (string, error) {
+	settings, err := p.targetBuildSettings(targetName, config)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch Team ID from target settings (%s): %s", targatName, err)
+		return "", fmt.Errorf("failed to fetch Team ID from target settings (%s): %s", targetName, err)
 	}
 
 	devTeam, err := settings.String("DEVELOPMENT_TEAM")
@@ -212,15 +213,10 @@ func (p *ProjectHelper) targetTeamID(targatName, config string) (string, error) 
 func (p *ProjectHelper) targetBuildSettings(name, conf string) (serialized.Object, error) {
 	targetCache, ok := p.buildSettingsCache[name]
 	if ok {
-		log.Debugf("Build settings cache hit for key: %s", name)
 		confCache, ok := targetCache[conf]
 		if ok {
 			return confCache, nil
-		} else {
-			log.Debugf("Build settings cache hit for key %s, but miss for config key %s", name, conf)
 		}
-	} else {
-		log.Debugf("Build settings cache miss for key: %s", name)
 	}
 
 	settings, err := p.XcProj.TargetBuildSettings(name, conf)
@@ -310,6 +306,28 @@ func (p *ProjectHelper) targetEntitlements(name, config, bundleID string) (autoc
 	}
 
 	return resolveEntitlementVariables(autocodesign.Entitlements(entitlements), bundleID)
+}
+
+// IsSigningManagedAutomatically checks the "Automatically manage signing" checkbox in Xcode
+// Note: it only checks the main Target based on the given Scheme and Configuration
+func (p *ProjectHelper) IsSigningManagedAutomatically() (bool, error) {
+	targetName := p.MainTarget.Name
+	settings, err := p.targetBuildSettings(targetName, p.Configuration)
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch code signing info from target (%s) settings: %s", targetName, err)
+	}
+	codeSignStyle, err := settings.String("CODE_SIGN_STYLE")
+	if err != nil {
+		if errors.As(err, &serialized.KeyNotFoundError{}) {
+			log.Debugf("setting CODE_SIGN_STYLE unspecified for target (%s), defaulting to `Manual`", targetName)
+
+			return false, nil
+		}
+
+		return false, fmt.Errorf("failed to fetch code signing info from target (%s) settings: %s", targetName, err)
+	}
+
+	return codeSignStyle != "Manual", nil
 }
 
 // resolveEntitlementVariables expands variables in the project entitlements.
