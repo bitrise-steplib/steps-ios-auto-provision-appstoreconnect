@@ -33,6 +33,7 @@ github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect
 github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnectclient
 github.com/bitrise-io/go-xcode/autocodesign/devportalclient/spaceship
 github.com/bitrise-io/go-xcode/autocodesign/keychain
+github.com/bitrise-io/go-xcode/autocodesign/localcodesignasset
 github.com/bitrise-io/go-xcode/autocodesign/projectmanager
 github.com/bitrise-io/go-xcode/certificateutil
 github.com/bitrise-io/go-xcode/devportalservice
