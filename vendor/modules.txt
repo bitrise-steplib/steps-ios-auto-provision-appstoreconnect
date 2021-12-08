@@ -22,7 +22,7 @@ github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/pretty
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-xcode v0.0.0-20211203163621-99a08cd4c73d
+# github.com/bitrise-io/go-xcode v0.0.0-20211208133147-c5f92f91d431
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/autocodesign
