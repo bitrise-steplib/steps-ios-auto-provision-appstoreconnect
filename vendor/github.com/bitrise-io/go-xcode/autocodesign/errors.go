@@ -36,11 +36,12 @@ func (e *DetailedError) Error() string {
 
 // missingCertificateError ...
 type missingCertificateError struct {
-	Type appstoreconnect.CertificateType
+	Type   appstoreconnect.CertificateType
+	TeamID string
 }
 
 func (e missingCertificateError) Error() string {
-	return fmt.Sprintf("no valid %s type certificates uploaded\n ", e.Type)
+	return fmt.Sprintf("no valid %s type certificates uploaded with Team ID (%s)\n ", e.Type, e.TeamID)
 }
 
 // NonmatchingProfileError is returned when a profile/bundle ID does not match project requirements
