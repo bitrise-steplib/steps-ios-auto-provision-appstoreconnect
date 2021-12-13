@@ -1,11 +1,13 @@
 package autocodesign
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/profileutil"
@@ -21,11 +23,10 @@ func appIDName(bundleID string) string {
 	return prefix + "Bitrise " + r.Replace(bundleID)
 }
 
-func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType,
+func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 	certsByType map[appstoreconnect.CertificateType][]Certificate, app AppLayout,
-	devPortalDeviceIDs []string, minProfileDaysValid int) (map[DistributionType]AppCodesignAssets, error) {
+	devPortalDeviceIDs []string, minProfileDaysValid int) (*AppCodesignAssets, error) {
 	// Ensure Profiles
-	codesignAssetsByDistributionType := map[DistributionType]AppCodesignAssets{}
 
 	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
 
@@ -37,73 +38,64 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 		containersByBundleID:        containersByBundleID,
 	}
 
-	for _, distrType := range distrTypes {
-		fmt.Println()
-		log.Infof("Checking %s provisioning profiles", distrType)
-		certType := CertificateTypeByDistribution[distrType]
-		certs := certsByType[certType]
+	fmt.Println()
+	log.Infof("Checking %s provisioning profiles", distrType)
 
-		if len(certs) == 0 {
-			return nil, fmt.Errorf("no valid certificate provided for distribution type: %s", distrType)
-		} else if len(certs) > 1 {
-			log.Warnf("Multiple certificates provided for distribution type: %s", distrType)
-			for _, c := range certs {
-				log.Warnf("- %s", c.CertificateInfo.CommonName)
+	certificate, err := SelectCertificate(certsByType, distrType)
+	if err != nil {
+		return nil, err
+	}
+
+	codesignAssets := AppCodesignAssets{
+		ArchivableTargetProfilesByBundleID: map[string]Profile{},
+		UITestTargetProfilesByBundleID:     map[string]Profile{},
+		Certificate:                        certificate.CertificateInfo,
+	}
+
+	certType := CertificateTypeByDistribution[distrType]
+	certs := certsByType[certType]
+
+	var certIDs []string
+	for _, cert := range certs {
+		certIDs = append(certIDs, cert.ID)
+	}
+
+	platformProfileTypes, ok := PlatformToProfileTypeByDistribution[app.Platform]
+	if !ok {
+		return nil, fmt.Errorf("no profiles for platform: %s", app.Platform)
+	}
+
+	profileType := platformProfileTypes[distrType]
+
+	for bundleIDIdentifier, entitlements := range app.EntitlementsByArchivableTargetBundleID {
+		var profileDeviceIDs []string
+		if DistributionTypeRequiresDeviceList([]DistributionType{distrType}) {
+			profileDeviceIDs = devPortalDeviceIDs
+		}
+
+		profile, err := profileManager.ensureProfileWithRetry(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
+		if err != nil {
+			return nil, err
+		}
+		codesignAssets.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+	}
+
+	if len(app.UITestTargetBundleIDs) > 0 && distrType == Development {
+		// Capabilities are not supported for UITest targets.
+		// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
+		for _, bundleIDIdentifier := range app.UITestTargetBundleIDs {
+			wildcardBundleID, err := CreateWildcardBundleID(bundleIDIdentifier)
+			if err != nil {
+				return nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
 			}
-			log.Warnf("Using: %s", certs[0].CertificateInfo.CommonName)
-		}
-		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
-		codesignAssets := AppCodesignAssets{
-			ArchivableTargetProfilesByBundleID: map[string]Profile{},
-			UITestTargetProfilesByBundleID:     map[string]Profile{},
-			Certificate:                        certs[0].CertificateInfo,
-		}
-
-		var certIDs []string
-		for _, cert := range certs {
-			certIDs = append(certIDs, cert.ID)
-		}
-
-		platformProfileTypes, ok := PlatformToProfileTypeByDistribution[app.Platform]
-		if !ok {
-			return nil, fmt.Errorf("no profiles for platform: %s", app.Platform)
-		}
-
-		profileType := platformProfileTypes[distrType]
-
-		for bundleIDIdentifier, entitlements := range app.EntitlementsByArchivableTargetBundleID {
-			var profileDeviceIDs []string
-			if distributionTypeRequiresDeviceList([]DistributionType{distrType}) {
-				profileDeviceIDs = devPortalDeviceIDs
-			}
-
-			profile, err := profileManager.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
+			// Capabilities are not supported for UITest targets.
+			profile, err := profileManager.ensureProfileWithRetry(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
 			if err != nil {
 				return nil, err
 			}
-			codesignAssets.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+			codesignAssets.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
 		}
-
-		if len(app.UITestTargetBundleIDs) > 0 && distrType == Development {
-			// Capabilities are not supported for UITest targets.
-			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
-			for _, bundleIDIdentifier := range app.UITestTargetBundleIDs {
-				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
-				if err != nil {
-					return nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
-				}
-
-				// Capabilities are not supported for UITest targets.
-				profile, err := profileManager.ensureProfile(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
-				if err != nil {
-					return nil, err
-				}
-				codesignAssets.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
-			}
-		}
-
-		codesignAssetsByDistributionType[distrType] = codesignAssets
 	}
 
 	if len(profileManager.containersByBundleID) > 0 {
@@ -124,7 +116,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 		}
 	}
 
-	return codesignAssetsByDistributionType, nil
+	return &codesignAssets, nil
 }
 
 type profileManager struct {
@@ -142,7 +134,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 		var err error
 		bundleID, err = m.client.FindBundleID(bundleIDIdentifier)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find bundle ID: %s", err)
+			return nil, fmt.Errorf("failed to find bundle ID: %w", err)
 		}
 	}
 
@@ -166,13 +158,13 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
 				if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
-					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
+					return nil, fmt.Errorf("failed to update bundle ID capabilities: %w", err)
 				}
 
 				return bundleID, nil
 			}
 
-			return nil, fmt.Errorf("failed to validate bundle ID: %s", err)
+			return nil, fmt.Errorf("failed to validate bundle ID: %w", err)
 		}
 
 		log.Printf("  app ID capabilities are in sync with the project capabilities")
@@ -185,12 +177,12 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 
 	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier, appIDName(bundleIDIdentifier))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
+		return nil, fmt.Errorf("failed to create bundle ID: %w", err)
 	}
 
 	containers, err := entitlements.ICloudContainers()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get list of iCloud containers: %s", err)
+		return nil, fmt.Errorf("failed to get list of iCloud containers: %w", err)
 	}
 
 	if len(containers) > 0 {
@@ -199,7 +191,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 	}
 
 	if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
-		return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
+		return nil, fmt.Errorf("failed to update bundle ID capabilities: %w", err)
 	}
 
 	m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
@@ -207,16 +199,48 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 	return bundleID, nil
 }
 
+func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
+	var profile *Profile
+	// Accessing the same Apple Developer Portal team can cause race conditions (parallel CI runs for example).
+	// Between the time of finding and downloading a profile, it could have been deleted for example.
+	if err := retry.Times(5).Wait(10 * time.Second).TryWithAbort(func(attempt uint) (error, bool) {
+		if attempt > 0 {
+			fmt.Println()
+			log.Printf("  Retrying profile preparation (attempt %d)", attempt)
+		}
+
+		var err error
+		profile, err = m.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, minProfileDaysValid)
+		if err != nil {
+			if ok := errors.As(err, &ProfilesInconsistentError{}); ok {
+				log.Warnf("  %s", err)
+				return err, false
+			}
+
+			return err, true
+		}
+
+		return nil, false
+	}); err != nil {
+		return nil, err
+	}
+
+	return profile, nil
+}
+
 func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
-	log.Printf("  capabilities: %s", entitlements)
+	log.Printf("  capabilities:")
+	for k, v := range entitlements {
+		log.Printf("  - %s: %v", k, v)
+	}
 
 	// Search for Bitrise managed Profile
 	name := profileName(profileType, bundleIDIdentifier)
 	profile, err := m.client.FindProfile(name, profileType)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find profile: %s", err)
+		return nil, fmt.Errorf("failed to find profile: %w", err)
 	}
 
 	if profile == nil {
@@ -231,7 +255,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 				if mErr, ok := err.(NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
 				} else {
-					return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
+					return nil, fmt.Errorf("failed to check if profile is valid: %w", err)
 				}
 			} else { // Profile matches
 				log.Donef("  profile is in sync with the project requirements")
@@ -245,7 +269,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 		}
 
 		if err := m.client.DeleteProfile(profile.ID()); err != nil {
-			return nil, fmt.Errorf("failed to delete profile: %s", err)
+			return nil, fmt.Errorf("failed to delete profile: %w", err)
 		}
 	}
 
@@ -261,7 +285,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 
 	profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create profile: %s", err)
+		return nil, fmt.Errorf("failed to create profile: %w", err)
 	}
 
 	log.Donef("  profile created: %s", profile.Attributes().Name)
@@ -286,7 +310,8 @@ func hasSignInWithAppleEntitlement(entitlements Entitlements) bool {
 	return false
 }
 
-func distributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
+// DistributionTypeRequiresDeviceList returns true if the provided distribution method requires a provisioning profile with a device list.
+func DistributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
 	for _, distrType := range distrTypes {
 		if distrType == Development || distrType == AdHoc {
 			return true
@@ -295,7 +320,8 @@ func distributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
 	return false
 }
 
-func createWildcardBundleID(bundleID string) (string, error) {
+// CreateWildcardBundleID creates a wildcard bundle identifier, by replacing the provided bundle id's last component with an asterisk (*).
+func CreateWildcardBundleID(bundleID string) (string, error) {
 	idx := strings.LastIndex(bundleID, ".")
 	if idx == -1 {
 		return "", fmt.Errorf("invalid bundle id (%s): does not contain *", bundleID)
@@ -332,7 +358,7 @@ func checkProfileEntitlements(client DevPortalClient, prof Profile, appEntitleme
 		return err
 	}
 
-	missingContainers, err := findMissingContainers(appEntitlements, profileEnts)
+	missingContainers, err := FindMissingContainers(appEntitlements, profileEnts)
 	if err != nil {
 		return fmt.Errorf("failed to check missing containers: %s", err)
 	}
@@ -364,8 +390,9 @@ func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 	return Entitlements(profile.Entitlements), nil
 }
 
-func findMissingContainers(projectEnts, profileEnts Entitlements) ([]string, error) {
-	projContainerIDs, err := serialized.Object(projectEnts).StringSlice("com.apple.developer.icloud-container-identifiers")
+// FindMissingContainers ...
+func FindMissingContainers(projectEnts, profileEnts Entitlements) ([]string, error) {
+	projContainerIDs, err := serialized.Object(projectEnts).StringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil {
 		if serialized.IsKeyNotFoundError(err) {
 			return nil, nil // project has no container
@@ -375,7 +402,7 @@ func findMissingContainers(projectEnts, profileEnts Entitlements) ([]string, err
 
 	// project has containers, so the profile should have at least the same
 
-	profContainerIDs, err := serialized.Object(profileEnts).StringSlice("com.apple.developer.icloud-container-identifiers")
+	profContainerIDs, err := serialized.Object(profileEnts).StringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil {
 		if serialized.IsKeyNotFoundError(err) {
 			return projContainerIDs, nil
@@ -457,4 +484,27 @@ func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement
 		return err
 	}
 	return checkProfileDevices(profileDeviceIDs, deviceIDs)
+}
+
+// SelectCertificate selects the first certificate with the given distribution type.
+func SelectCertificate(certsByType map[appstoreconnect.CertificateType][]Certificate, distrType DistributionType) (*Certificate, error) {
+	certType := CertificateTypeByDistribution[distrType]
+	certs := certsByType[certType]
+
+	if len(certs) == 0 {
+		return nil, fmt.Errorf("no valid certificate provided for distribution type: %s", distrType)
+	}
+
+	if len(certs) > 1 {
+		log.Warnf("Multiple certificates provided for distribution type: %s", distrType)
+		for _, c := range certs {
+			log.Warnf("- %s", c.CertificateInfo.CommonName)
+		}
+	}
+
+	selectedCertificate := certs[0]
+
+	log.Warnf("Using certificate for %s distribution: %s", distrType, selectedCertificate.CertificateInfo.CommonName)
+
+	return &selectedCertificate, nil
 }

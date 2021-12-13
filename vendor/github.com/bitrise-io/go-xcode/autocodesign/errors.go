@@ -36,12 +36,11 @@ func (e *DetailedError) Error() string {
 
 // missingCertificateError ...
 type missingCertificateError struct {
-	Type   appstoreconnect.CertificateType
-	TeamID string
+	Type appstoreconnect.CertificateType
 }
 
 func (e missingCertificateError) Error() string {
-	return fmt.Sprintf("no valid %s type certificates uploaded with Team ID (%s)\n ", e.Type, e.TeamID)
+	return fmt.Sprintf("no valid %s type certificates uploaded\n ", e.Type)
 }
 
 // NonmatchingProfileError is returned when a profile/bundle ID does not match project requirements
@@ -52,6 +51,26 @@ type NonmatchingProfileError struct {
 
 func (e NonmatchingProfileError) Error() string {
 	return fmt.Sprintf("provisioning profile does not match requirements: %s", e.Reason)
+}
+
+// ProfilesInconsistentError is returned when a profile is deleted by an other actor
+type ProfilesInconsistentError struct {
+	wrapErr error
+}
+
+// NewProfilesInconsistentError ...
+func NewProfilesInconsistentError(wrapErr error) ProfilesInconsistentError {
+	return ProfilesInconsistentError{
+		wrapErr: wrapErr,
+	}
+}
+
+func (e ProfilesInconsistentError) Error() string {
+	return fmt.Sprintf("provisioning profiles were concurrently changed on Developer Portal, %s", e.wrapErr)
+}
+
+func (e ProfilesInconsistentError) Unwrap() error {
+	return e.wrapErr
 }
 
 // ErrAppClipAppID ...
