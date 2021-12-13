@@ -101,7 +101,7 @@ inputs:
     category: Apple ID
     title: Team ID
     description: |-
-      Needed if the are multiple Developer Portal teams active when using Bitrise Apple Service connection with Apple ID.
+      Defining this is required when Bitrise Apple Developer Connection is set to `apple-id` and the connected account belongs to multiple teams.
 - distribution_type: development
   opts:
     title: Distribution type
