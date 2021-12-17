@@ -22,7 +22,7 @@ github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/pretty
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-xcode v0.0.0-20211213084300-055f09f99a30
+# github.com/bitrise-io/go-xcode v0.0.0-20211217002218-2be2d78bc261
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/autocodesign
@@ -51,8 +51,6 @@ github.com/bitrise-io/pkcs12
 github.com/bitrise-io/pkcs12/internal/rc2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/dgrijalva/jwt-go v3.2.0+incompatible
-## explicit
 # github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 github.com/fullsailor/pkcs7
 # github.com/golang-jwt/jwt/v4 v4.1.0
