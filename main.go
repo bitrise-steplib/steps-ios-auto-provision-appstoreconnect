@@ -28,7 +28,6 @@ func failf(format string, args ...interface{}) {
 }
 
 func main() {
-
 	// Parse and validate inputs
 	var cfg Config
 	parser := stepconf.NewInputParser(env.NewRepository())
