@@ -4,25 +4,26 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-steputils/tools"
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/env"
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	v1log "github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
-	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
-	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
-	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
-	"github.com/bitrise-io/go-xcode/autocodesign/localcodesignasset"
-	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/codesignasset"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/keychain"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 )
 
 func failf(format string, args ...interface{}) {
-	log.Errorf(format, args...)
+	v1log.Errorf(format, args...)
 	os.Exit(1)
 }
 
@@ -37,7 +38,7 @@ func main() {
 
 	var logger = log.NewLogger()
 	logger.EnableDebugLog(cfg.VerboseLog)
-	log.SetEnableDebugLog(cfg.VerboseLog) // for compatibility
+	v1log.SetEnableDebugLog(cfg.VerboseLog) // for compatibility
 
 	certsWithPrivateKey, err := cfg.Certificates()
 	if err != nil {
