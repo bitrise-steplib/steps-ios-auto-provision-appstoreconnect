@@ -40,6 +40,23 @@ func main() {
 	logger.EnableDebugLog(cfg.VerboseLog)
 	v1log.SetEnableDebugLog(cfg.VerboseLog) // for compatibility
 
+	logger.Warnf(`
+This Step has been deprecated in the favour of the new automatic code signing options on Bitrise.
+
+Option A) 
+The latest versions of the 'Xcode Archive & Export for iOS', 'Xcode Build for testing for iOS', 
+and the 'Export iOS and tvOS Xcode archive' steps have built-in automatic code signing.
+We suggest to remove this step from your workflow and start to use
+the automatic code signing feature in the Steps mentioned above.
+
+Option B) 
+If you are not using any of the mentioned Xcode steps, then you can replace
+the 'iOS Auto Provision with App Store Connect API' Step with the 'Manage iOS Code signing' Step.
+
+You can read more about these changes in our blog post:
+https://blog.bitrise.io/post/simplifying-automatic-code-signing-on-bitrise.
+`)
+
 	certsWithPrivateKey, err := cfg.Certificates()
 	if err != nil {
 		failf("Failed to convert certificate URLs: %s", err)
