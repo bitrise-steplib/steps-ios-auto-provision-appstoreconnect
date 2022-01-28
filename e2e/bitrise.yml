@@ -366,7 +366,7 @@ workflows:
 
   _check_xcode_build_for_test:
     steps:
-    - xcode-build-for-test@0:
+    - xcode-build-for-test:
         inputs:
         - project_path: ./_tmp/$BITRISE_PROJECT_PATH
         - scheme: $BITRISE_SCHEME
