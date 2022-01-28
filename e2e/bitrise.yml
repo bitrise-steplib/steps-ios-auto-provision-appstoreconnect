@@ -371,7 +371,7 @@ workflows:
         - project_path: ./_tmp/$BITRISE_PROJECT_PATH
         - scheme: $BITRISE_SCHEME
         - configuration: Debug
-        - output_tool: xcodebuild
+        - log_formatter: xcodebuild
     - deploy-to-bitrise-io:
         inputs:
         - notify_user_groups: none
