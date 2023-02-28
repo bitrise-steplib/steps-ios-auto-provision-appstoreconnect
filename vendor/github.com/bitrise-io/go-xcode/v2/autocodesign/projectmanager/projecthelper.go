@@ -54,11 +54,16 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 		return nil, fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
 
-	dependentTargets := mainTarget.DependentExecutableProductTargets()
+	var dependentTargets []xcodeproj.Target
+	for _, target := range xcproj.DependentTargetsOfTarget(mainTarget) {
+		if target.IsExecutableProduct() {
+			dependentTargets = append(dependentTargets, target)
+		}
+	}
 
 	var uiTestTargets []xcodeproj.Target
 	for _, target := range xcproj.Proj.Targets {
-		if target.IsUITestProduct() && target.DependesOn(mainTarget.ID) {
+		if target.IsUITestProduct() && target.DependsOn(mainTarget.ID) {
 			uiTestTargets = append(uiTestTargets, target)
 		}
 	}
@@ -414,6 +419,8 @@ func configuration(configurationName string, scheme xcscheme.Scheme, xcproj xcod
 
 // mainTargetOfScheme return the main target
 func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcodeproj.Target, error) {
+	log.Debugf("Searching %d for scheme main target: %s", len(scheme.BuildAction.BuildActionEntries), scheme.Name)
+
 	var blueIdent string
 	for _, entry := range scheme.BuildAction.BuildActionEntries {
 		if entry.BuildableReference.IsAppReference() {
@@ -421,6 +428,8 @@ func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcode
 			break
 		}
 	}
+
+	log.Debugf("Searching %d targets for: %s", len(proj.Proj.Targets), blueIdent)
 
 	// Search for the main target
 	for _, t := range proj.Proj.Targets {
@@ -435,6 +444,8 @@ func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcode
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
 func findBuiltProject(pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
+	log.TInfof("Locating built project for xcode project: %s, scheme: %s", pth, schemeName)
+
 	scheme, schemeContainerDir, err := schemeint.Scheme(pth, schemeName)
 	if err != nil {
 		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, fmt.Errorf("could not get scheme with name %s from path %s", schemeName, pth)
@@ -454,6 +465,8 @@ func findBuiltProject(pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Sch
 	if err != nil {
 		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, err
 	}
+
+	log.TInfof("Located built project for scheme: %s", schemeName)
 
 	return xcodeProj, *scheme, nil
 }
