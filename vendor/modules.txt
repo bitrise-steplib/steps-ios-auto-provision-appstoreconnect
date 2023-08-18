@@ -1,6 +1,9 @@
+# github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02
+github.com/bitrise-io/go-pkcs12
+github.com/bitrise-io/go-pkcs12/internal/rc2
 # github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 github.com/bitrise-io/go-plist
-# github.com/bitrise-io/go-steputils v1.0.1
+# github.com/bitrise-io/go-steputils v1.0.5
 ## explicit
 github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/tools
@@ -8,7 +11,7 @@ github.com/bitrise-io/go-steputils/tools
 ## explicit
 github.com/bitrise-io/go-steputils/v2/ruby
 github.com/bitrise-io/go-steputils/v2/stepconf
-# github.com/bitrise-io/go-utils v1.0.1
+# github.com/bitrise-io/go-utils v1.0.9
 ## explicit
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
@@ -28,7 +31,7 @@ github.com/bitrise-io/go-utils/sliceutil
 github.com/bitrise-io/go-utils/v2/command
 github.com/bitrise-io/go-utils/v2/env
 github.com/bitrise-io/go-utils/v2/log
-# github.com/bitrise-io/go-xcode v1.0.2
+# github.com/bitrise-io/go-xcode v1.0.15
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/certificateutil
@@ -54,9 +57,6 @@ github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/spaceship
 github.com/bitrise-io/go-xcode/v2/autocodesign/keychain
 github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset
 github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager
-# github.com/bitrise-io/pkcs12 v0.0.0-20211108084543-e52728e011c8
-github.com/bitrise-io/pkcs12
-github.com/bitrise-io/pkcs12/internal/rc2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
@@ -69,22 +69,23 @@ github.com/google/go-querystring/query
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.7.0
 github.com/hashicorp/go-retryablehttp
-# github.com/hashicorp/go-version v1.4.0
-## explicit
+# github.com/hashicorp/go-version v1.6.0
 github.com/hashicorp/go-version
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/stretchr/objx v0.3.0
+# github.com/stretchr/objx v0.5.0
 github.com/stretchr/objx
-# github.com/stretchr/testify v1.7.0
+# github.com/stretchr/testify v1.8.4
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
-# golang.org/x/text v0.3.7
+# golang.org/x/crypto v0.12.0
+golang.org/x/crypto/pbkdf2
+# golang.org/x/text v0.12.0
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+# gopkg.in/yaml.v3 v3.0.1
 gopkg.in/yaml.v3
 # howett.net/plist v1.0.0
 howett.net/plist
